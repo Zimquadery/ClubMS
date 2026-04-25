@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:16-alpine
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    env_file: .env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "4000:4000"
+    env_file: .env
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_UNIVERSITY_NAME: ${UNIVERSITY_NAME}
+        VITE_PRIMARY_BRAND_COLOR: ${PRIMARY_BRAND_COLOR}
+        VITE_LOGO_URL: ${LOGO_URL}
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+volumes:
+  pgdata:

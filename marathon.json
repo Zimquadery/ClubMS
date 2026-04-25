@@ -8,7 +8,7 @@
     {
       "type": "step",
       "agent": "opencode",
-      "prompt": "We have attempted .\\Plans\\Phase-1-Foundation.md . Ensure everything is complete and ready before we move to next phase. Find gaps and issues that needs to be fixed before moving on. Use subagents to fix those completely. Ensure no cascading issues arise. DO NOT OVER-SCOPE."
+      "prompt": "We have attempted .\\Plans\\Phase-1-Foundation.md . Ensure everything is complete and ready before we move to next phase. Find gaps and issues that needs to be fixed before moving on. Use subagents to fix those completely. Ensure no cascading issues arise. DO NOT OVER-SCOPE. commit to git at the end."
     },
     {
       "type": "step",
@@ -18,7 +18,7 @@
     {
       "type": "step",
       "agent": "opencode",
-      "prompt": "We have attempted .\\Plans\\Phase-2-Auth.md . Ensure everything is complete and ready before we move to next phase. Find gaps and issues that needs to be fixed before moving on. Use subagents to fix those completely. Ensure no cascading issues arise. DO NOT OVER-SCOPE."
+      "prompt": "We have attempted .\\Plans\\Phase-2-Auth.md . Ensure everything is complete and ready before we move to next phase. Find gaps and issues that needs to be fixed before moving on. Use subagents to fix those completely. Ensure no cascading issues arise. DO NOT OVER-SCOPE. commit to git at the end."
     },
     {
       "type": "step",
@@ -28,7 +28,7 @@
     {
       "type": "step",
       "agent": "opencode",
-      "prompt": "We have attempted .\\Plans\\Phase-3-RBAC-Frontend-Shell.md . Ensure everything is complete and ready before we move to next phase. Find gaps and issues that needs to be fixed before moving on. Use subagents to fix those completely. Ensure no cascading issues arise. DO NOT OVER-SCOPE."
+      "prompt": "We have attempted .\\Plans\\Phase-3-RBAC-Frontend-Shell.md . Ensure everything is complete and ready before we move to next phase. Find gaps and issues that needs to be fixed before moving on. Use subagents to fix those completely. Ensure no cascading issues arise. DO NOT OVER-SCOPE. commit to git at the end."
     },
     {
       "type": "step",
@@ -38,7 +38,7 @@
     {
       "type": "step",
       "agent": "opencode",
-      "prompt": "We have attempted .\\Plans\\Phase-4-Clubs.md . Ensure everything is complete and ready before we move to next phase. Find gaps and issues that needs to be fixed before moving on. Use subagents to fix those completely. Ensure no cascading issues arise. DO NOT OVER-SCOPE."
+      "prompt": "We have attempted .\\Plans\\Phase-4-Clubs.md . Ensure everything is complete and ready before we move to next phase. Find gaps and issues that needs to be fixed before moving on. Use subagents to fix those completely. Ensure no cascading issues arise. DO NOT OVER-SCOPE. commit to git at the end."
     },
     {
       "type": "step",
@@ -48,7 +48,7 @@
     {
       "type": "step",
       "agent": "opencode",
-      "prompt": "We have attempted .\\Plans\\Phase-5-Memberships.md . Ensure everything is complete and ready before we move to next phase. Find gaps and issues that needs to be fixed before moving on. Use subagents to fix those completely. Ensure no cascading issues arise. DO NOT OVER-SCOPE."
+      "prompt": "We have attempted .\\Plans\\Phase-5-Memberships.md . Ensure everything is complete and ready before we move to next phase. Find gaps and issues that needs to be fixed before moving on. Use subagents to fix those completely. Ensure no cascading issues arise. DO NOT OVER-SCOPE. commit to git at the end."
     },
     {
       "type": "step",
@@ -58,7 +58,7 @@
     {
       "type": "step",
       "agent": "opencode",
-      "prompt": "We have attempted .\\Plans\\Phase-6-Events.md . Ensure everything is complete and ready before we move to next phase. Find gaps and issues that needs to be fixed before moving on. Use subagents to fix those completely. Ensure no cascading issues arise. DO NOT OVER-SCOPE."
+      "prompt": "We have attempted .\\Plans\\Phase-6-Events.md . Ensure everything is complete and ready before we move to next phase. Find gaps and issues that needs to be fixed before moving on. Use subagents to fix those completely. Ensure no cascading issues arise. DO NOT OVER-SCOPE. commit to git at the end."
     },
     {
       "type": "step",
@@ -68,7 +68,7 @@
     {
       "type": "step",
       "agent": "opencode",
-      "prompt": "We have attempted .\\Plans\\Phase-7-Branding-Seed.md . Ensure everything is complete and ready before we move to next phase. Find gaps and issues that needs to be fixed before moving on. Use subagents to fix those completely. Ensure no cascading issues arise. DO NOT OVER-SCOPE."
+      "prompt": "We have attempted .\\Plans\\Phase-7-Branding-Seed.md . Ensure everything is complete and ready before we move to next phase. Find gaps and issues that needs to be fixed before moving on. Use subagents to fix those completely. Ensure no cascading issues arise. DO NOT OVER-SCOPE. commit to git at the end."
     }
   ]
 }
