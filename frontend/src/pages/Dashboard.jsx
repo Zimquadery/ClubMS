@@ -1,6 +1,7 @@
 import { useAuth } from '@/hooks/useAuth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Users, Calendar, Shield } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -26,7 +27,8 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              You haven&apos;t joined any clubs yet. Browse clubs to get started.
+              You haven&apos;t joined any clubs yet.{' '}
+              <Link to="/clubs" className="text-brand-primary hover:underline">Browse clubs →</Link>
             </p>
           </CardContent>
         </Card>
@@ -55,11 +57,20 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
-              {isAdmin
-                ? 'You have platform admin privileges. Admin features will be available in upcoming phases.'
-                : 'You have club admin privileges. Club management features will be available in upcoming phases.'}
-            </p>
+            {isAdmin ? (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  You have platform admin privileges to manage clubs.
+                </p>
+                <Link to="/admin/clubs" className="inline-flex items-center gap-1 text-sm text-brand-primary hover:underline mt-1">
+                  Manage Clubs →
+                </Link>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                You have club admin privileges. Club management features will be available in upcoming phases.
+              </p>
+            )}
           </CardContent>
         </Card>
       )}

@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { LayoutDashboard, Users, Calendar, LogOut } from 'lucide-react'
+import { LayoutDashboard, Users, Calendar, LogOut, Shield } from 'lucide-react'
 
 export function Layout() {
   const { user, logout } = useAuth()
@@ -44,14 +44,20 @@ export function Layout() {
                   <LayoutDashboard className="h-4 w-4" />
                   Dashboard
                 </Link>
-                <span className="flex items-center gap-1 text-muted-foreground cursor-default">
+                <Link to="/clubs" className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
                   <Users className="h-4 w-4" />
                   Clubs
-                </span>
-                <span className="flex items-center gap-1 text-muted-foreground cursor-default">
+                </Link>
+                <Link to="/dashboard" className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
                   <Calendar className="h-4 w-4" />
                   Events
-                </span>
+                </Link>
+                {user.role === 'PLATFORM_ADMIN' && (
+                  <Link to="/admin/clubs" className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
+                    <Shield className="h-4 w-4" />
+                    Manage Clubs
+                  </Link>
+                )}
               </nav>
             )}
           </div>

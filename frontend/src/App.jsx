@@ -4,6 +4,9 @@ import { ProtectedRoute } from '@/components/ProtectedRoute'
 import Login from '@/pages/Login'
 import Register from '@/pages/Register'
 import Dashboard from '@/pages/Dashboard'
+import ClubDirectory from '@/pages/ClubDirectory'
+import ClubDetail from '@/pages/ClubDetail'
+import ManageClubs from '@/pages/admin/ManageClubs'
 
 function App() {
   return (
@@ -14,6 +17,15 @@ function App() {
         <Route index element={<Navigate to="/dashboard" />} />
         <Route path="dashboard" element={
           <ProtectedRoute><Dashboard /></ProtectedRoute>
+        } />
+        <Route path="clubs" element={
+          <ProtectedRoute><ClubDirectory /></ProtectedRoute>
+        } />
+        <Route path="clubs/:id" element={
+          <ProtectedRoute><ClubDetail /></ProtectedRoute>
+        } />
+        <Route path="admin/clubs" element={
+          <ProtectedRoute roles={['PLATFORM_ADMIN']}><ManageClubs /></ProtectedRoute>
         } />
       </Route>
     </Routes>
