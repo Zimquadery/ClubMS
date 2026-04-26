@@ -1,16 +1,12 @@
 -- CreateSchema
 CREATE SCHEMA IF NOT EXISTS "public";
 
--- CreateEnum
 CREATE TYPE "UserRole" AS ENUM ('PLATFORM_ADMIN', 'CLUB_ADMIN', 'STUDENT');
 
--- CreateEnum
 CREATE TYPE "MembershipStatus" AS ENUM ('PENDING', 'ACTIVE', 'ALUMNI', 'REJECTED');
 
--- CreateEnum
 CREATE TYPE "MemberRole" AS ENUM ('MEMBER', 'OFFICER');
 
--- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
     "email" TEXT NOT NULL,
@@ -23,7 +19,6 @@ CREATE TABLE "User" (
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
 CREATE TABLE "Club" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -36,7 +31,6 @@ CREATE TABLE "Club" (
     CONSTRAINT "Club_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
 CREATE TABLE "ClubMembership" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
@@ -49,7 +43,6 @@ CREATE TABLE "ClubMembership" (
     CONSTRAINT "ClubMembership_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
 CREATE TABLE "Event" (
     "id" TEXT NOT NULL,
     "clubId" TEXT NOT NULL,
@@ -65,18 +58,12 @@ CREATE TABLE "Event" (
     CONSTRAINT "Event_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
--- CreateIndex
 CREATE UNIQUE INDEX "ClubMembership_userId_clubId_key" ON "ClubMembership"("userId", "clubId");
 
--- AddForeignKey
 ALTER TABLE "ClubMembership" ADD CONSTRAINT "ClubMembership_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
--- AddForeignKey
 ALTER TABLE "ClubMembership" ADD CONSTRAINT "ClubMembership_clubId_fkey" FOREIGN KEY ("clubId") REFERENCES "Club"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
--- AddForeignKey
 ALTER TABLE "Event" ADD CONSTRAINT "Event_clubId_fkey" FOREIGN KEY ("clubId") REFERENCES "Club"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-

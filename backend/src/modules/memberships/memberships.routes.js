@@ -31,6 +31,7 @@ router.patch('/:clubId/members/:userId/alumni', authMiddleware, requireRole('CLU
 router.post('/:clubId/transfer', authMiddleware, requireRole('CLUB_ADMIN'), requireClubAdmin, membershipsController.transferAdmin);
 
 const adminRouter = express.Router();
+adminRouter.get('/my-clubs', authMiddleware, membershipsController.getMyClubs);
 adminRouter.get('/my-admin-clubs', authMiddleware, requireRole('CLUB_ADMIN'), membershipsController.getAdminClubs);
 
 module.exports = { router, adminRouter };

@@ -191,6 +191,19 @@ async function isClubAdmin(userId, clubId) {
   return !!(membership && membership.role === 'OFFICER' && membership.status === 'ACTIVE');
 }
 
+async function getMyClubs(userId) {
+  const memberships = await prisma.clubMembership.findMany({
+    where: { userId, status: { in: ['ACTIVE', 'PENDING'] } },
+    include: { club: { select: { id: true, name: true, category: true, logoUrl: true } } },
+    orderBy: { createdAt: 'desc' },
+  });
+  return memberships.map((m) => ({
+    ...m.club,
+    membershipStatus: m.status,
+    membershipRole: m.role,
+  }));
+}
+
 async function getAdminClubs(userId) {
   const memberships = await prisma.clubMembership.findMany({
     where: { userId, role: 'OFFICER', status: 'ACTIVE' },
@@ -200,4 +213,4 @@ async function getAdminClubs(userId) {
   return memberships.map((m) => m.club);
 }
 
-module.exports = { requestJoin, listMembers, approve, reject, setAlumni, transferAdmin, isClubAdmin, getAdminClubs };
+module.exports = { requestJoin, listMembers, approve, reject, setAlumni, transferAdmin, isClubAdmin, getAdminClubs, getMyClubs };

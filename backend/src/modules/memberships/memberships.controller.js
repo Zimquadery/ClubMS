@@ -60,6 +60,15 @@ async function transferAdmin(req, res, next) {
   }
 }
 
+async function getMyClubs(req, res, next) {
+  try {
+    const clubs = await membershipsService.getMyClubs(req.user.userId);
+    res.status(200).json(clubs);
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function getAdminClubs(req, res, next) {
   try {
     const clubs = await membershipsService.getAdminClubs(req.user.userId);
@@ -69,4 +78,4 @@ async function getAdminClubs(req, res, next) {
   }
 }
 
-module.exports = { requestJoin, listMembers, approve, reject, setAlumni, transferAdmin, getAdminClubs };
+module.exports = { requestJoin, listMembers, approve, reject, setAlumni, transferAdmin, getAdminClubs, getMyClubs };

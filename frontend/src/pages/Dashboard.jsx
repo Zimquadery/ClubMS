@@ -6,20 +6,44 @@ import { Badge } from '@/components/ui/badge'
 import { Users, Calendar, Shield } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
+function formatDate(dateStr) {
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
 export default function Dashboard() {
   const { user } = useAuth()
   const isAdmin = user?.role === 'PLATFORM_ADMIN'
   const isClubAdmin = user?.role === 'CLUB_ADMIN'
+  const [myClubs, setMyClubs] = useState([])
+  const [clubsLoading, setClubsLoading] = useState(true)
+  const [upcomingEvents, setUpcomingEvents] = useState([])
+  const [eventsLoading, setEventsLoading] = useState(true)
   const [adminClubs, setAdminClubs] = useState([])
-  const [clubsLoading, setClubsLoading] = useState(false)
+
+  useEffect(() => {
+    client.get('/memberships/my-clubs')
+      .then((res) => setMyClubs(res.data))
+      .catch(() => {})
+      .finally(() => setClubsLoading(false))
+  }, [])
+
+  useEffect(() => {
+    client.get('/events?joined=true')
+      .then((res) => setUpcomingEvents(res.data))
+      .catch(() => {})
+      .finally(() => setEventsLoading(false))
+  }, [])
 
   useEffect(() => {
     if (isClubAdmin) {
-      setClubsLoading(true)
       client.get('/memberships/my-admin-clubs')
         .then((res) => setAdminClubs(res.data))
         .catch(() => {})
-        .finally(() => setClubsLoading(false))
     }
   }, [isClubAdmin])
 
@@ -41,10 +65,30 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
-              You haven&apos;t joined any clubs yet.{' '}
-              <Link to="/clubs" className="text-brand-primary hover:underline">Browse clubs →</Link>
-            </p>
+            {clubsLoading ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-primary" />
+            ) : myClubs.length > 0 ? (
+              <div className="space-y-2">
+                {myClubs.map((club) => (
+                  <div key={club.id} className="flex items-center justify-between rounded-md border bg-background p-2">
+                    <div className="flex items-center gap-2">
+                      <Link to={`/clubs/${club.id}`} className="text-sm font-medium hover:underline">
+                        {club.name}
+                      </Link>
+                      <Badge variant="secondary" className="text-xs">{club.category}</Badge>
+                      {club.membershipStatus === 'PENDING' && (
+                        <Badge variant="outline" className="text-xs text-yellow-600 border-yellow-400">Pending</Badge>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                You haven&apos;t joined any clubs yet.{' '}
+                <Link to="/clubs" className="text-brand-primary hover:underline">Browse clubs →</Link>
+              </p>
+            )}
           </CardContent>
         </Card>
 
@@ -56,9 +100,29 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
-              No upcoming events. Join a club to see events here.
-            </p>
+            {eventsLoading ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-primary" />
+            ) : upcomingEvents.length > 0 ? (
+              <div className="space-y-2">
+                {upcomingEvents.map((event) => (
+                  <div key={event.id} className="rounded-md border bg-background p-2">
+                    <div className="flex items-center gap-2">
+                      <Link to={`/clubs/${event.club?.id}`} className="text-sm font-medium hover:underline">
+                        {event.title}
+                      </Link>
+                      <Badge variant="secondary" className="text-xs">{event.club?.name}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {formatDate(event.startTime)}{event.location && ` · ${event.location}`}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No upcoming events. Join a club to see events here.
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
