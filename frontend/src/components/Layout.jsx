@@ -48,7 +48,7 @@ export function Layout() {
                   <Users className="h-4 w-4" />
                   Clubs
                 </Link>
-                <Link to="/dashboard" className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
+                <Link to="/events" className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
                   <Calendar className="h-4 w-4" />
                   Events
                 </Link>

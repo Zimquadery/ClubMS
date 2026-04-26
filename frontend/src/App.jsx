@@ -6,6 +6,7 @@ import Register from '@/pages/Register'
 import Dashboard from '@/pages/Dashboard'
 import ClubDirectory from '@/pages/ClubDirectory'
 import ClubDetail from '@/pages/ClubDetail'
+import EventCalendar from '@/pages/EventCalendar'
 import ManageClubs from '@/pages/admin/ManageClubs'
 import PendingRequests from '@/pages/admin/PendingRequests'
 import ClubMembers from '@/pages/admin/ClubMembers'
@@ -25,6 +26,9 @@ function App() {
         } />
         <Route path="clubs/:id" element={
           <ProtectedRoute><ClubDetail /></ProtectedRoute>
+        } />
+        <Route path="events" element={
+          <ProtectedRoute><EventCalendar /></ProtectedRoute>
         } />
         <Route path="admin/clubs" element={
           <ProtectedRoute roles={['PLATFORM_ADMIN']}><ManageClubs /></ProtectedRoute>

@@ -5,7 +5,10 @@ import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Users, Calendar, MapPin, ArrowLeft, ImageIcon, Clock, UserPlus, Shield, GraduationCap } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
+import { Users, Calendar, MapPin, ArrowLeft, ImageIcon, Clock, UserPlus, Shield, GraduationCap, Trash2 } from 'lucide-react'
 
 export default function ClubDetail() {
   const { id } = useParams()
@@ -15,6 +18,9 @@ export default function ClubDetail() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [joinLoading, setJoinLoading] = useState(false)
+  const [showCreateDialog, setShowCreateDialog] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [newEvent, setNewEvent] = useState({ title: '', description: '', startTime: '', endTime: '', location: '', bannerUrl: '' })
 
   useEffect(() => {
     fetchClub()
@@ -69,6 +75,32 @@ export default function ClubDetail() {
 
   const memberCount = club.memberships?.length ?? 0
   const userMembership = club.userMembership
+  const canManageEvents = (userMembership?.role === 'OFFICER' && userMembership?.status === 'ACTIVE') || user?.role === 'PLATFORM_ADMIN'
+
+  async function handleCreateEvent(e) {
+    e.preventDefault()
+    setSubmitting(true)
+    try {
+      await client.post(`/clubs/${id}/events`, newEvent)
+      setShowCreateDialog(false)
+      setNewEvent({ title: '', description: '', startTime: '', endTime: '', location: '', bannerUrl: '' })
+      await fetchClub()
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to create event')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function handleDeleteEvent(eventId) {
+    if (!confirm('Are you sure you want to delete this event?')) return
+    try {
+      await client.delete(`/events/${eventId}`)
+      await fetchClub()
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to delete event')
+    }
+  }
 
   function renderMembershipAction() {
     if (!user) return null
@@ -194,10 +226,56 @@ export default function ClubDetail() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Calendar className="h-5 w-5 text-brand-primary" />
-              Upcoming Events
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Calendar className="h-5 w-5 text-brand-primary" />
+                Upcoming Events
+              </CardTitle>
+              {canManageEvents && (
+                <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" className="bg-brand-primary hover:bg-brand-primary/90 text-white">
+                      Create Event
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Create Event</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleCreateEvent} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="event-title">Title</Label>
+                        <Input id="event-title" required value={newEvent.title} onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="event-description">Description</Label>
+                        <textarea id="event-description" className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" value={newEvent.description} onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="event-start">Start Time</Label>
+                        <Input id="event-start" type="datetime-local" required value={newEvent.startTime} onChange={(e) => setNewEvent({ ...newEvent, startTime: e.target.value })} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="event-end">End Time</Label>
+                        <Input id="event-end" type="datetime-local" required value={newEvent.endTime} onChange={(e) => setNewEvent({ ...newEvent, endTime: e.target.value })} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="event-location">Location</Label>
+                        <Input id="event-location" value={newEvent.location} onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="event-banner">Banner URL</Label>
+                        <Input id="event-banner" value={newEvent.bannerUrl} onChange={(e) => setNewEvent({ ...newEvent, bannerUrl: e.target.value })} />
+                      </div>
+                      <DialogFooter>
+                        <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)} disabled={submitting}>Cancel</Button>
+                        <Button type="submit" className="bg-brand-primary hover:bg-brand-primary/90 text-white" disabled={submitting}>{submitting ? 'Creating...' : 'Create'}</Button>
+                      </DialogFooter>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             {!club.events || club.events.length === 0 ? (
@@ -206,7 +284,14 @@ export default function ClubDetail() {
               <div className="space-y-3">
                 {club.events.map((event) => (
                   <div key={event.id} className="rounded-lg border p-3 space-y-1">
-                    <h4 className="font-medium text-sm">{event.title}</h4>
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="font-medium text-sm">{event.title}</h4>
+                      {canManageEvents && (
+                        <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteEvent(event.id)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </div>
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />

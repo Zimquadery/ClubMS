@@ -79,6 +79,7 @@ async function main() {
           title: 'Weekly Code Review',
           description: 'Review each other\'s projects and learn best practices',
           startTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+          endTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000),
           location: 'Room 301',
         },
         {
