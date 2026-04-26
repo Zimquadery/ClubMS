@@ -16,9 +16,7 @@ export function AuthProvider({ children }) {
     }
 
     try {
-      const response = await client.get('/auth/me', {
-        headers: { Authorization: `Bearer ${storedToken}` },
-      });
+      const response = await client.get('/auth/me');
       setUser(response.data);
       setToken(storedToken);
     } catch {

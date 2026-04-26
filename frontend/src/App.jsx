@@ -1,13 +1,22 @@
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { Layout } from '@/components/Layout'
+import { ProtectedRoute } from '@/components/ProtectedRoute'
+import Login from '@/pages/Login'
+import Register from '@/pages/Register'
+import Dashboard from '@/pages/Dashboard'
+
 function App() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-brand-primary mb-4">
-          {import.meta.env.VITE_UNIVERSITY_NAME || 'ClubMS'}
-        </h1>
-        <p className="text-gray-600">University Club Management Platform</p>
-      </div>
-    </div>
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/" element={<Layout />}>
+        <Route index element={<Navigate to="/dashboard" />} />
+        <Route path="dashboard" element={
+          <ProtectedRoute><Dashboard /></ProtectedRoute>
+        } />
+      </Route>
+    </Routes>
   )
 }
 
