@@ -21,7 +21,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Plus, Trash2, Users } from 'lucide-react'
+import { Plus, Trash2, Users, UserCheck, ClipboardList } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 const CLUB_CATEGORIES = ['Academic', 'Sports', 'Cultural', 'Technology', 'Arts', 'Community', 'Other']
 
@@ -190,14 +191,26 @@ export default function ManageClubs() {
                     {club._count?.memberships ?? 0} member{(club._count?.memberships ?? 0) !== 1 ? 's' : ''}
                   </div>
                 </div>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => setDeleteTarget(club)}
-                  disabled={deleting}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <div className="flex gap-2">
+                  <Link to={`/admin/clubs/${club.id}/requests`}>
+                    <Button variant="outline" size="sm">
+                      <ClipboardList className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <Link to={`/admin/clubs/${club.id}/members`}>
+                    <Button variant="outline" size="sm">
+                      <UserCheck className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setDeleteTarget(club)}
+                    disabled={deleting}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}

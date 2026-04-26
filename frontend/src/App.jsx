@@ -7,6 +7,8 @@ import Dashboard from '@/pages/Dashboard'
 import ClubDirectory from '@/pages/ClubDirectory'
 import ClubDetail from '@/pages/ClubDetail'
 import ManageClubs from '@/pages/admin/ManageClubs'
+import PendingRequests from '@/pages/admin/PendingRequests'
+import ClubMembers from '@/pages/admin/ClubMembers'
 
 function App() {
   return (
@@ -26,6 +28,12 @@ function App() {
         } />
         <Route path="admin/clubs" element={
           <ProtectedRoute roles={['PLATFORM_ADMIN']}><ManageClubs /></ProtectedRoute>
+        } />
+        <Route path="admin/clubs/:id/requests" element={
+          <ProtectedRoute roles={['CLUB_ADMIN', 'PLATFORM_ADMIN']}><PendingRequests /></ProtectedRoute>
+        } />
+        <Route path="admin/clubs/:id/members" element={
+          <ProtectedRoute roles={['CLUB_ADMIN', 'PLATFORM_ADMIN']}><ClubMembers /></ProtectedRoute>
         } />
       </Route>
     </Routes>

@@ -1,5 +1,8 @@
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
+import client from '@/api/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Users, Calendar, Shield } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
@@ -7,6 +10,18 @@ export default function Dashboard() {
   const { user } = useAuth()
   const isAdmin = user?.role === 'PLATFORM_ADMIN'
   const isClubAdmin = user?.role === 'CLUB_ADMIN'
+  const [adminClubs, setAdminClubs] = useState([])
+  const [clubsLoading, setClubsLoading] = useState(false)
+
+  useEffect(() => {
+    if (isClubAdmin) {
+      setClubsLoading(true)
+      client.get('/memberships/my-admin-clubs')
+        .then((res) => setAdminClubs(res.data))
+        .catch(() => {})
+        .finally(() => setClubsLoading(false))
+    }
+  }, [isClubAdmin])
 
   return (
     <div className="space-y-6">
@@ -67,9 +82,41 @@ export default function Dashboard() {
                 </Link>
               </>
             ) : (
-              <p className="text-sm text-muted-foreground">
-                You have club admin privileges. Club management features will be available in upcoming phases.
-              </p>
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  You manage the following clubs:
+                </p>
+                {clubsLoading ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-primary" />
+                ) : adminClubs.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No clubs assigned yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {adminClubs.map((club) => (
+                      <div key={club.id} className="flex items-center justify-between rounded-md border bg-background p-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">{club.name}</span>
+                          <Badge variant="secondary" className="text-xs">{club.category}</Badge>
+                        </div>
+                        <div className="flex gap-2">
+                          <Link
+                            to={`/admin/clubs/${club.id}/requests`}
+                            className="text-xs text-brand-primary hover:underline"
+                          >
+                            Requests
+                          </Link>
+                          <Link
+                            to={`/admin/clubs/${club.id}/members`}
+                            className="text-xs text-brand-primary hover:underline"
+                          >
+                            Members
+                          </Link>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </CardContent>
         </Card>

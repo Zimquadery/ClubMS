@@ -1,16 +1,20 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import client from '@/api/client'
+import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Users, Calendar, MapPin, ArrowLeft, ImageIcon, Clock } from 'lucide-react'
+import { Users, Calendar, MapPin, ArrowLeft, ImageIcon, Clock, UserPlus, Shield, GraduationCap } from 'lucide-react'
 
 export default function ClubDetail() {
   const { id } = useParams()
+  const navigate = useNavigate()
+  const { user } = useAuth()
   const [club, setClub] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [joinLoading, setJoinLoading] = useState(false)
 
   useEffect(() => {
     fetchClub()
@@ -26,6 +30,19 @@ export default function ClubDetail() {
       setError(err.response?.data?.message || 'Failed to load club')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleJoin() {
+    setJoinLoading(true)
+    setError('')
+    try {
+      await client.post(`/clubs/${id}/join`)
+      await fetchClub()
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to join club')
+    } finally {
+      setJoinLoading(false)
     }
   }
 
@@ -51,6 +68,80 @@ export default function ClubDetail() {
   if (!club) return null
 
   const memberCount = club.memberships?.length ?? 0
+  const userMembership = club.userMembership
+
+  function renderMembershipAction() {
+    if (!user) return null
+
+    if (userMembership?.status === 'ACTIVE') {
+      return (
+        <div className="flex items-center gap-2">
+          <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+            <Shield className="h-3 w-3 mr-1" />
+            {userMembership.role === 'OFFICER' ? 'Officer' : 'Member'}
+          </Badge>
+          {userMembership.role === 'OFFICER' && (
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => navigate(`/admin/clubs/${id}/requests`)}>
+                Pending Requests
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => navigate(`/admin/clubs/${id}/members`)}>
+                Manage Members
+              </Button>
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    if (userMembership?.status === 'PENDING') {
+      return (
+        <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+          Request Pending
+        </Badge>
+      )
+    }
+
+    if (userMembership?.status === 'ALUMNI') {
+      return (
+        <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+          <GraduationCap className="h-3 w-3 mr-1" /> Alumni
+        </Badge>
+      )
+    }
+
+    if (userMembership?.status === 'REJECTED') {
+      return null
+    }
+
+    if (user?.role === 'STUDENT') {
+      return (
+        <Button
+          className="bg-brand-primary hover:bg-brand-primary/90 text-white"
+          disabled={joinLoading}
+          onClick={handleJoin}
+        >
+          <UserPlus className="h-4 w-4 mr-2" />
+          {joinLoading ? 'Requesting...' : 'Join Club'}
+        </Button>
+      )
+    }
+
+    if (user?.role === 'PLATFORM_ADMIN') {
+      return (
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => navigate(`/admin/clubs/${id}/requests`)}>
+            Pending Requests
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => navigate(`/admin/clubs/${id}/members`)}>
+            Manage Members
+          </Button>
+        </div>
+      )
+    }
+
+    return null
+  }
 
   function formatDate(dateStr) {
     return new Date(dateStr).toLocaleDateString('en-US', {
@@ -90,9 +181,12 @@ export default function ClubDetail() {
           {club.description && (
             <p className="text-muted-foreground mt-1">{club.description}</p>
           )}
-          <div className="flex items-center gap-1 mt-2 text-sm text-muted-foreground">
-            <Users className="h-4 w-4" />
-            {memberCount} active member{memberCount !== 1 ? 's' : ''}
+          <div className="flex items-center justify-between mt-2">
+            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+              <Users className="h-4 w-4" />
+              {memberCount} active member{memberCount !== 1 ? 's' : ''}
+            </div>
+            {renderMembershipAction()}
           </div>
         </div>
       </div>

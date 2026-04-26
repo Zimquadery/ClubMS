@@ -12,7 +12,8 @@ async function list(req, res, next) {
 
 async function getById(req, res, next) {
   try {
-    const club = await clubsService.getById(req.params.id);
+    const userId = req.user?.userId;
+    const club = await clubsService.getById(req.params.id, userId);
     res.status(200).json(club);
   } catch (err) {
     next(err);

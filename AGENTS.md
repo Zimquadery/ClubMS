@@ -58,3 +58,43 @@ Prisma's CLI loader may provide CJS shims, making `__dirname` appear to work —
 **Solution:** Migration SQL can be generated via `npx prisma migrate diff --from-empty --to-schema=prisma/schema.prisma --script` and placed manually in `prisma/migrations/<timestamp>_init/migration.sql`. `prisma migrate deploy` will apply it normally when the database is available.
 
 **Critical:** The `prisma/migrations/` directory must be committed to source control.
+
+### Express Route Mounting — Avoiding Path Collisions
+
+**Issue:** When multiple routers are mounted at the same base path (e.g., `/api/clubs`), Express matches routes in the first registered router. If the first router has a parametric route like `GET /:id`, it will capture requests intended for specific paths in the second router (e.g., `GET /my-admin-clubs` would be matched as `GET /:id` with `id="my-admin-clubs"`).
+
+**Solution:** Split routes that could collide into separate mount points. For example, the memberships module exports two routers: `router` (mounted at `/api/clubs` for `/:clubId/join`, `/:clubId/members`, etc.) and `adminRouter` (mounted at `/api/memberships` for `/my-admin-clubs`). Specific literal paths must never share a mount point with parametric routes from another router registered earlier.
+
+### Per-Resource Authorization Beyond RBAC
+
+**Issue:** The global `requireRole()` middleware checks `User.role` (STUDENT, CLUB_ADMIN, PLATFORM_ADMIN), but a CLUB_ADMIN should only manage clubs they actually admin — not all clubs. Global RBAC alone is insufficient.
+
+**Solution:** For CLUB_ADMIN-scoped endpoints, add a second middleware (`requireClubAdmin`) that queries `ClubMembership` to verify the requesting user has an ACTIVE OFFICER membership for the specific `clubId`. This middleware runs after `requireRole('CLUB_ADMIN')` for defense-in-depth.
+
+### Extending Existing Endpoints for Context
+
+**Issue:** Frontend pages like `ClubDetail` need to know the current user's membership status for a club, but the existing `GET /clubs/:id` endpoint only returns the club's public data.
+
+**Solution:** Modify `clubs.service.getById(id)` to accept an optional `userId` parameter. When provided, it queries the user's `ClubMembership` for that club and attaches it to the response as `club.userMembership`. The controller passes `req.user?.userId` (safe because the route already uses `authMiddleware`). This avoids creating a separate endpoint just for membership status.
+
+### Role Hierarchy in requireRole Middleware
+
+**Issue:** The `requireRole()` middleware in `rbac.js` used exact string matching. A PLATFORM_ADMIN calling a `requireRole('CLUB_ADMIN')` endpoint would be blocked, even though PLATFORM_ADMIN is the highest privileged role and should be able to manage any club's memberships.
+
+**Solution:** Introduce a `ROLE_INHERITS` map in `rbac.js`:
+```js
+const ROLE_INHERITS = {
+  PLATFORM_ADMIN: ['PLATFORM_ADMIN', 'CLUB_ADMIN'],
+  CLUB_ADMIN: ['CLUB_ADMIN'],
+  STUDENT: ['STUDENT'],
+};
+```
+`requireRole` now resolves the user's role to an array of effective roles and checks if ANY requested role is in that set. PLATFORM_ADMIN inherits CLUB_ADMIN permissions but NOT STUDENT (admins don't join clubs as students).
+
+**Note:** The frontend `ProtectedRoute` uses a flat `roles.includes()` check without hierarchy awareness. To avoid mismatches, `App.jsx` must explicitly list both roles (e.g., `roles={['CLUB_ADMIN', 'PLATFORM_ADMIN']}`) on routes where both should have access.
+
+### PLATFORM_ADMIN Bypass in requireClubAdmin
+
+**Issue:** The `requireClubAdmin` middleware checks the database for an ACTIVE OFFICER membership. PLATFORM_ADMIN users are typically not OFFICER members of any club, so they'd always be blocked.
+
+**Solution:** `requireClubAdmin` in `memberships.routes.js` does an early `return next()` for `req.user.role === 'PLATFORM_ADMIN'`, skipping the per-club database check. This is safe because PLATFORM_ADMIN is the highest role and the `requireRole('CLUB_ADMIN')` check (via hierarchy) already passed.

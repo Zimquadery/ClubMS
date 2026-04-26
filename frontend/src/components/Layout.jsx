@@ -58,6 +58,12 @@ export function Layout() {
                     Manage Clubs
                   </Link>
                 )}
+                {user.role === 'CLUB_ADMIN' && (
+                  <Link to="/dashboard" className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
+                    <Shield className="h-4 w-4" />
+                    My Clubs
+                  </Link>
+                )}
               </nav>
             )}
           </div>

@@ -26,7 +26,7 @@ async function list({ search, category }) {
   return clubs;
 }
 
-async function getById(id) {
+async function getById(id, userId) {
   const club = await prisma.club.findUnique({
     where: { id },
     include: {
@@ -47,6 +47,14 @@ async function getById(id) {
 
   if (!club) {
     throw new AppError('Club not found', 404);
+  }
+
+  if (userId) {
+    const userMembership = await prisma.clubMembership.findUnique({
+      where: { userId_clubId: { userId, clubId: id } },
+      select: { status: true, role: true },
+    });
+    club.userMembership = userMembership;
   }
 
   return club;
