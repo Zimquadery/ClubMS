@@ -24,17 +24,89 @@ async function main() {
   });
   console.log(`Created admin user: ${admin.email}`);
 
-  const student = await prisma.user.upsert({
-    where: { email: 'student@university.edu' },
+  const officer1 = await prisma.user.upsert({
+    where: { email: 'officer1@university.edu' },
     update: {},
     create: {
-      email: 'student@university.edu',
+      email: 'officer1@university.edu',
       passwordHash,
-      name: 'Test Student',
+      name: 'Club Officer 1',
+      role: 'CLUB_ADMIN',
+    },
+  });
+  console.log(`Created officer user: ${officer1.email}`);
+
+  const officer2 = await prisma.user.upsert({
+    where: { email: 'officer2@university.edu' },
+    update: {},
+    create: {
+      email: 'officer2@university.edu',
+      passwordHash,
+      name: 'Club Officer 2',
+      role: 'CLUB_ADMIN',
+    },
+  });
+  console.log(`Created officer user: ${officer2.email}`);
+
+  const student1 = await prisma.user.upsert({
+    where: { email: 'student1@university.edu' },
+    update: {},
+    create: {
+      email: 'student1@university.edu',
+      passwordHash,
+      name: 'Student One',
       role: 'STUDENT',
     },
   });
-  console.log(`Created student user: ${student.email}`);
+  console.log(`Created student user: ${student1.email}`);
+
+  const student2 = await prisma.user.upsert({
+    where: { email: 'student2@university.edu' },
+    update: {},
+    create: {
+      email: 'student2@university.edu',
+      passwordHash,
+      name: 'Student Two',
+      role: 'STUDENT',
+    },
+  });
+  console.log(`Created student user: ${student2.email}`);
+
+  const student3 = await prisma.user.upsert({
+    where: { email: 'student3@university.edu' },
+    update: {},
+    create: {
+      email: 'student3@university.edu',
+      passwordHash,
+      name: 'Student Three',
+      role: 'STUDENT',
+    },
+  });
+  console.log(`Created student user: ${student3.email}`);
+
+  const student4 = await prisma.user.upsert({
+    where: { email: 'student4@university.edu' },
+    update: {},
+    create: {
+      email: 'student4@university.edu',
+      passwordHash,
+      name: 'Student Four',
+      role: 'STUDENT',
+    },
+  });
+  console.log(`Created student user: ${student4.email}`);
+
+  const student5 = await prisma.user.upsert({
+    where: { email: 'student5@university.edu' },
+    update: {},
+    create: {
+      email: 'student5@university.edu',
+      passwordHash,
+      name: 'Student Five',
+      role: 'STUDENT',
+    },
+  });
+  console.log(`Created student user: ${student5.email}`);
 
   const existingClubs = await prisma.club.findMany();
   if (existingClubs.length === 0) {
@@ -64,6 +136,30 @@ async function main() {
     });
     console.log('Made admin an officer of Coding Club');
 
+    // Phase 7: officer and student memberships
+    await prisma.clubMembership.create({
+      data: { userId: officer1.id, clubId: clubs[0].id, status: 'ACTIVE', role: 'OFFICER' },
+    });
+    await prisma.clubMembership.create({
+      data: { userId: officer2.id, clubId: clubs[1].id, status: 'ACTIVE', role: 'OFFICER' },
+    });
+    await prisma.clubMembership.create({
+      data: { userId: student1.id, clubId: clubs[0].id, status: 'ACTIVE', role: 'MEMBER' },
+    });
+    await prisma.clubMembership.create({
+      data: { userId: student2.id, clubId: clubs[0].id, status: 'PENDING', role: 'MEMBER' },
+    });
+    await prisma.clubMembership.create({
+      data: { userId: student3.id, clubId: clubs[1].id, status: 'ACTIVE', role: 'MEMBER' },
+    });
+    await prisma.clubMembership.create({
+      data: { userId: student4.id, clubId: clubs[2].id, status: 'ALUMNI', role: 'MEMBER' },
+    });
+    await prisma.clubMembership.create({
+      data: { userId: student5.id, clubId: clubs[0].id, status: 'ACTIVE', role: 'MEMBER' },
+    });
+    console.log('Created officer and student memberships');
+
     await prisma.event.createMany({
       data: [
         {
@@ -87,6 +183,7 @@ async function main() {
           title: 'Tryouts',
           description: 'Open tryouts for the upcoming season',
           startTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+          endTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000),
           location: 'Main Gym',
         },
         {
@@ -94,7 +191,16 @@ async function main() {
           title: 'Spring Play Auditions',
           description: 'Auditions for the spring theatre production',
           startTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+          endTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000),
           location: 'Auditorium',
+        },
+        {
+          clubId: clubs[2].id,
+          title: 'Improv Night',
+          description: 'An evening of spontaneous comedy and fun',
+          startTime: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
+          endTime: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000),
+          location: 'Black Box Theatre',
         },
       ],
     });

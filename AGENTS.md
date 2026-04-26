@@ -98,3 +98,21 @@ const ROLE_INHERITS = {
 **Issue:** The `requireClubAdmin` middleware checks the database for an ACTIVE OFFICER membership. PLATFORM_ADMIN users are typically not OFFICER members of any club, so they'd always be blocked.
 
 **Solution:** `requireClubAdmin` in `memberships.routes.js` does an early `return next()` for `req.user.role === 'PLATFORM_ADMIN'`, skipping the per-club database check. This is safe because PLATFORM_ADMIN is the highest role and the `requireRole('CLUB_ADMIN')` check (via hierarchy) already passed.
+
+### Seed Scripts — Required Fields Must Be Explicit
+
+**Issue:** When using `prisma.event.createMany()` (or any bulk create), Prisma validates all required fields are present. The seed script had events missing the required `endTime` field, which caused the entire `createMany` to fail at runtime.
+
+**Solution:** Always cross-check seed data against the Prisma schema. Every required field (non-nullable, no `?`) must be explicitly provided in seed data. For `Event`, both `startTime` and `endTime` are required. Run `npx prisma validate` and visually inspect schema enums/required fields before writing seed data.
+
+### Seed Data Must Cover All RBAC Roles
+
+**Issue:** The initial seed only created PLATFORM_ADMIN and STUDENT users, missing CLUB_ADMIN. This meant the CLUB_ADMIN-specific code paths (requireClubAdmin, requireRole hierarchy) could not be tested with seed data.
+
+**Solution:** Seed scripts should create at least one user per `UserRole` enum value, with memberships that exercise each role's typical access patterns. The Phase 7 seed now creates: 1 PLATFORM_ADMIN, 2 CLUB_ADMIN (officers), and 5 STUDENT users with varied membership statuses.
+
+### Deseed Script — Deletion Order Matters
+
+**Issue:** Foreign key constraints mean deletion order must respect dependency graph.
+
+**Solution:** `deseed.js` deletes in reverse dependency order: Event → ClubMembership → Club → User. This matches the cascade rules defined in the schema (`onDelete: Cascade` on ClubMembership), but explicit deletion is safer to avoid constraint violations.
