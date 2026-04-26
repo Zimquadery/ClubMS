@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const { PORT } = require('./config/env');
 const { errorHandler } = require('./utils/errors');
+const authRoutes = require('./modules/auth/auth.routes');
 
 const app = express();
 
@@ -11,6 +12,8 @@ app.use(express.json());
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
+
+app.use('/api/auth', authRoutes);
 
 app.use(errorHandler);
 

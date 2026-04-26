@@ -31,6 +31,14 @@
 
 **Note:** `prisma.config.mjs` uses `process.env.DATABASE_URL ?? ''` instead of `env('DATABASE_URL')` because the `env()` helper throws if the variable is missing, breaking `prisma generate` in CI/environments where only client generation is needed.
 
+**Note (ESM in prisma.config.mjs):** The file has a `.mjs` extension and runs as ESM. `__dirname` is not available in ESM. Use `import.meta.url` with `fileURLToPath` instead:
+```js
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+const __dirname = dirname(fileURLToPath(import.meta.url));
+```
+Prisma's CLI loader may provide CJS shims, making `__dirname` appear to work — but this is fragile and not portable across Node.js versions.
+
 ### Frontend Build Requirement
 
 **Issue:** The Phase 1 file manifest omitted `frontend/index.html`, but Vite requires it as the build entry point.
