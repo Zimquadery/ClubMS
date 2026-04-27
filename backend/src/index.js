@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -12,6 +13,10 @@ const eventsRoutes = require('./modules/events/events.routes');
 const rsvpRoutes = require('./modules/rsvp/rsvp.routes');
 const { router: membershipsRoutes, adminRouter: membershipsAdminRouter } = require('./modules/memberships/memberships.routes');
 const statsRoutes = require('./modules/stats/stats.routes');
+const uploadRoutes = require('./modules/upload/upload.routes');
+const auditRoutes = require('./modules/audit/audit.routes');
+const swaggerUi = require('swagger-ui-express');
+const { specs } = require('./config/swagger');
 const { prisma } = require('./lib/prisma');
 
 const app = express();
@@ -39,6 +44,8 @@ app.get('/api/health', async (_req, res) => {
   }
 });
 
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
 app.use('/api/auth', authRoutes);
 app.use('/api/clubs', clubRoutes);
 app.use('/api/events', eventsRoutes);
@@ -46,6 +53,8 @@ app.use('/api/events', rsvpRoutes);
 app.use('/api/clubs', membershipsRoutes);
 app.use('/api/memberships', membershipsAdminRouter);
 app.use('/api/stats', statsRoutes);
+app.use('/api/audit-logs', auditRoutes);
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 app.use(errorHandler);
 

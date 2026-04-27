@@ -48,8 +48,11 @@
 | `/api/clubs` | `clubRoutes` | `clubs/clubs.routes.js` | **Yes: `GET /:id`, `PATCH /:id`, `DELETE /:id`** | Only multi-segment (`/:id/action`) |
 | `/api/clubs` | `membershipsRoutes` | `memberships/memberships.routes.js` | Yes: `/:clubId/join`, `/:clubId/leave`, `/:clubId/members/*`, `/:clubId/transfer` | Only multi-segment |
 | `/api/events` | `eventsRoutes` | `events/events.routes.js` | **Yes: `GET /:id`, `PATCH /:id`, `DELETE /:id`** | Only multi-segment (`/:id/action`) |
-| `/api/events` | `rsvpRoutes` | `rsvp/rsvp.routes.js` | Yes: `/:id/rsvp`, `/:id/rsvps` | Only multi-segment |
+| `/api/events` | `rsvpRoutes` | `rsvp/rsvp.routes.js` | Yes: `/:id/rsvp`, `/:id/rsvps`, `/:id/rsvps/export` | Only multi-segment |
 | `/api/memberships` | `membershipsAdminRouter` | `memberships/memberships.routes.js` | No | **Any — this is the safe mount for literal paths** |
+| `/api/stats` | `statsRoutes` | `stats/stats.routes.js` | No | Any |
+| `/api/audit-logs` | `auditRoutes` | `audit/audit.routes.js` | No | Any |
+| `/api/upload` | `uploadRoutes` | `upload/upload.routes.js` | No | Any |
 
 **Collision zones:** `/api/clubs` and `/api/events` each have TWO routers. On `/api/clubs`, `clubRoutes` registers `GET /:id` which swallows ANY single-segment GET path. On `/api/events`, `eventsRoutes` registers `GET /:id` — but `rsvpRoutes` only uses multi-segment paths (`/:id/rsvp`, `/:id/rsvps`) so no collision occurs. Adding a single-segment literal path to `rsvpRoutes` would collide with `eventsRoutes` `/:id`.
 
@@ -173,3 +176,43 @@ All pages use `Skeleton` component variants from `components/ui/skeleton.jsx` in
 ### Frontend Form Validation
 
 Register: confirm password field + password strength meter (Weak/Fair/Strong based on length, uppercase, numbers, symbols). Event create/edit: frontend date validation (end > start) before API call. All backend validation via Zod remains the source of truth.
+
+### Audit Logging
+
+`AuditLog` model in Prisma stores action, actorId, targetType, targetId, metadata (JSON string), ipAddress. `auditLog` middleware in `middleware/auditLog.js` monkey-patches `res.end` to log successful operations. Applied to club CRUD, event CRUD, membership approve/reject/alumni/remove/transfer/promote/demote/bulk-approve/bulk-reject routes. Query endpoint at `GET /api/audit-logs` (PLATFORM_ADMIN only). Frontend page at `/admin/audit-logs`. When adding new admin actions, always add `auditLog` middleware and update the `ACTIONS` array in `AuditLog.jsx`.
+
+### Member Role Management
+
+`promoteMember` promotes MEMBER → OFFICER (transactional: updates ClubMembership + User role to CLUB_ADMIN). `demoteMember` demotes OFFICER → MEMBER (checks remaining officer count before downgrading user role). Routes: `PATCH /:clubId/members/:userId/promote`, `PATCH /:clubId/members/:userId/demote`. Both require CLUB_ADMIN + requireClubAdmin.
+
+### Bulk Actions
+
+`bulkApprove`/`bulkReject` accept `{ userIds: string[] }` and use `updateMany` in a transaction. Schemas validate array is non-empty with max 100 items. Frontend uses checkboxes + sticky bulk action bar in PendingRequests.
+
+### File Upload
+
+`multer` configured in `config/upload.js` — disk storage to `backend/uploads/`, 5MB limit, image-only filter (JPEG/PNG/GIF/WebP). Upload endpoint at `POST /api/upload` returns `{ url }`. Static serving at `/uploads`. Frontend proxy and nginx config both proxy `/uploads` to backend. Docker volume `uploads` persists files. File upload UI replaces URL-only inputs in club create/edit and event create/edit forms.
+
+### CSV Export
+
+`exportMembersCsv` and `exportRsvpsCsv` build CSV strings from DB queries. Endpoints return CSV with Content-Disposition header. Frontend uses blob download pattern (createObjectURL + link.click).
+
+### Dark Mode
+
+Tailwind v4 `@custom-variant dark` uses `.dark` class. `ThemeContext` + `useTheme` hook manages state, persists to localStorage. Toggle button in Layout header (Sun/Moon icons). CSS variables override all theme colors in `.dark` block.
+
+### Code Splitting
+
+All page components use `React.lazy()` with `Suspense` fallback (spinner). Each page is a separate chunk. Main bundle reduced from ~557KB to ~456KB.
+
+### Swagger API Docs
+
+`swagger-jsdoc` + `swagger-ui-express` at `/api/docs`. All routes annotated with OpenAPI JSDoc comments. Tags: Auth, Clubs, Events, Memberships, RSVP, Stats, Audit, Upload.
+
+### Test Suite
+
+Jest + supertest. 64 tests in `backend/tests/`. Service unit tests (memberships, events, auth) mock prisma. Integration tests (auth) use Express app via supertest. Config in `backend/jest.config.js`. CI runs tests via GitHub Actions.
+
+### Email Notifications (Scaffold)
+
+`lib/notifications.js` provides `sendNotification`, `notifyMembershipApproved`, `notifyMembershipRejected`, `notifyNewEvent`. Uses console provider by default. `setProvider(name, provider)` allows swapping to email service (SendGrid/Resend).

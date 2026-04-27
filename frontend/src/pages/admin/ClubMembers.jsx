@@ -19,7 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Users, ArrowLeft, ArrowRightLeft, GraduationCap, Trash2 } from 'lucide-react'
+import { Users, ArrowLeft, ArrowRightLeft, GraduationCap, Trash2, Download, ChevronUp, ChevronDown } from 'lucide-react'
 import { formatShortDate } from '@/lib/format'
 import { toast } from 'sonner'
 import { ListSkeleton } from '@/components/ui/skeleton'
@@ -104,6 +104,43 @@ export default function ClubMembers() {
     }
   }
 
+  async function handleExport() {
+    try {
+      const res = await client.get(`/clubs/${clubId}/members/export`, { responseType: 'blob' })
+      const url = window.URL.createObjectURL(new Blob([res.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `members-${clubId}.csv`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+      toast.success('Members exported')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to export members')
+    }
+  }
+
+  async function handlePromote(membership) {
+    try {
+      await client.patch(`/clubs/${clubId}/members/${membership.userId}/promote`)
+      toast.success(`${membership.user.name} promoted to officer`)
+      await fetchMembers()
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to promote member')
+    }
+  }
+
+  async function handleDemote(membership) {
+    try {
+      await client.patch(`/clubs/${clubId}/members/${membership.userId}/demote`)
+      toast.success(`${membership.user.name} demoted to member`)
+      await fetchMembers()
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to demote member')
+    }
+  }
+
   const currentClub = adminClubs.find((c) => c.id === clubId)
   const displayMembers = tab === 'active' ? activeMembers : alumniMembers
 
@@ -154,6 +191,12 @@ export default function ClubMembers() {
         </Button>
       </div>
 
+      <div className="flex justify-end">
+        <Button variant="outline" size="sm" onClick={handleExport}>
+          <Download className="h-4 w-4 mr-1" /> Export CSV
+        </Button>
+      </div>
+
       {error && (
         <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">{error}</div>
       )}
@@ -184,30 +227,31 @@ export default function ClubMembers() {
                     Joined {formatShortDate(membership.createdAt)}
                   </p>
                 </div>
-                {tab === 'active' && membership.role !== 'OFFICER' && (
+                {tab === 'active' && (
                   <div className="flex gap-2 ml-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setAlumniTarget(membership)}
-                    >
-                      <GraduationCap className="h-4 w-4 mr-1" /> Set Alumni
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setTransferTarget(membership)}
-                    >
-                      <ArrowRightLeft className="h-4 w-4 mr-1" /> Transfer Admin
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => setRemoveTarget(membership)}
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" /> Remove
-                    </Button>
+                    {membership.role !== 'OFFICER' && (
+                      <Button variant="outline" size="sm" onClick={() => handlePromote(membership)}>
+                        <ChevronUp className="h-4 w-4 mr-1" /> Promote
+                      </Button>
+                    )}
+                    {membership.role === 'OFFICER' && (
+                      <Button variant="outline" size="sm" onClick={() => handleDemote(membership)}>
+                        <ChevronDown className="h-4 w-4 mr-1" /> Demote
+                      </Button>
+                    )}
+                    {membership.role !== 'OFFICER' && (
+                      <>
+                        <Button variant="outline" size="sm" onClick={() => setAlumniTarget(membership)}>
+                          <GraduationCap className="h-4 w-4 mr-1" /> Set Alumni
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => setTransferTarget(membership)}>
+                          <ArrowRightLeft className="h-4 w-4 mr-1" /> Transfer Admin
+                        </Button>
+                        <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => setRemoveTarget(membership)}>
+                          <Trash2 className="h-4 w-4 mr-1" /> Remove
+                        </Button>
+                      </>
+                    )}
                   </div>
                 )}
               </CardContent>

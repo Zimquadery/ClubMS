@@ -41,6 +41,7 @@ export default function ManageClubs() {
   const [editForm, setEditForm] = useState({ name: '', description: '', category: '', logoUrl: '' })
   const [editError, setEditError] = useState('')
   const [editing, setEditing] = useState(false)
+  const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
     fetchClubs()
@@ -99,6 +100,24 @@ export default function ManageClubs() {
     setEditTarget(club)
     setEditForm({ name: club.name, description: club.description || '', category: club.category, logoUrl: club.logoUrl || '' })
     setEditError('')
+  }
+
+  async function handleFileUpload(file, setFormValue) {
+    if (!file) return
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await client.post('/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      setFormValue(res.data.url)
+      toast.success('Image uploaded')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to upload image')
+    } finally {
+      setUploading(false)
+    }
   }
 
   async function handleEdit(e) {
@@ -177,13 +196,28 @@ export default function ManageClubs() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="logoUrl">Logo URL</Label>
-                  <Input
-                    id="logoUrl"
-                    value={form.logoUrl}
-                    onChange={(e) => setForm((f) => ({ ...f, logoUrl: e.target.value }))}
-                    placeholder="https://example.com/logo.png"
-                  />
+                  <Label htmlFor="logoUrl">Logo</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="logoUrl"
+                      value={form.logoUrl}
+                      onChange={(e) => setForm((f) => ({ ...f, logoUrl: e.target.value }))}
+                      placeholder="https://example.com/logo.png"
+                      className="flex-1"
+                    />
+                    <label className="inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-3 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground cursor-pointer">
+                      {uploading ? '...' : 'Upload'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files[0]
+                          if (file) handleFileUpload(file, (url) => setForm((f) => ({ ...f, logoUrl: url })))
+                        }}
+                      />
+                    </label>
+                  </div>
                 </div>
               </div>
               <DialogFooter>
@@ -321,13 +355,28 @@ export default function ManageClubs() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-logoUrl">Logo URL</Label>
-                <Input
-                  id="edit-logoUrl"
-                  value={editForm.logoUrl}
-                  onChange={(e) => setEditForm((f) => ({ ...f, logoUrl: e.target.value }))}
-                  placeholder="https://example.com/logo.png"
-                />
+                <Label htmlFor="edit-logoUrl">Logo</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="edit-logoUrl"
+                    value={editForm.logoUrl}
+                    onChange={(e) => setEditForm((f) => ({ ...f, logoUrl: e.target.value }))}
+                    placeholder="https://example.com/logo.png"
+                    className="flex-1"
+                  />
+                  <label className="inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-3 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground cursor-pointer">
+                    {uploading ? '...' : 'Upload'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files[0]
+                        if (file) handleFileUpload(file, (url) => setEditForm((f) => ({ ...f, logoUrl: url })))
+                      }}
+                    />
+                  </label>
+                </div>
               </div>
             </div>
             <DialogFooter>

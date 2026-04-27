@@ -18,6 +18,8 @@ services:
     ports:
       - "4000:4000"
     env_file: .env
+    volumes:
+      - uploads:/app/uploads
 
   frontend:
     build:
@@ -33,3 +35,4 @@ services:
 
 volumes:
   pgdata:
+  uploads:

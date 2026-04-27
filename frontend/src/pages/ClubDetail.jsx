@@ -294,8 +294,30 @@ export default function ClubDetail() {
                         <Input id="event-location" value={newEvent.location} onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })} />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="event-banner">Banner URL</Label>
-                        <Input id="event-banner" value={newEvent.bannerUrl} onChange={(e) => setNewEvent({ ...newEvent, bannerUrl: e.target.value })} />
+                        <Label htmlFor="event-banner">Banner</Label>
+                        <div className="flex gap-2">
+                          <Input id="event-banner" value={newEvent.bannerUrl} onChange={(e) => setNewEvent({ ...newEvent, bannerUrl: e.target.value })} className="flex-1" />
+                          <label className="inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-3 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground cursor-pointer">
+                            Upload
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={async (e) => {
+                                const file = e.target.files[0]
+                                if (!file) return
+                                try {
+                                  const formData = new FormData()
+                                  formData.append('file', file)
+                                  const res = await client.post('/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+                                  setNewEvent({ ...newEvent, bannerUrl: res.data.url })
+                                } catch (err) {
+                                  toast.error('Failed to upload image')
+                                }
+                              }}
+                            />
+                          </label>
+                        </div>
                       </div>
                       <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)} disabled={submitting}>Cancel</Button>

@@ -50,4 +50,30 @@ async function getUserRsvp(eventId, userId) {
   });
 }
 
-module.exports = { upsert, remove, listByEvent, getUserRsvp };
+async function exportRsvpsCsv(eventId, userId, userRole) {
+  const event = await prisma.event.findUnique({ where: { id: eventId } });
+  if (!event) throw new AppError('Event not found', 404);
+
+  if (userRole !== 'PLATFORM_ADMIN') {
+    const membership = await prisma.clubMembership.findUnique({
+      where: { userId_clubId: { userId, clubId: event.clubId } },
+    });
+    if (!membership || membership.role !== 'OFFICER' || membership.status !== 'ACTIVE') {
+      throw new AppError('Not authorized to export RSVPs for this event', 403);
+    }
+  }
+
+  const rsvps = await prisma.eventRsvp.findMany({
+    where: { eventId },
+    include: { user: { select: { id: true, name: true, email: true } } },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  const header = 'Name,Email,Status,Responded At';
+  const rows = rsvps.map((r) =>
+    `"${r.user.name}","${r.user.email}","${r.status}","${r.createdAt.toISOString()}"`
+  );
+  return [header, ...rows].join('\n');
+}
+
+module.exports = { upsert, remove, listByEvent, getUserRsvp, exportRsvpsCsv };

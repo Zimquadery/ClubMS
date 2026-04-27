@@ -193,4 +193,88 @@ async function getAdminClubs(userId) {
   return memberships.map((m) => m.club);
 }
 
-module.exports = { requestJoin, listMembers, approve, reject, setAlumni, transferAdmin, leaveClub, removeMember, isClubAdmin, getAdminClubs, getMyClubs };
+async function promoteMember(clubId, userId) {
+  const membership = await prisma.clubMembership.findUnique({
+    where: { userId_clubId: { userId, clubId } },
+  });
+  if (!membership) throw new AppError('Membership not found', 404);
+  if (membership.status !== 'ACTIVE') throw new AppError('Only active members can be promoted', 400);
+  if (membership.role === 'OFFICER') throw new AppError('Member is already an officer', 400);
+
+  const result = await prisma.$transaction(async (tx) => {
+    const updated = await tx.clubMembership.update({
+      where: { userId_clubId: { userId, clubId } },
+      data: { role: 'OFFICER' },
+      include: { user: { select: USER_SELECT } },
+    });
+    await tx.user.update({ where: { id: userId }, data: { role: 'CLUB_ADMIN' } });
+    return updated;
+  });
+  return result;
+}
+
+async function demoteMember(clubId, userId) {
+  const membership = await prisma.clubMembership.findUnique({
+    where: { userId_clubId: { userId, clubId } },
+  });
+  if (!membership) throw new AppError('Membership not found', 404);
+  if (membership.role !== 'OFFICER') throw new AppError('Member is not an officer', 400);
+
+  const result = await prisma.$transaction(async (tx) => {
+    const remainingOfficerCount = await tx.clubMembership.count({
+      where: { userId, clubId: { not: clubId }, role: 'OFFICER', status: 'ACTIVE' },
+    });
+    const updated = await tx.clubMembership.update({
+      where: { userId_clubId: { userId, clubId } },
+      data: { role: 'MEMBER' },
+      include: { user: { select: USER_SELECT } },
+    });
+    if (remainingOfficerCount === 0) {
+      await tx.user.update({ where: { id: userId }, data: { role: 'STUDENT' } });
+    }
+    return updated;
+  });
+  return result;
+}
+
+async function bulkApprove(clubId, userIds) {
+  if (!Array.isArray(userIds) || userIds.length === 0) throw new AppError('userIds must be a non-empty array', 400);
+
+  const result = await prisma.$transaction(async (tx) => {
+    const updated = await tx.clubMembership.updateMany({
+      where: { clubId, userId: { in: userIds }, status: 'PENDING' },
+      data: { status: 'ACTIVE' },
+    });
+    return { count: updated.count };
+  });
+  return result;
+}
+
+async function bulkReject(clubId, userIds) {
+  if (!Array.isArray(userIds) || userIds.length === 0) throw new AppError('userIds must be a non-empty array', 400);
+
+  const result = await prisma.$transaction(async (tx) => {
+    const updated = await tx.clubMembership.updateMany({
+      where: { clubId, userId: { in: userIds }, status: 'PENDING' },
+      data: { status: 'REJECTED' },
+    });
+    return { count: updated.count };
+  });
+  return result;
+}
+
+async function exportMembersCsv(clubId) {
+  const members = await prisma.clubMembership.findMany({
+    where: { clubId },
+    include: { user: { select: USER_SELECT } },
+    orderBy: { createdAt: 'asc' },
+  });
+
+  const header = 'Name,Email,Role,Status,Joined Date';
+  const rows = members.map((m) =>
+    `"${m.user.name}","${m.user.email}","${m.role}","${m.status}","${m.createdAt.toISOString()}"`
+  );
+  return [header, ...rows].join('\n');
+}
+
+module.exports = { requestJoin, listMembers, approve, reject, setAlumni, transferAdmin, leaveClub, removeMember, isClubAdmin, getAdminClubs, getMyClubs, promoteMember, demoteMember, bulkApprove, bulkReject, exportMembersCsv };

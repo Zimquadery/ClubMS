@@ -53,4 +53,31 @@ const getAdminClubs = asyncHandler(async (req, res) => {
   res.status(200).json(clubs);
 });
 
-module.exports = { requestJoin, listMembers, approve, reject, setAlumni, transferAdmin, leaveClub, removeMember, getAdminClubs, getMyClubs };
+const promoteMember = asyncHandler(async (req, res) => {
+  const membership = await membershipsService.promoteMember(req.params.clubId, req.params.userId);
+  res.status(200).json(membership);
+});
+
+const demoteMember = asyncHandler(async (req, res) => {
+  const membership = await membershipsService.demoteMember(req.params.clubId, req.params.userId);
+  res.status(200).json(membership);
+});
+
+const bulkApprove = asyncHandler(async (req, res) => {
+  const result = await membershipsService.bulkApprove(req.params.clubId, req.body.userIds);
+  res.status(200).json(result);
+});
+
+const bulkReject = asyncHandler(async (req, res) => {
+  const result = await membershipsService.bulkReject(req.params.clubId, req.body.userIds);
+  res.status(200).json(result);
+});
+
+const exportMembers = asyncHandler(async (req, res) => {
+  const csv = await membershipsService.exportMembersCsv(req.params.clubId);
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', `attachment; filename="members-${req.params.clubId}.csv"`);
+  res.status(200).send(csv);
+});
+
+module.exports = { requestJoin, listMembers, approve, reject, setAlumni, transferAdmin, leaveClub, removeMember, getAdminClubs, getMyClubs, promoteMember, demoteMember, bulkApprove, bulkReject, exportMembers };

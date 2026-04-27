@@ -1,0 +1,135 @@
+import { useState, useEffect } from 'react'
+import client from '@/api/client'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Shield, Search } from 'lucide-react'
+import { formatDateTime } from '@/lib/format'
+import { toast } from 'sonner'
+import { Pagination } from '@/components/Pagination'
+import { ListSkeleton } from '@/components/ui/skeleton'
+
+const ACTIONS = [
+  'CLUB_CREATE', 'CLUB_UPDATE', 'CLUB_DELETE',
+  'EVENT_CREATE', 'EVENT_UPDATE', 'EVENT_DELETE',
+  'MEMBERSHIP_APPROVE', 'MEMBERSHIP_REJECT', 'MEMBERSHIP_SET_ALUMNI',
+  'MEMBERSHIP_REMOVE', 'MEMBERSHIP_TRANSFER_ADMIN',
+  'MEMBERSHIP_PROMOTE', 'MEMBERSHIP_DEMOTE',
+  'MEMBERSHIP_BULK_APPROVE', 'MEMBERSHIP_BULK_REJECT',
+]
+
+export default function AuditLog() {
+  const [logs, setLogs] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [action, setAction] = useState('')
+  const [total, setTotal] = useState(0)
+
+  useEffect(() => {
+    fetchLogs()
+  }, [page, action])
+
+  async function fetchLogs() {
+    setLoading(true)
+    try {
+      const params = new URLSearchParams()
+      params.set('page', page)
+      params.set('limit', 20)
+      if (action) params.set('action', action)
+      const res = await client.get(`/audit-logs?${params.toString()}`)
+      setLogs(res.data.items)
+      setTotalPages(res.data.totalPages)
+      setTotal(res.data.total)
+    } catch (err) {
+      toast.error('Failed to load audit logs')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <Shield className="h-6 w-6 text-brand-primary" />
+          Audit Log
+        </h1>
+        <p className="text-muted-foreground">Track admin actions across the platform</p>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Select value={action} onValueChange={(val) => { setAction(val === '__all__' ? '' : val); setPage(1) }}>
+          <SelectTrigger className="w-full sm:w-[220px]">
+            <SelectValue placeholder="All Actions" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">All Actions</SelectItem>
+            {ACTIONS.map((a) => (
+              <SelectItem key={a} value={a}>{a.replace(/_/g, ' ')}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {loading ? (
+        <ListSkeleton rows={8} />
+      ) : logs.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center text-muted-foreground">
+            No audit logs found
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <div className="text-sm text-muted-foreground">{total} log{total !== 1 ? 's' : ''} found</div>
+          <div className="space-y-2">
+            {logs.map((log) => (
+              <Card key={log.id}>
+                <CardContent className="p-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="inline-flex items-center rounded-md bg-brand-primary/10 px-2 py-0.5 text-xs font-medium text-brand-primary">
+                          {log.action.replace(/_/g, ' ')}
+                        </span>
+                        {log.targetType && (
+                          <span className="text-xs text-muted-foreground">
+                            {log.targetType}{log.targetId ? `: ${log.targetId.slice(0, 8)}...` : ''}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 mt-1.5">
+                        {log.actor && (
+                          <span className="text-sm text-muted-foreground">
+                            by {log.actor.name} ({log.actor.role.replace('_', ' ').toLowerCase()})
+                          </span>
+                        )}
+                      </div>
+                      {log.metadata && (
+                        <p className="text-xs text-muted-foreground mt-1 font-mono">
+                          {(() => { try { return JSON.stringify(JSON.parse(log.metadata)) } catch { return log.metadata } })()}
+                        </p>
+                      )}
+                    </div>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      {formatDateTime(log.createdAt)}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        </>
+      )}
+    </div>
+  )
+}

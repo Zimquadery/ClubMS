@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Calendar, MapPin, Clock, ArrowLeft, ImageIcon, Trash2, Pencil } from 'lucide-react'
+import { Calendar, MapPin, Clock, ArrowLeft, ImageIcon, Trash2, Pencil, Download } from 'lucide-react'
 import { formatDate, formatTime } from '@/lib/format'
 import { toast } from 'sonner'
 import {
@@ -91,6 +91,23 @@ export default function EventDetail() {
       toast.error(err.response?.data?.message || 'Failed to remove RSVP')
     } finally {
       setRsvpLoading(false)
+    }
+  }
+
+  async function handleExportRsvps() {
+    try {
+      const res = await client.get(`/events/${id}/rsvps/export`, { responseType: 'blob' })
+      const url = window.URL.createObjectURL(new Blob([res.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `rsvps-${id}.csv`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+      toast.success('RSVPs exported')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to export RSVPs')
     }
   }
 
@@ -243,9 +260,16 @@ export default function EventDetail() {
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="font-semibold">RSVP</h2>
-              {attendeeCount > 0 && (
-                <span className="text-sm text-muted-foreground">{attendeeCount} attending</span>
-              )}
+              <div className="flex items-center gap-3">
+                {attendeeCount > 0 && (
+                  <span className="text-sm text-muted-foreground">{attendeeCount} attending</span>
+                )}
+                {canManage && (
+                  <Button variant="outline" size="sm" onClick={handleExportRsvps}>
+                    <Download className="h-4 w-4 mr-1" /> Export
+                  </Button>
+                )}
+              </div>
             </div>
             <div className="flex gap-2 flex-wrap">
               <Button
@@ -321,8 +345,30 @@ export default function EventDetail() {
               <Input id="ed-loc" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="ed-banner">Banner URL</Label>
-              <Input id="ed-banner" value={form.bannerUrl} onChange={(e) => setForm({ ...form, bannerUrl: e.target.value })} />
+              <Label htmlFor="ed-banner">Banner</Label>
+              <div className="flex gap-2">
+                <Input id="ed-banner" value={form.bannerUrl} onChange={(e) => setForm({ ...form, bannerUrl: e.target.value })} className="flex-1" />
+                <label className="inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-3 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground cursor-pointer">
+                  Upload
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files[0]
+                      if (!file) return
+                      try {
+                        const formData = new FormData()
+                        formData.append('file', file)
+                        const res = await client.post('/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+                        setForm({ ...form, bannerUrl: res.data.url })
+                      } catch (err) {
+                        toast.error('Failed to upload image')
+                      }
+                    }}
+                  />
+                </label>
+              </div>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setEditDialog(false)} disabled={submitting}>Cancel</Button>

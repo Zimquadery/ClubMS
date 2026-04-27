@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Check, X, Users, ArrowLeft } from 'lucide-react'
+import { Check, X, Users, ArrowLeft, Download, CheckSquare, XSquare } from 'lucide-react'
 import { formatShortDate } from '@/lib/format'
 import { toast } from 'sonner'
 import {
@@ -34,6 +34,8 @@ export default function PendingRequests() {
   const [actionLoading, setActionLoading] = useState({})
   const [rejectTarget, setRejectTarget] = useState(null)
   const [rejecting, setRejecting] = useState(false)
+  const [selected, setSelected] = useState(new Set())
+  const [bulkLoading, setBulkLoading] = useState(false)
 
   useEffect(() => {
     fetchAdminClubs()
@@ -80,6 +82,53 @@ export default function PendingRequests() {
 
   const currentClub = adminClubs.find((c) => c.id === clubId)
 
+  function toggleSelect(userId) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(userId)) next.delete(userId)
+      else next.add(userId)
+      return next
+    })
+  }
+
+  function toggleSelectAll() {
+    if (selected.size === requests.length) {
+      setSelected(new Set())
+    } else {
+      setSelected(new Set(requests.map((r) => r.userId)))
+    }
+  }
+
+  async function handleBulkApprove() {
+    if (selected.size === 0) return
+    setBulkLoading(true)
+    try {
+      await client.post(`/clubs/${clubId}/members/bulk-approve`, { userIds: Array.from(selected) })
+      toast.success(`${selected.size} request(s) approved`)
+      setSelected(new Set())
+      await fetchRequests()
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to bulk approve')
+    } finally {
+      setBulkLoading(false)
+    }
+  }
+
+  async function handleBulkReject() {
+    if (selected.size === 0) return
+    setBulkLoading(true)
+    try {
+      await client.post(`/clubs/${clubId}/members/bulk-reject`, { userIds: Array.from(selected) })
+      toast.success(`${selected.size} request(s) rejected`)
+      setSelected(new Set())
+      await fetchRequests()
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to bulk reject')
+    } finally {
+      setBulkLoading(false)
+    }
+  }
+
   return (
     <>
     <div className="space-y-6">
@@ -109,6 +158,18 @@ export default function PendingRequests() {
         <Badge variant="secondary">{currentClub.name}</Badge>
       )}
 
+      {requests.length > 0 && (
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={selected.size === requests.length && requests.length > 0}
+            onChange={toggleSelectAll}
+            className="h-4 w-4 rounded border-gray-300"
+          />
+          <span className="text-sm text-muted-foreground">Select all ({requests.length})</span>
+        </div>
+      )}
+
       {error && (
         <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">{error}</div>
       )}
@@ -127,12 +188,20 @@ export default function PendingRequests() {
           {requests.map((req) => (
             <Card key={req.id}>
               <CardContent className="p-4 flex items-center justify-between">
-                <div>
-                  <p className="font-medium">{req.user.name}</p>
-                  <p className="text-sm text-muted-foreground">{req.user.email}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Requested {formatShortDate(req.createdAt)}
-                  </p>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(req.userId)}
+                    onChange={() => toggleSelect(req.userId)}
+                    className="h-4 w-4 rounded border-gray-300"
+                  />
+                  <div>
+                    <p className="font-medium">{req.user.name}</p>
+                    <p className="text-sm text-muted-foreground">{req.user.email}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Requested {formatShortDate(req.createdAt)}
+                    </p>
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -158,6 +227,31 @@ export default function PendingRequests() {
         </div>
       )}
     </div>
+    {selected.size > 0 && (
+      <Card className="sticky bottom-4 border-brand-primary">
+        <CardContent className="p-3 flex items-center justify-between">
+          <span className="text-sm font-medium">{selected.size} selected</span>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              className="bg-brand-primary hover:bg-brand-primary/90 text-white"
+              disabled={bulkLoading}
+              onClick={handleBulkApprove}
+            >
+              <CheckSquare className="h-4 w-4 mr-1" /> Bulk Approve
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              disabled={bulkLoading}
+              onClick={handleBulkReject}
+            >
+              <XSquare className="h-4 w-4 mr-1" /> Bulk Reject
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    )}
     <Dialog open={!!rejectTarget} onOpenChange={(open) => !open && setRejectTarget(null)}>
       <DialogContent>
         <DialogHeader>

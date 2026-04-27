@@ -24,4 +24,11 @@ const getUserRsvp = asyncHandler(async (req, res) => {
   res.status(200).json(rsvp);
 });
 
-module.exports = { upsert, remove, listByEvent, getUserRsvp };
+const exportRsvps = asyncHandler(async (req, res) => {
+  const csv = await rsvpService.exportRsvpsCsv(req.params.id, req.user.userId, req.user.role);
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', `attachment; filename="rsvps-${req.params.id}.csv"`);
+  res.status(200).send(csv);
+});
+
+module.exports = { upsert, remove, listByEvent, getUserRsvp, exportRsvps };

@@ -41,6 +41,7 @@ model User {
 
   memberships   ClubMembership[]
   rsvps         EventRsvp[]
+  auditLogs     AuditLog[]
 }
 
 model Club {
@@ -99,4 +100,17 @@ model EventRsvp {
   user      User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([eventId, userId])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  action     String
+  actorId    String?
+  targetType String?
+  targetId   String?
+  metadata   String?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
 }
