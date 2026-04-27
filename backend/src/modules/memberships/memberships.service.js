@@ -47,15 +47,24 @@ async function requestJoin(clubId, userId) {
   });
 }
 
-async function listMembers(clubId, { status } = {}) {
+async function listMembers(clubId, { status, page = 1, limit = 50 } = {}) {
   const where = { clubId };
   if (status) where.status = status;
 
-  return prisma.clubMembership.findMany({
-    where,
-    include: { user: { select: USER_SELECT } },
-    orderBy: { createdAt: 'asc' },
-  });
+  const skip = (page - 1) * limit;
+
+  const [items, total] = await Promise.all([
+    prisma.clubMembership.findMany({
+      where,
+      include: { user: { select: USER_SELECT } },
+      orderBy: { createdAt: 'asc' },
+      skip,
+      take: limit,
+    }),
+    prisma.clubMembership.count({ where }),
+  ]);
+
+  return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
 }
 
 async function approve(clubId, userId) {
@@ -110,19 +119,11 @@ async function transferAdmin(clubId, currentAdminId, newAdminId) {
         where: { userId_clubId: { userId: newAdminId, clubId } },
         data: { role: 'OFFICER' },
       }),
-      tx.user.update({
-        where: { id: newAdminId },
-        data: { role: 'CLUB_ADMIN' },
-      }),
+      tx.user.update({ where: { id: newAdminId }, data: { role: 'CLUB_ADMIN' } }),
     ];
 
     if (remainingOfficerCount === 0) {
-      ops.push(
-        tx.user.update({
-          where: { id: currentAdminId },
-          data: { role: 'STUDENT' },
-        })
-      );
+      ops.push(tx.user.update({ where: { id: currentAdminId }, data: { role: 'STUDENT' } }));
     }
 
     await Promise.all(ops);
@@ -145,10 +146,7 @@ async function leaveClub(clubId, userId) {
     throw new AppError('Officers cannot leave. Transfer admin rights first.', 400);
   }
 
-  await prisma.clubMembership.delete({
-    where: { userId_clubId: { userId, clubId } },
-  });
-
+  await prisma.clubMembership.delete({ where: { userId_clubId: { userId, clubId } } });
   return { success: true };
 }
 
@@ -162,10 +160,7 @@ async function removeMember(clubId, userId) {
     throw new AppError('Cannot remove an officer. Transfer admin rights first.', 400);
   }
 
-  await prisma.clubMembership.delete({
-    where: { userId_clubId: { userId, clubId } },
-  });
-
+  await prisma.clubMembership.delete({ where: { userId_clubId: { userId, clubId } } });
   return { success: true };
 }
 

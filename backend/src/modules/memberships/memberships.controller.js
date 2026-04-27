@@ -8,9 +8,9 @@ const requestJoin = asyncHandler(async (req, res) => {
 });
 
 const listMembers = asyncHandler(async (req, res) => {
-  const { status } = req.query;
-  const members = await membershipsService.listMembers(req.params.clubId, { status });
-  res.status(200).json(members);
+  const { status, page, limit } = req.query;
+  const result = await membershipsService.listMembers(req.params.clubId, { status, page, limit });
+  res.status(200).json(result);
 });
 
 const approve = asyncHandler(async (req, res) => {
@@ -29,9 +29,7 @@ const setAlumni = asyncHandler(async (req, res) => {
 });
 
 const transferAdmin = asyncHandler(async (req, res) => {
-  const { newAdminId } = req.body;
-  if (!newAdminId) throw new AppError('newAdminId is required', 400);
-  const result = await membershipsService.transferAdmin(req.params.clubId, req.user.userId, newAdminId);
+  const result = await membershipsService.transferAdmin(req.params.clubId, req.user.userId, req.body.newAdminId);
   res.status(200).json(result);
 });
 

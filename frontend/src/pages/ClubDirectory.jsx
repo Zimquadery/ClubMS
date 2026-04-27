@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import client from '@/api/client'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -14,6 +13,7 @@ import {
 } from '@/components/ui/select'
 import { Search, Users, ImageIcon } from 'lucide-react'
 import { CLUB_CATEGORIES } from '@/lib/constants'
+import { Pagination } from '@/components/Pagination'
 
 export default function ClubDirectory() {
   const [clubs, setClubs] = useState([])
@@ -21,8 +21,14 @@ export default function ClubDirectory() {
   const [category, setCategory] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
 
   const debounceRef = useRef(null)
+
+  useEffect(() => {
+    setPage(1)
+  }, [search, category])
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -32,7 +38,7 @@ export default function ClubDirectory() {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }
-  }, [search, category])
+  }, [search, category, page])
 
   async function fetchClubs() {
     setLoading(true)
@@ -41,8 +47,10 @@ export default function ClubDirectory() {
       const params = new URLSearchParams()
       if (search) params.set('search', search)
       if (category) params.set('category', category)
+      params.set('page', page)
       const res = await client.get(`/clubs?${params.toString()}`)
-      setClubs(res.data)
+      setClubs(res.data.items)
+      setTotalPages(res.data.totalPages)
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load clubs')
     } finally {
@@ -97,33 +105,36 @@ export default function ClubDirectory() {
       )}
 
       {!loading && !error && clubs.length > 0 && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {clubs.map((club) => (
-            <Link key={club.id} to={`/clubs/${club.id}`}>
-              <Card className="hover:shadow-md transition-shadow h-full">
-                <CardContent className="p-4 flex gap-4">
-                  <div className="flex-shrink-0 h-12 w-12 rounded-lg bg-muted flex items-center justify-center overflow-hidden">
-                    {club.logoUrl ? (
-                      <img src={club.logoUrl} alt={club.name} className="h-full w-full object-cover" />
-                    ) : (
-                      <ImageIcon className="h-6 w-6 text-muted-foreground" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold truncate">{club.name}</h3>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge variant="secondary" className="text-xs">{club.category}</Badge>
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {clubs.map((club) => (
+              <Link key={club.id} to={`/clubs/${club.id}`}>
+                <Card className="hover:shadow-md transition-shadow h-full">
+                  <CardContent className="p-4 flex gap-4">
+                    <div className="flex-shrink-0 h-12 w-12 rounded-lg bg-muted flex items-center justify-center overflow-hidden">
+                      {club.logoUrl ? (
+                        <img src={club.logoUrl} alt={club.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                      )}
                     </div>
-                    <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
-                      <Users className="h-3 w-3" />
-                      {club._count?.memberships ?? 0} member{(club._count?.memberships ?? 0) !== 1 ? 's' : ''}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold truncate">{club.name}</h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="secondary" className="text-xs">{club.category}</Badge>
+                      </div>
+                      <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+                        <Users className="h-3 w-3" />
+                        {club._count?.memberships ?? 0} member{(club._count?.memberships ?? 0) !== 1 ? 's' : ''}
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        </>
       )}
     </div>
   )

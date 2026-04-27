@@ -26,8 +26,8 @@ export default function Dashboard() {
   }, [])
 
   useEffect(() => {
-    client.get('/events?joined=true')
-      .then((res) => setUpcomingEvents(res.data))
+    client.get('/events?joined=true&limit=5')
+      .then((res) => setUpcomingEvents(res.data.items || res.data))
       .catch(() => toast.error('Failed to load events'))
       .finally(() => setEventsLoading(false))
   }, [])
@@ -100,7 +100,7 @@ export default function Dashboard() {
                 {upcomingEvents.map((event) => (
                   <div key={event.id} className="rounded-md border bg-background p-2">
                     <div className="flex items-center gap-2">
-                      <Link to={`/clubs/${event.club?.id}`} className="text-sm font-medium hover:underline">
+                      <Link to={`/events/${event.id}`} className="text-sm font-medium hover:underline">
                         {event.title}
                       </Link>
                       <Badge variant="secondary" className="text-xs">{event.club?.name}</Badge>

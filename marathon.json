@@ -3,67 +3,32 @@
     {
       "type": "step",
       "agent": "opencode",
-      "prompt": "We have attempted .\\Plans\\Phase-1-Foundation.md . Ensure everything is complete and ready before we move to next phase. Find gaps and issues that needs to be fixed before moving on. Use subagents to fix those completely. Ensure no cascading issues arise. DO NOT OVER-SCOPE. commit to git at the end."
+      "prompt": "proceed with phase 2 of Report.md . Ensure apprppriate and complete implementaion, not bandaid, not over-engineereed. Think holistically. Dont make mistakes, utilize tools and delegation wisely"
     },
     {
       "type": "step",
       "agent": "opencode",
-      "prompt": "proceed with .\\Plans\\Phase-2-Auth.md . Ensure apprppriate and complete implementaion, not bandaid, not over-engineereed. Think holistically. Dont make mistakes, utilize tools and delegation wisely. More context in .\\Plans\\README.md and Prompt.md ."
+      "prompt": "We have attempted phase 2 of Report.md . Ensure everything is complete and ready before we move to next phase. Find gaps and issues that needs to be fixed before moving on. Use subagents to fix those completely. Ensure no cascading issues arise. DO NOT OVER-SCOPE. commit to git at the end."
     },
     {
       "type": "step",
       "agent": "opencode",
-      "prompt": "We have attempted .\\Plans\\Phase-2-Auth.md . Ensure everything is complete and ready before we move to next phase. Find gaps and issues that needs to be fixed before moving on. Use subagents to fix those completely. Ensure no cascading issues arise. DO NOT OVER-SCOPE. commit to git at the end."
+      "prompt": "proceed with phase 3 of Report.md . Ensure apprppriate and complete implementaion, not bandaid, not over-engineereed. Think holistically. Dont make mistakes, utilize tools and delegation wisely"
     },
     {
       "type": "step",
       "agent": "opencode",
-      "prompt": "proceed with .\\Plans\\Phase-3-RBAC-Frontend-Shell.md . Ensure apprppriate and complete implementaion, not bandaid, not over-engineereed. Think holistically. Dont make mistakes, utilize tools and delegation wisely. More context in .\\Plans\\README.md and Prompt.md ."
+      "prompt": "We have attempted phase 3 of Report.md . Ensure everything is complete and ready before we move to next phase. Find gaps and issues that needs to be fixed before moving on. Use subagents to fix those completely. Ensure no cascading issues arise. DO NOT OVER-SCOPE. commit to git at the end."
     },
     {
       "type": "step",
       "agent": "opencode",
-      "prompt": "We have attempted .\\Plans\\Phase-3-RBAC-Frontend-Shell.md . Ensure everything is complete and ready before we move to next phase. Find gaps and issues that needs to be fixed before moving on. Use subagents to fix those completely. Ensure no cascading issues arise. DO NOT OVER-SCOPE. commit to git at the end."
+      "prompt": "proceed with phase 4 of Report.md . Ensure apprppriate and complete implementaion, not bandaid, not over-engineereed. Think holistically. Dont make mistakes, utilize tools and delegation wisely"
     },
     {
       "type": "step",
       "agent": "opencode",
-      "prompt": "proceed with .\\Plans\\Phase-4-Clubs.md . Ensure apprppriate and complete implementaion, not bandaid, not over-engineereed. Think holistically. Dont make mistakes, utilize tools and delegation wisely. More context in .\\Plans\\README.md and Prompt.md ."
-    },
-    {
-      "type": "step",
-      "agent": "opencode",
-      "prompt": "We have attempted .\\Plans\\Phase-4-Clubs.md . Ensure everything is complete and ready before we move to next phase. Find gaps and issues that needs to be fixed before moving on. Use subagents to fix those completely. Ensure no cascading issues arise. DO NOT OVER-SCOPE. commit to git at the end."
-    },
-    {
-      "type": "step",
-      "agent": "opencode",
-      "prompt": "proceed with .\\Plans\\Phase-5-Memberships.md . Ensure apprppriate and complete implementaion, not bandaid, not over-engineereed. Think holistically. Dont make mistakes, utilize tools and delegation wisely. More context in .\\Plans\\README.md and Prompt.md ."
-    },
-    {
-      "type": "step",
-      "agent": "opencode",
-      "prompt": "We have attempted .\\Plans\\Phase-5-Memberships.md . Ensure everything is complete and ready before we move to next phase. Find gaps and issues that needs to be fixed before moving on. Use subagents to fix those completely. Ensure no cascading issues arise. DO NOT OVER-SCOPE. commit to git at the end."
-    },
-    {
-      "type": "step",
-      "agent": "opencode",
-      "prompt": "proceed with .\\Plans\\Phase-6-Events.md . Ensure apprppriate and complete implementaion, not bandaid, not over-engineereed. Think holistically. Dont make mistakes, utilize tools and delegation wisely. More context in .\\Plans\\README.md and Prompt.md ."
-    },
-    {
-      "type": "step",
-      "agent": "opencode",
-      "prompt": "We have attempted .\\Plans\\Phase-6-Events.md . Ensure everything is complete and ready before we move to next phase. Find gaps and issues that needs to be fixed before moving on. Use subagents to fix those completely. Ensure no cascading issues arise. DO NOT OVER-SCOPE. commit to git at the end."
-    },
-    {
-      "type": "step",
-      "agent": "opencode",
-      "prompt": "proceed with .\\Plans\\Phase-7-Branding-Seed.md . Ensure apprppriate and complete implementaion, not bandaid, not over-engineereed. Think holistically. Dont make mistakes, utilize tools and delegation wisely. More context in .\\Plans\\README.md and Prompt.md ."
-    },
-    {
-      "type": "step",
-      "agent": "opencode",
-      "prompt": "We have attempted .\\Plans\\Phase-7-Branding-Seed.md . Ensure everything is complete and ready before we move to next phase. Find gaps and issues that needs to be fixed before moving on. Use subagents to fix those completely. Ensure no cascading issues arise. DO NOT OVER-SCOPE. commit to git at the end."
+      "prompt": "We have attempted phase 4 of Report.md . Ensure everything is complete and ready before we move to next phase. Find gaps and issues that needs to be fixed before moving on. Use subagents to fix those completely. Ensure no cascading issues arise. DO NOT OVER-SCOPE. commit to git at the end."
     }
   ]
 }

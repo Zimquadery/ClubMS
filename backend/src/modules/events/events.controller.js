@@ -2,25 +2,28 @@ const eventsService = require('./events.service');
 const { asyncHandler } = require('../../utils/asyncHandler');
 
 const list = asyncHandler(async (req, res) => {
-  const { clubId } = req.query;
-  const joinedBool = req.query.joined === 'true';
+  const { clubId, joined, timeRange, page, limit } = req.query;
   const userId = req.user.userId;
-  const events = await eventsService.list({ clubId: clubId || undefined, joined: joinedBool, userId });
-  res.status(200).json(events);
+  const result = await eventsService.list({ clubId, joined: joined === 'true', timeRange, userId, page, limit });
+  res.status(200).json(result);
+});
+
+const getById = asyncHandler(async (req, res) => {
+  const userId = req.user?.userId;
+  const event = await eventsService.getById(req.params.id, userId);
+  res.status(200).json(event);
 });
 
 const create = asyncHandler(async (req, res) => {
   const { clubId } = req.params;
-  const { title, description, startTime, endTime, location, bannerUrl } = req.body;
-  const event = await eventsService.create(clubId, { title, description, startTime, endTime, location, bannerUrl });
+  const event = await eventsService.create(clubId, req.body);
   res.status(201).json(event);
 });
 
 const updateEvent = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { title, description, startTime, endTime, location, bannerUrl } = req.body;
   const isPlatformAdmin = req.user.role === 'PLATFORM_ADMIN';
-  const event = await eventsService.update(id, req.user.userId, { title, description, startTime, endTime, location, bannerUrl }, isPlatformAdmin);
+  const event = await eventsService.update(id, req.user.userId, req.body, isPlatformAdmin);
   res.status(200).json(event);
 });
 
@@ -31,4 +34,4 @@ const deleteEvent = asyncHandler(async (req, res) => {
   res.status(200).json(result);
 });
 
-module.exports = { list, create, updateEvent, deleteEvent };
+module.exports = { list, getById, create, updateEvent, deleteEvent };

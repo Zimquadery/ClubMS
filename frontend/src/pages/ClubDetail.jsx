@@ -302,7 +302,7 @@ export default function ClubDetail() {
                 {club.events.map((event) => (
                   <div key={event.id} className="rounded-lg border p-3 space-y-1">
                     <div className="flex items-start justify-between gap-2">
-                      <h4 className="font-medium text-sm">{event.title}</h4>
+                      <Link to={`/events/${event.id}`} className="font-medium text-sm hover:underline">{event.title}</Link>
                       {canManageEvents && (
                         <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteEvent(event.id)}>
                           <Trash2 className="h-3.5 w-3.5" />

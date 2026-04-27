@@ -1,6 +1,6 @@
 # Follow these guidelines
 
-- Log your learning to AGENTS.md . Ensure who ever has this file will avoid any mistakes and gain desired success easily in this codebase. Similar mistakes shall not be made twice in this codebase.
+- Proactively log your learning to AGENTS.md . Ensure who ever has this file will avoid any mistakes and gain desired success easily in this codebase. Similar mistakes shall not be made twice in this codebase.
 - You Dont have to communicate with the user. User will provide prompt, You will complete the work autonomously and say just "Done" at the end.
 - After finding an issue check if similar issue exists elsewhere. Though not all issues worth resolving at once.
 
@@ -47,7 +47,7 @@
 | `/api/auth` | `authRoutes` | `auth/auth.routes.js` | No | Any |
 | `/api/clubs` | `clubRoutes` | `clubs/clubs.routes.js` | **Yes: `GET /:id`, `PATCH /:id`, `DELETE /:id`** | Only multi-segment (`/:id/action`) |
 | `/api/clubs` | `membershipsRoutes` | `memberships/memberships.routes.js` | Yes: `/:clubId/join`, `/:clubId/leave`, `/:clubId/members/*`, `/:clubId/transfer` | Only multi-segment |
-| `/api/events` | `eventsRoutes` | `events/events.routes.js` | Yes: `PATCH /:id`, `DELETE /:id` | Any (only one router here) |
+| `/api/events` | `eventsRoutes` | `events/events.routes.js` | **Yes: `GET /:id`, `PATCH /:id`, `DELETE /:id`** | Any (only one router here) |
 | `/api/memberships` | `membershipsAdminRouter` | `memberships/memberships.routes.js` | No | **Any — this is the safe mount for literal paths** |
 
 **Collision zone:** `/api/clubs` has TWO routers. `clubRoutes` registers `GET /:id` which swallows ANY single-segment GET path (e.g., `/my-clubs`, `/categories`, `/stats`). `GET /categories` works only because it is registered BEFORE `/:id` **within the same router**. Adding a literal path to the OTHER router (`membershipsRoutes`) will always fail — Express already consumed the request in `clubRoutes`.
@@ -124,3 +124,27 @@ REJECTED users can re-apply by updating their membership status back to PENDING 
 ### Security Middleware Stack
 
 Backend uses: `helmet()` for headers, `cors({ origin: FRONTEND_URL })`, `express.json({ limit: '10kb' })`, `express-rate-limit` (auth: 20/15min, general: 100/min). `JWT_SECRET` has no fallback — throws at startup if missing.
+
+### Input Validation (Zod)
+
+All endpoints use Zod schemas for input validation via `validate()` and `validateQuery()` middleware from `middleware/validate.js`. Each module has its own `*.schemas.js` file. The `validate` middleware strips unknown fields by replacing `req.body` with `result.data`.
+
+### Pagination
+
+All list endpoints return `{ items, total, page, limit, totalPages }`. Default page size is 20 (clubs/events) or 50 (members). Max limit is 100. Frontend uses the `Pagination` component from `components/Pagination.jsx`. Backward compatibility: existing code that doesn't pass page/limit gets default pagination.
+
+### Frontend API Response Handling
+
+Backend list endpoints now return paginated objects. Frontend pages use `res.data.items || res.data` for backward compatibility. When fetching without pagination (e.g., dropdowns), pass `limit=100`.
+
+### Profile Management
+
+`PATCH /api/auth/profile` (name, email) and `PATCH /api/auth/password` (currentPassword, newPassword). AuthContext provides `refreshUser()` to update the user state after profile changes. Profile page at `/profile` with both forms.
+
+### Event Detail
+
+`GET /api/events/:id` returns event with club info and user membership. EventDetail.jsx at `/events/:id` shows full event details with edit/delete for authorized users. EventCalendar cards link to event detail pages.
+
+### Past Events
+
+`GET /events?timeRange=past|upcoming|all` — default is `upcoming`. Past events are sorted `startTime: 'desc'`. EventCalendar has a dropdown to switch between upcoming/past/all.

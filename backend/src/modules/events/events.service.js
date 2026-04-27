@@ -1,38 +1,62 @@
 const { prisma } = require('../../lib/prisma');
 const { AppError } = require('../../utils/errors');
 
-async function list({ clubId, joined, userId }) {
-  const where = {
-    startTime: { gte: new Date() },
-    ...(clubId && { clubId }),
-    ...(joined && {
-      club: {
-        memberships: {
-          some: {
-            userId,
-            status: 'ACTIVE',
-          },
-        },
-      },
-    }),
-  };
+async function list({ clubId, joined, timeRange = 'upcoming', userId, page = 1, limit = 20 }) {
+  const now = new Date();
+  const where = {};
 
-  const events = await prisma.event.findMany({
-    where,
-    include: {
-      club: { select: { id: true, name: true, logoUrl: true } },
-    },
-    orderBy: { startTime: 'asc' },
+  if (timeRange === 'upcoming') {
+    where.startTime = { gte: now };
+  } else if (timeRange === 'past') {
+    where.startTime = { lt: now };
+  }
+
+  if (clubId) where.clubId = clubId;
+
+  if (joined) {
+    where.club = { memberships: { some: { userId, status: 'ACTIVE' } } };
+  }
+
+  const skip = (page - 1) * limit;
+
+  const orderBy = timeRange === 'past' ? { startTime: 'desc' } : { startTime: 'asc' };
+
+  const [items, total] = await Promise.all([
+    prisma.event.findMany({
+      where,
+      include: { club: { select: { id: true, name: true, logoUrl: true } } },
+      orderBy,
+      skip,
+      take: limit,
+    }),
+    prisma.event.count({ where }),
+  ]);
+
+  return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
+}
+
+async function getById(eventId, userId) {
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    include: { club: { select: { id: true, name: true, logoUrl: true, category: true } } },
   });
 
-  return events;
+  if (!event) throw new AppError('Event not found', 404);
+
+  if (userId) {
+    const membership = await prisma.clubMembership.findUnique({
+      where: { userId_clubId: { userId, clubId: event.clubId } },
+      select: { status: true, role: true },
+    });
+    event.userMembership = membership;
+  }
+
+  return event;
 }
 
 async function create(clubId, { title, description, startTime, endTime, location, bannerUrl }) {
   const club = await prisma.club.findUnique({ where: { id: clubId } });
-  if (!club) {
-    throw new AppError('Club not found', 404);
-  }
+  if (!club) throw new AppError('Club not found', 404);
 
   if (!title || !startTime || !endTime) {
     throw new AppError('Title, start time, and end time are required', 400);
@@ -49,7 +73,7 @@ async function create(clubId, { title, description, startTime, endTime, location
     throw new AppError('End time must be after start time', 422);
   }
 
-  const event = await prisma.event.create({
+  return prisma.event.create({
     data: {
       clubId,
       title,
@@ -59,12 +83,8 @@ async function create(clubId, { title, description, startTime, endTime, location
       location: location || null,
       bannerUrl: bannerUrl || null,
     },
-    include: {
-      club: { select: { id: true, name: true, logoUrl: true } },
-    },
+    include: { club: { select: { id: true, name: true, logoUrl: true } } },
   });
-
-  return event;
 }
 
 async function update(eventId, userId, { title, description, startTime, endTime, location, bannerUrl }, skipOwnershipCheck = false) {
@@ -73,15 +93,12 @@ async function update(eventId, userId, { title, description, startTime, endTime,
     include: { club: true },
   });
 
-  if (!event) {
-    throw new AppError('Event not found', 404);
-  }
+  if (!event) throw new AppError('Event not found', 404);
 
   if (!skipOwnershipCheck) {
     const membership = await prisma.clubMembership.findUnique({
       where: { userId_clubId: { userId, clubId: event.clubId } },
     });
-
     if (!membership || membership.role !== 'OFFICER' || membership.status !== 'ACTIVE') {
       throw new AppError('Not an admin of this club', 403);
     }
@@ -109,16 +126,12 @@ async function update(eventId, userId, { title, description, startTime, endTime,
     if (endTime !== undefined) data.endTime = end;
   }
 
-  if (Object.keys(data).length === 0) {
-    throw new AppError('No fields to update', 400);
-  }
+  if (Object.keys(data).length === 0) throw new AppError('No fields to update', 400);
 
   return prisma.event.update({
     where: { id: eventId },
     data,
-    include: {
-      club: { select: { id: true, name: true, logoUrl: true } },
-    },
+    include: { club: { select: { id: true, name: true, logoUrl: true } } },
   });
 }
 
@@ -128,25 +141,19 @@ async function remove(eventId, userId, skipOwnershipCheck = false) {
     include: { club: true },
   });
 
-  if (!event) {
-    throw new AppError('Event not found', 404);
-  }
+  if (!event) throw new AppError('Event not found', 404);
 
   if (!skipOwnershipCheck) {
     const membership = await prisma.clubMembership.findUnique({
-      where: {
-        userId_clubId: { userId, clubId: event.clubId },
-      },
+      where: { userId_clubId: { userId, clubId: event.clubId } },
     });
-
     if (!membership || membership.role !== 'OFFICER' || membership.status !== 'ACTIVE') {
       throw new AppError('Not an admin of this club', 403);
     }
   }
 
   await prisma.event.delete({ where: { id: eventId } });
-
   return { success: true };
 }
 
-module.exports = { list, create, update, remove };
+module.exports = { list, getById, create, update, remove };

@@ -55,8 +55,8 @@ export default function PendingRequests() {
     setLoading(true)
     setError('')
     try {
-      const res = await client.get(`/clubs/${clubId}/members`, { params: { status: 'PENDING' } })
-      setRequests(res.data)
+      const res = await client.get(`/clubs/${clubId}/members`, { params: { status: 'PENDING', limit: 100 } })
+      setRequests(res.data.items || res.data)
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load requests')
     } finally {

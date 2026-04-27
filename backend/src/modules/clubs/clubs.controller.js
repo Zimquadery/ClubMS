@@ -3,9 +3,9 @@ const { asyncHandler } = require('../../utils/asyncHandler');
 const { AppError } = require('../../utils/errors');
 
 const list = asyncHandler(async (req, res) => {
-  const { search, category } = req.query;
-  const clubs = await clubsService.list({ search, category });
-  res.status(200).json(clubs);
+  const { search, category, page, limit } = req.query;
+  const result = await clubsService.list({ search, category, page, limit });
+  res.status(200).json(result);
 });
 
 const getById = asyncHandler(async (req, res) => {
@@ -15,15 +15,12 @@ const getById = asyncHandler(async (req, res) => {
 });
 
 const create = asyncHandler(async (req, res) => {
-  const { name, description, category, logoUrl, adminUserId } = req.body;
-  if (!name || !category) throw new AppError('Name and category are required', 400);
-  const club = await clubsService.create({ name, description, category, logoUrl, adminUserId });
+  const club = await clubsService.create(req.body);
   res.status(201).json(club);
 });
 
 const update = asyncHandler(async (req, res) => {
-  const { name, description, category, logoUrl } = req.body;
-  const club = await clubsService.update(req.params.id, { name, description, category, logoUrl });
+  const club = await clubsService.update(req.params.id, req.body);
   res.status(200).json(club);
 });
 

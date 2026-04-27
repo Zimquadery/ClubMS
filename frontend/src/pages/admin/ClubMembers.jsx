@@ -61,11 +61,11 @@ export default function ClubMembers() {
     setError('')
     try {
       const [activeRes, alumniRes] = await Promise.all([
-        client.get(`/clubs/${clubId}/members`, { params: { status: 'ACTIVE' } }),
-        client.get(`/clubs/${clubId}/members`, { params: { status: 'ALUMNI' } }),
+        client.get(`/clubs/${clubId}/members`, { params: { status: 'ACTIVE', limit: 100 } }),
+        client.get(`/clubs/${clubId}/members`, { params: { status: 'ALUMNI', limit: 100 } }),
       ])
-      setActiveMembers(activeRes.data)
-      setAlumniMembers(alumniRes.data)
+      setActiveMembers(activeRes.data.items || activeRes.data)
+      setAlumniMembers(alumniRes.data.items || alumniRes.data)
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load members')
     } finally {

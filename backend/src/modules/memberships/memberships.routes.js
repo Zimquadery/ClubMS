@@ -2,17 +2,19 @@ const express = require('express');
 const membershipsController = require('./memberships.controller');
 const { authMiddleware } = require('../../middleware/auth');
 const { requireRole, requireClubAdmin } = require('../../middleware/rbac');
+const { validate, validateQuery } = require('../../middleware/validate');
+const { transferAdmin: transferAdminSchema, listMembersQuery } = require('./memberships.schemas');
 
 const router = express.Router();
 
 router.post('/:clubId/join', authMiddleware, requireRole('STUDENT'), membershipsController.requestJoin);
 router.post('/:clubId/leave', authMiddleware, requireRole('STUDENT'), membershipsController.leaveClub);
-router.get('/:clubId/members', authMiddleware, requireRole('CLUB_ADMIN'), requireClubAdmin, membershipsController.listMembers);
+router.get('/:clubId/members', authMiddleware, requireRole('CLUB_ADMIN'), requireClubAdmin, validateQuery(listMembersQuery), membershipsController.listMembers);
 router.patch('/:clubId/members/:userId/approve', authMiddleware, requireRole('CLUB_ADMIN'), requireClubAdmin, membershipsController.approve);
 router.patch('/:clubId/members/:userId/reject', authMiddleware, requireRole('CLUB_ADMIN'), requireClubAdmin, membershipsController.reject);
 router.patch('/:clubId/members/:userId/alumni', authMiddleware, requireRole('CLUB_ADMIN'), requireClubAdmin, membershipsController.setAlumni);
 router.delete('/:clubId/members/:userId', authMiddleware, requireRole('CLUB_ADMIN'), requireClubAdmin, membershipsController.removeMember);
-router.post('/:clubId/transfer', authMiddleware, requireRole('CLUB_ADMIN'), requireClubAdmin, membershipsController.transferAdmin);
+router.post('/:clubId/transfer', authMiddleware, requireRole('CLUB_ADMIN'), requireClubAdmin, validate(transferAdminSchema), membershipsController.transferAdmin);
 
 const adminRouter = express.Router();
 adminRouter.get('/my-clubs', authMiddleware, membershipsController.getMyClubs);

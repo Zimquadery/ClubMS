@@ -2,28 +2,25 @@ const { prisma } = require('../../lib/prisma');
 const { AppError } = require('../../utils/errors');
 const { CLUB_CATEGORIES } = require('./clubs.constants');
 
-async function list({ search, category }) {
+async function list({ search, category, page = 1, limit = 20 }) {
   const where = {};
+  if (search) where.name = { contains: search, mode: 'insensitive' };
+  if (category) where.category = category;
 
-  if (search) {
-    where.name = { contains: search, mode: 'insensitive' };
-  }
+  const skip = (page - 1) * limit;
 
-  if (category) {
-    where.category = category;
-  }
+  const [items, total] = await Promise.all([
+    prisma.club.findMany({
+      where,
+      include: { _count: { select: { memberships: { where: { status: 'ACTIVE' } } } } },
+      orderBy: { name: 'asc' },
+      skip,
+      take: limit,
+    }),
+    prisma.club.count({ where }),
+  ]);
 
-  const clubs = await prisma.club.findMany({
-    where,
-    include: {
-      _count: {
-        select: { memberships: { where: { status: 'ACTIVE' } } },
-      },
-    },
-    orderBy: { name: 'asc' },
-  });
-
-  return clubs;
+  return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
 }
 
 async function getById(id, userId) {
@@ -32,11 +29,7 @@ async function getById(id, userId) {
     include: {
       memberships: {
         where: { status: 'ACTIVE' },
-        include: {
-          user: {
-            select: { id: true, name: true, email: true },
-          },
-        },
+        include: { user: { select: { id: true, name: true, email: true } } },
       },
       events: {
         where: { startTime: { gte: new Date() } },
@@ -45,9 +38,7 @@ async function getById(id, userId) {
     },
   });
 
-  if (!club) {
-    throw new AppError('Club not found', 404);
-  }
+  if (!club) throw new AppError('Club not found', 404);
 
   if (userId) {
     const userMembership = await prisma.clubMembership.findUnique({
@@ -62,9 +53,7 @@ async function getById(id, userId) {
 
 async function create({ name, description, category, logoUrl, adminUserId }) {
   const existing = await prisma.club.findFirst({ where: { name } });
-  if (existing) {
-    throw new AppError('A club with this name already exists', 409);
-  }
+  if (existing) throw new AppError('A club with this name already exists', 409);
 
   if (!CLUB_CATEGORIES.includes(category)) {
     throw new AppError(`Invalid category. Must be one of: ${CLUB_CATEGORIES.join(', ')}`, 400);
@@ -79,9 +68,7 @@ async function create({ name, description, category, logoUrl, adminUserId }) {
 
   if (adminUserId) {
     const user = await prisma.user.findUnique({ where: { id: adminUserId } });
-    if (!user) {
-      throw new AppError('Specified admin user not found', 400);
-    }
+    if (!user) throw new AppError('Specified admin user not found', 400);
   }
 
   const result = await prisma.$transaction(async (tx) => {
@@ -89,18 +76,9 @@ async function create({ name, description, category, logoUrl, adminUserId }) {
 
     if (adminUserId) {
       await tx.clubMembership.create({
-        data: {
-          userId: adminUserId,
-          clubId: club.id,
-          status: 'ACTIVE',
-          role: 'OFFICER',
-        },
+        data: { userId: adminUserId, clubId: club.id, status: 'ACTIVE', role: 'OFFICER' },
       });
-
-      await tx.user.update({
-        where: { id: adminUserId },
-        data: { role: 'CLUB_ADMIN' },
-      });
+      await tx.user.update({ where: { id: adminUserId }, data: { role: 'CLUB_ADMIN' } });
     }
 
     return club;
@@ -111,9 +89,7 @@ async function create({ name, description, category, logoUrl, adminUserId }) {
 
 async function update(id, { name, description, category, logoUrl }) {
   const club = await prisma.club.findUnique({ where: { id } });
-  if (!club) {
-    throw new AppError('Club not found', 404);
-  }
+  if (!club) throw new AppError('Club not found', 404);
 
   const data = {};
   if (name !== undefined && name !== club.name) {
@@ -130,24 +106,15 @@ async function update(id, { name, description, category, logoUrl }) {
   }
   if (logoUrl !== undefined) data.logoUrl = logoUrl || null;
 
-  if (Object.keys(data).length === 0) {
-    throw new AppError('No fields to update', 400);
-  }
+  if (Object.keys(data).length === 0) throw new AppError('No fields to update', 400);
 
-  return prisma.club.update({
-    where: { id },
-    data,
-  });
+  return prisma.club.update({ where: { id }, data });
 }
 
 async function deleteClub(id) {
   const club = await prisma.club.findUnique({ where: { id } });
-  if (!club) {
-    throw new AppError('Club not found', 404);
-  }
-
+  if (!club) throw new AppError('Club not found', 404);
   await prisma.club.delete({ where: { id } });
-
   return { success: true };
 }
 

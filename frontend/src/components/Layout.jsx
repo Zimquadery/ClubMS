@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { LayoutDashboard, Users, Calendar, LogOut, Shield, Menu, X } from 'lucide-react'
+import { LayoutDashboard, Users, Calendar, LogOut, Shield, Menu, X, UserCircle } from 'lucide-react'
 
 export function Layout() {
   const { user, logout } = useAuth()
@@ -52,12 +52,10 @@ export function Layout() {
           Manage Clubs
         </NavLink>
       )}
-      {user.role === 'CLUB_ADMIN' && (
-        <NavLink to="/dashboard" className={linkClass} onClick={() => setMobileMenuOpen(false)}>
-          <Shield className="h-4 w-4" />
-          My Clubs
-        </NavLink>
-      )}
+      <NavLink to="/profile" className={linkClass} onClick={() => setMobileMenuOpen(false)}>
+        <UserCircle className="h-4 w-4" />
+        Profile
+      </NavLink>
     </>
   ) : null
 
