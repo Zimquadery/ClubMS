@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import client from '@/api/client'
 import { Input } from '@/components/ui/input'
@@ -13,8 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Search, Users, ImageIcon } from 'lucide-react'
-
-const CLUB_CATEGORIES = ['Academic', 'Sports', 'Cultural', 'Technology', 'Arts', 'Community', 'Other']
+import { CLUB_CATEGORIES } from '@/lib/constants'
 
 export default function ClubDirectory() {
   const [clubs, setClubs] = useState([])

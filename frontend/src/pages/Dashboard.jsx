@@ -5,15 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Users, Calendar, Shield } from 'lucide-react'
 import { Link } from 'react-router-dom'
-
-function formatDate(dateStr) {
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  })
-}
+import { formatDateTime } from '@/lib/format'
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -113,7 +105,7 @@ export default function Dashboard() {
                       <Badge variant="secondary" className="text-xs">{event.club?.name}</Badge>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {formatDate(event.startTime)}{event.location && ` · ${event.location}`}
+                      {formatDateTime(event.startTime)}{event.location && ` · ${event.location}`}
                     </p>
                   </div>
                 ))}

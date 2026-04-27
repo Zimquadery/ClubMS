@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import client from '@/api/client'
-import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import {
@@ -10,20 +9,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Calendar, MapPin, Clock, Users, ImageIcon, Filter } from 'lucide-react'
-
-function formatDate(dateStr) {
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
-  })
-}
-
-function formatTime(dateStr) {
-  return new Date(dateStr).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-}
+import { Calendar, MapPin, Clock, ImageIcon, Filter } from 'lucide-react'
+import { formatDate, formatTime } from '@/lib/format'
 
 export default function EventCalendar() {
-  const { user } = useAuth()
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')

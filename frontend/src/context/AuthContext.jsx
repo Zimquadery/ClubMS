@@ -1,42 +1,32 @@
-import { createContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useState, useEffect } from 'react';
 import client from '@/api/client';
 
 export const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(() => localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
 
-  const restoreSession = useCallback(async () => {
+  useEffect(() => {
     const storedToken = localStorage.getItem('token');
     if (!storedToken) {
       setLoading(false);
       return;
     }
 
-    try {
-      const response = await client.get('/auth/me');
-      setUser(response.data);
-      setToken(storedToken);
-    } catch {
-      localStorage.removeItem('token');
-      setToken(null);
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
+    client.get('/auth/me')
+      .then((response) => setUser(response.data))
+      .catch(() => {
+        localStorage.removeItem('token');
+        setUser(null);
+      })
+      .finally(() => setLoading(false));
   }, []);
-
-  useEffect(() => {
-    restoreSession();
-  }, [restoreSession]);
 
   const login = async (email, password) => {
     const response = await client.post('/auth/login', { email, password });
     const { token: newToken, user: newUser } = response.data;
     localStorage.setItem('token', newToken);
-    setToken(newToken);
     setUser(newUser);
     return response.data;
   };
@@ -46,34 +36,13 @@ export function AuthProvider({ children }) {
     return response.data;
   };
 
-  const logout = useCallback(() => {
+  const logout = () => {
     localStorage.removeItem('token');
-    setToken(null);
     setUser(null);
-  }, []);
-
-  const isAuthenticated = !!user;
-
-  const hasRole = useCallback(
-    (...roles) => {
-      return user ? roles.includes(user.role) : false;
-    },
-    [user]
-  );
+  };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        token,
-        loading,
-        login,
-        register,
-        logout,
-        isAuthenticated,
-        hasRole,
-      }}
-    >
+    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -23,8 +23,7 @@ import {
 } from '@/components/ui/select'
 import { Plus, Trash2, Users, UserCheck, ClipboardList } from 'lucide-react'
 import { Link } from 'react-router-dom'
-
-const CLUB_CATEGORIES = ['Academic', 'Sports', 'Cultural', 'Technology', 'Arts', 'Community', 'Other']
+import { CLUB_CATEGORIES } from '@/lib/constants'
 
 export default function ManageClubs() {
   const [clubs, setClubs] = useState([])

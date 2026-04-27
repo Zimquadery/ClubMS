@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Check, X, Users, ArrowLeft } from 'lucide-react'
+import { formatShortDate } from '@/lib/format'
 
 export default function PendingRequests() {
   const { id: clubId } = useParams()
@@ -62,14 +63,6 @@ export default function PendingRequests() {
     } finally {
       setActionLoading((prev) => ({ ...prev, [userId]: false }))
     }
-  }
-
-  function formatDate(dateStr) {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    })
   }
 
   const currentClub = adminClubs.find((c) => c.id === clubId)
@@ -126,7 +119,7 @@ export default function PendingRequests() {
                   <p className="font-medium">{req.user.name}</p>
                   <p className="text-sm text-muted-foreground">{req.user.email}</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Requested {formatDate(req.createdAt)}
+                    Requested {formatShortDate(req.createdAt)}
                   </p>
                 </div>
                 <div className="flex gap-2">

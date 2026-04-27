@@ -20,6 +20,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Users, ArrowLeft, ArrowRightLeft, GraduationCap } from 'lucide-react'
+import { formatShortDate } from '@/lib/format'
 
 export default function ClubMembers() {
   const { id: clubId } = useParams()
@@ -92,14 +93,6 @@ export default function ClubMembers() {
     } finally {
       setTransferring(false)
     }
-  }
-
-  function formatDate(dateStr) {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    })
   }
 
   const currentClub = adminClubs.find((c) => c.id === clubId)
@@ -181,7 +174,7 @@ export default function ClubMembers() {
                   </div>
                   <p className="text-sm text-muted-foreground">{membership.user.email}</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Joined {formatDate(membership.createdAt)}
+                    Joined {formatShortDate(membership.createdAt)}
                   </p>
                 </div>
                 {tab === 'active' && membership.role !== 'OFFICER' && (
