@@ -13,6 +13,7 @@ import {
 import { Calendar, MapPin, Clock, ImageIcon, Filter } from 'lucide-react'
 import { formatDate, formatTime } from '@/lib/format'
 import { Pagination } from '@/components/Pagination'
+import { EventCardSkeleton } from '@/components/ui/skeleton'
 
 export default function EventCalendar() {
   const [events, setEvents] = useState([])
@@ -119,8 +120,10 @@ export default function EventCalendar() {
       </div>
 
       {loading && (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary" />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <EventCardSkeleton key={i} />
+          ))}
         </div>
       )}
 

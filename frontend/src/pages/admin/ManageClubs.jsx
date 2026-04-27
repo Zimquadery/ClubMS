@@ -25,6 +25,7 @@ import { Plus, Trash2, Users, UserCheck, ClipboardList, Pencil } from 'lucide-re
 import { Link } from 'react-router-dom'
 import { CLUB_CATEGORIES } from '@/lib/constants'
 import { toast } from 'sonner'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export default function ManageClubs() {
   const [clubs, setClubs] = useState([])
@@ -200,8 +201,16 @@ export default function ManageClubs() {
       )}
 
       {loading ? (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary" />
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="rounded-xl border p-4 flex items-center justify-between">
+              <div className="space-y-2 flex-1">
+                <Skeleton className="h-5 w-1/4" />
+                <Skeleton className="h-3 w-1/6" />
+              </div>
+              <Skeleton className="h-9 w-24" />
+            </div>
+          ))}
         </div>
       ) : clubs.length === 0 ? (
         <Card>

@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { DetailSkeleton } from '@/components/ui/skeleton'
 
 export default function EventDetail() {
   const { id } = useParams()
@@ -30,6 +31,9 @@ export default function EventDetail() {
   const [deleteDialog, setDeleteDialog] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [form, setForm] = useState({ title: '', description: '', startTime: '', endTime: '', location: '', bannerUrl: '' })
+  const [userRsvp, setUserRsvp] = useState(null)
+  const [rsvpLoading, setRsvpLoading] = useState(false)
+  const [attendeeCount, setAttendeeCount] = useState(0)
 
   useEffect(() => {
     fetchEvent()
@@ -41,10 +45,52 @@ export default function EventDetail() {
     try {
       const res = await client.get(`/events/${id}`)
       setEvent(res.data)
+      try {
+        const [rsvpRes, countRes] = await Promise.all([
+          client.get(`/events/${id}/rsvp`),
+          client.get(`/events/${id}/rsvps`, { params: { limit: 1 } }),
+        ])
+        setUserRsvp(rsvpRes.data)
+        setAttendeeCount(countRes.data.total)
+      } catch {}
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load event')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleRsvp(status) {
+    setRsvpLoading(true)
+    try {
+      const res = await client.post(`/events/${id}/rsvp`, { status })
+      setUserRsvp(res.data)
+      if (status === 'NOT_GOING') {
+        setAttendeeCount(prev => Math.max(0, prev - 1))
+      } else if (!userRsvp || userRsvp.status === 'NOT_GOING') {
+        setAttendeeCount(prev => prev + 1)
+      }
+      toast.success(`You're ${status === 'GOING' ? 'going' : status === 'MAYBE' ? 'maybe attending' : 'not going'}`)
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update RSVP')
+    } finally {
+      setRsvpLoading(false)
+    }
+  }
+
+  async function handleRemoveRsvp() {
+    setRsvpLoading(true)
+    try {
+      await client.delete(`/events/${id}/rsvp`)
+      if (userRsvp?.status !== 'NOT_GOING') {
+        setAttendeeCount(prev => Math.max(0, prev - 1))
+      }
+      setUserRsvp(null)
+      toast.success('RSVP removed')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to remove RSVP')
+    } finally {
+      setRsvpLoading(false)
     }
   }
 
@@ -70,6 +116,15 @@ export default function EventDetail() {
   async function handleEdit(e) {
     e.preventDefault()
     setSubmitting(true)
+    if (form.startTime && form.endTime) {
+      const start = new Date(form.startTime)
+      const end = new Date(form.endTime)
+      if (end <= start) {
+        toast.error('End time must be after start time')
+        setSubmitting(false)
+        return
+      }
+    }
     try {
       await client.patch(`/events/${id}`, form)
       setEditDialog(false)
@@ -100,11 +155,7 @@ export default function EventDetail() {
   const isPast = event ? new Date(event.startTime) < new Date() : false
 
   if (loading) {
-    return (
-      <div className="flex justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary" />
-      </div>
-    )
+    return <DetailSkeleton />
   }
 
   if (error) {
@@ -183,6 +234,60 @@ export default function EventDetail() {
           <CardContent className="p-4">
             <h2 className="font-semibold mb-2">Description</h2>
             <p className="text-sm text-muted-foreground whitespace-pre-wrap">{event.description}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {!isPast && (
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold">RSVP</h2>
+              {attendeeCount > 0 && (
+                <span className="text-sm text-muted-foreground">{attendeeCount} attending</span>
+              )}
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                size="sm"
+                variant={userRsvp?.status === 'GOING' ? 'default' : 'outline'}
+                className={userRsvp?.status === 'GOING' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}
+                onClick={() => handleRsvp('GOING')}
+                disabled={rsvpLoading}
+              >
+                Going
+              </Button>
+              <Button
+                size="sm"
+                variant={userRsvp?.status === 'MAYBE' ? 'default' : 'outline'}
+                className={userRsvp?.status === 'MAYBE' ? 'bg-yellow-600 hover:bg-yellow-700 text-white' : ''}
+                onClick={() => handleRsvp('MAYBE')}
+                disabled={rsvpLoading}
+              >
+                Maybe
+              </Button>
+              <Button
+                size="sm"
+                variant={userRsvp?.status === 'NOT_GOING' ? 'default' : 'outline'}
+                className={userRsvp?.status === 'NOT_GOING' ? 'bg-red-600 hover:bg-red-700 text-white' : ''}
+                onClick={() => handleRsvp('NOT_GOING')}
+                disabled={rsvpLoading}
+              >
+                Not Going
+              </Button>
+              {userRsvp && (
+                <Button size="sm" variant="ghost" onClick={handleRemoveRsvp} disabled={rsvpLoading}>
+                  Clear RSVP
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {isPast && attendeeCount > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <span className="text-sm text-muted-foreground">{attendeeCount} attendee{attendeeCount !== 1 ? 's' : ''}</span>
           </CardContent>
         </Card>
       )}

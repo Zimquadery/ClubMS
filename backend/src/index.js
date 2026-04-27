@@ -2,12 +2,16 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const pinoHttp = require('pino-http');
 const { PORT, FRONTEND_URL } = require('./config/env');
 const { errorHandler } = require('./utils/errors');
+const { logger } = require('./lib/logger');
 const authRoutes = require('./modules/auth/auth.routes');
 const clubRoutes = require('./modules/clubs/clubs.routes');
 const eventsRoutes = require('./modules/events/events.routes');
+const rsvpRoutes = require('./modules/rsvp/rsvp.routes');
 const { router: membershipsRoutes, adminRouter: membershipsAdminRouter } = require('./modules/memberships/memberships.routes');
+const statsRoutes = require('./modules/stats/stats.routes');
 const { prisma } = require('./lib/prisma');
 
 const app = express();
@@ -18,6 +22,7 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json({ limit: '10kb' }));
+app.use(pinoHttp({ logger }));
 
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: { error: 'Too many requests, please try again later' } });
 const generalLimiter = rateLimit({ windowMs: 60 * 1000, max: 100, message: { error: 'Too many requests, please try again later' } });
@@ -37,11 +42,13 @@ app.get('/api/health', async (_req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/clubs', clubRoutes);
 app.use('/api/events', eventsRoutes);
+app.use('/api/events', rsvpRoutes);
 app.use('/api/clubs', membershipsRoutes);
 app.use('/api/memberships', membershipsAdminRouter);
+app.use('/api/stats', statsRoutes);
 
 app.use(errorHandler);
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  logger.info({ port: PORT }, 'Server running');
 });

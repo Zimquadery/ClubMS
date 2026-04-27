@@ -7,10 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
 import { Users, Calendar, MapPin, ArrowLeft, ImageIcon, Clock, UserPlus, Shield, GraduationCap, Trash2 } from 'lucide-react'
 import { formatDate, formatTime } from '@/lib/format'
 import { toast } from 'sonner'
+import { DetailSkeleton } from '@/components/ui/skeleton'
 
 export default function ClubDetail() {
   const { id } = useParams()
@@ -24,6 +25,7 @@ export default function ClubDetail() {
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [newEvent, setNewEvent] = useState({ title: '', description: '', startTime: '', endTime: '', location: '', bannerUrl: '' })
+  const [deleteEventTarget, setDeleteEventTarget] = useState(null)
 
   useEffect(() => {
     fetchClub()
@@ -70,8 +72,8 @@ export default function ClubDetail() {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary" />
+      <div className="space-y-6">
+        <DetailSkeleton />
       </div>
     )
   }
@@ -96,6 +98,15 @@ export default function ClubDetail() {
   async function handleCreateEvent(e) {
     e.preventDefault()
     setSubmitting(true)
+    if (newEvent.startTime && newEvent.endTime) {
+      const start = new Date(newEvent.startTime)
+      const end = new Date(newEvent.endTime)
+      if (end <= start) {
+        toast.error('End time must be after start time')
+        setSubmitting(false)
+        return
+      }
+    }
     try {
       await client.post(`/clubs/${id}/events`, newEvent)
       setShowCreateDialog(false)
@@ -109,11 +120,13 @@ export default function ClubDetail() {
     }
   }
 
-  async function handleDeleteEvent(eventId) {
+  async function handleDeleteEvent() {
+    if (!deleteEventTarget) return
     try {
-      await client.delete(`/events/${eventId}`)
+      await client.delete(`/events/${deleteEventTarget.id}`)
       await fetchClub()
       toast.success('Event deleted')
+      setDeleteEventTarget(null)
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to delete event')
     }
@@ -304,7 +317,7 @@ export default function ClubDetail() {
                     <div className="flex items-start justify-between gap-2">
                       <Link to={`/events/${event.id}`} className="font-medium text-sm hover:underline">{event.title}</Link>
                       {canManageEvents && (
-                        <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteEvent(event.id)}>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0 text-muted-foreground hover:text-destructive" aria-label="Delete event" onClick={() => setDeleteEventTarget(event)}>
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       )}
@@ -360,6 +373,20 @@ export default function ClubDetail() {
           </CardContent>
         </Card>
       </div>
+      <Dialog open={!!deleteEventTarget} onOpenChange={(open) => !open && setDeleteEventTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Event</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete &quot;{deleteEventTarget?.title}&quot;? This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteEventTarget(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeleteEvent}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -22,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { ListSkeleton } from '@/components/ui/skeleton'
 
 export default function PendingRequests() {
   const { id: clubId } = useParams()
@@ -113,9 +114,7 @@ export default function PendingRequests() {
       )}
 
       {loading ? (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary" />
-        </div>
+        <ListSkeleton rows={5} />
       ) : requests.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">

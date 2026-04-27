@@ -61,6 +61,9 @@ export function Layout() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-brand-primary focus:text-white focus:rounded-md">
+        Skip to content
+      </a>
       <header className="sticky top-0 z-50 border-b bg-background">
         <div className="container mx-auto flex h-14 items-center justify-between px-4">
           <div className="flex items-center gap-6">
@@ -98,7 +101,7 @@ export function Layout() {
                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <DropdownMenuContent className="w-56" align="end">
                     <DropdownMenuLabel className="font-normal">
                       <div className="flex flex-col space-y-1">
                         <p className="text-sm font-medium">{user.name}</p>
@@ -120,14 +123,14 @@ export function Layout() {
           </div>
         </div>
         {mobileMenuOpen && user && (
-          <nav className="md:hidden border-t bg-background">
+          <nav className="md:hidden border-t bg-background" aria-label="Mobile navigation">
             <div className="container mx-auto px-4 py-3 flex flex-col gap-3 text-sm">
               {navLinks}
             </div>
           </nav>
         )}
       </header>
-      <main className="flex-1 container mx-auto px-4 py-6">
+      <main id="main-content" className="flex-1 container mx-auto px-4 py-6">
         <Outlet />
       </main>
     </div>

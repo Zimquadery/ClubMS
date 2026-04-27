@@ -6,10 +6,24 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 
+function getPasswordStrength(password) {
+  if (!password) return { label: '', color: '' }
+  let score = 0
+  if (password.length >= 6) score++
+  if (password.length >= 10) score++
+  if (/[A-Z]/.test(password)) score++
+  if (/[0-9]/.test(password)) score++
+  if (/[^A-Za-z0-9]/.test(password)) score++
+  if (score <= 1) return { label: 'Weak', color: 'bg-red-500' }
+  if (score <= 3) return { label: 'Fair', color: 'bg-yellow-500' }
+  return { label: 'Strong', color: 'bg-green-500' }
+}
+
 export default function Register() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const { register } = useAuth()
@@ -21,6 +35,16 @@ export default function Register() {
     e.preventDefault()
     setError('')
     setLoading(true)
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters')
+      setLoading(false)
+      return
+    }
+    if (password !== confirmPassword) {
+      setError('Passwords do not match')
+      setLoading(false)
+      return
+    }
     try {
       await register(email, password, name)
       navigate('/dashboard')
@@ -78,6 +102,34 @@ export default function Register() {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            {password && (
+              <div className="space-y-1">
+                <div className="flex gap-1">
+                  {[1, 2, 3].map((level) => (
+                    <div
+                      key={level}
+                      className={`h-1 flex-1 rounded-full ${
+                        getPasswordStrength(password).label === 'Weak' && level <= 1 ? getPasswordStrength(password).color :
+                        getPasswordStrength(password).label === 'Fair' && level <= 2 ? getPasswordStrength(password).color :
+                        getPasswordStrength(password).label === 'Strong' ? getPasswordStrength(password).color : 'bg-gray-200'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">{getPasswordStrength(password).label}</p>
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
                 required
               />
             </div>

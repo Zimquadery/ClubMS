@@ -47,10 +47,11 @@
 | `/api/auth` | `authRoutes` | `auth/auth.routes.js` | No | Any |
 | `/api/clubs` | `clubRoutes` | `clubs/clubs.routes.js` | **Yes: `GET /:id`, `PATCH /:id`, `DELETE /:id`** | Only multi-segment (`/:id/action`) |
 | `/api/clubs` | `membershipsRoutes` | `memberships/memberships.routes.js` | Yes: `/:clubId/join`, `/:clubId/leave`, `/:clubId/members/*`, `/:clubId/transfer` | Only multi-segment |
-| `/api/events` | `eventsRoutes` | `events/events.routes.js` | **Yes: `GET /:id`, `PATCH /:id`, `DELETE /:id`** | Any (only one router here) |
+| `/api/events` | `eventsRoutes` | `events/events.routes.js` | **Yes: `GET /:id`, `PATCH /:id`, `DELETE /:id`** | Only multi-segment (`/:id/action`) |
+| `/api/events` | `rsvpRoutes` | `rsvp/rsvp.routes.js` | Yes: `/:id/rsvp`, `/:id/rsvps` | Only multi-segment |
 | `/api/memberships` | `membershipsAdminRouter` | `memberships/memberships.routes.js` | No | **Any — this is the safe mount for literal paths** |
 
-**Collision zone:** `/api/clubs` has TWO routers. `clubRoutes` registers `GET /:id` which swallows ANY single-segment GET path (e.g., `/my-clubs`, `/categories`, `/stats`). `GET /categories` works only because it is registered BEFORE `/:id` **within the same router**. Adding a literal path to the OTHER router (`membershipsRoutes`) will always fail — Express already consumed the request in `clubRoutes`.
+**Collision zones:** `/api/clubs` and `/api/events` each have TWO routers. On `/api/clubs`, `clubRoutes` registers `GET /:id` which swallows ANY single-segment GET path. On `/api/events`, `eventsRoutes` registers `GET /:id` — but `rsvpRoutes` only uses multi-segment paths (`/:id/rsvp`, `/:id/rsvps`) so no collision occurs. Adding a single-segment literal path to `rsvpRoutes` would collide with `eventsRoutes` `/:id`.
 
 **Rule:** When adding a new endpoint to the memberships module with a literal path (like `/my-clubs`, `/stats`, `/search`), add it to `membershipsAdminRouter` (mounted at `/api/memberships`). Do NOT add it to `membershipsRoutes` (mounted at `/api/clubs`).
 
@@ -148,3 +149,27 @@ Backend list endpoints now return paginated objects. Frontend pages use `res.dat
 ### Past Events
 
 `GET /events?timeRange=past|upcoming|all` — default is `upcoming`. Past events are sorted `startTime: 'desc'`. EventCalendar has a dropdown to switch between upcoming/past/all.
+
+### Event RSVP
+
+`EventRsvp` model with `@@unique([eventId, userId])`. Upsert pattern: `prisma.eventRsvp.upsert({ where: { eventId_userId: { eventId, userId } } })`. Routes mounted at `/api/events` via `rsvpRoutes` — uses multi-segment paths (`/:id/rsvp`, `/:id/rsvps`) to avoid collision with `eventsRoutes` `/:id`.
+
+### Dashboard Analytics
+
+`GET /api/stats/dashboard` returns role-specific stats. PLATFORM_ADMIN sees global counts. CLUB_ADMIN sees their clubs' counts. STUDENT sees their own counts. Frontend `StatCard` component renders metric cards. Stats module is a standalone module at `modules/stats/`.
+
+### Structured Logging
+
+`pino-http` middleware logs all requests. `pino` logger at `lib/logger.js`. Error handler logs 5xx with full error object, 4xx with status + message. `LOG_LEVEL` env var controls verbosity (default: `info`).
+
+### Frontend Loading States
+
+All pages use `Skeleton` component variants from `components/ui/skeleton.jsx` instead of spinner divs. Variants: `Skeleton` (base), `CardSkeleton`, `EventCardSkeleton`, `ListSkeleton`, `DetailSkeleton`. Each page imports the appropriate variant.
+
+### Frontend Axios Configuration
+
+`api/client.js` has 15s timeout and 1 retry on timeout (ECONNABORTED). 401 interceptor does hard reload to `/login` (acceptable trade-off since interceptors are outside React's component tree).
+
+### Frontend Form Validation
+
+Register: confirm password field + password strength meter (Weak/Fair/Strong based on length, uppercase, numbers, symbols). Event create/edit: frontend date validation (end > start) before API call. All backend validation via Zod remains the source of truth.

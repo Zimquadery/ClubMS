@@ -24,6 +24,12 @@ enum MemberRole {
   OFFICER
 }
 
+enum RsvpStatus {
+  GOING
+  MAYBE
+  NOT_GOING
+}
+
 model User {
   id            String   @id @default(uuid())
   email         String   @unique
@@ -34,6 +40,7 @@ model User {
   updatedAt     DateTime @updatedAt
 
   memberships   ClubMembership[]
+  rsvps         EventRsvp[]
 }
 
 model Club {
@@ -77,4 +84,19 @@ model Event {
   updatedAt   DateTime @updatedAt
 
   club        Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  rsvps       EventRsvp[]
+}
+
+model EventRsvp {
+  id        String     @id @default(uuid())
+  eventId   String
+  userId    String
+  status    RsvpStatus @default(GOING)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  event     Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
 }

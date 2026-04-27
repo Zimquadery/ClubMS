@@ -7,6 +7,21 @@ import { Users, Calendar, Shield } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { formatDateTime } from '@/lib/format'
 import { toast } from 'sonner'
+import { Skeleton, ListSkeleton, CardSkeleton } from '@/components/ui/skeleton'
+
+function StatCard({ label, value, icon }) {
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">{label}</p>
+          {icon && <span className="text-muted-foreground">{icon}</span>}
+        </div>
+        <p className="text-2xl font-bold">{value}</p>
+      </CardContent>
+    </Card>
+  )
+}
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -17,6 +32,15 @@ export default function Dashboard() {
   const [upcomingEvents, setUpcomingEvents] = useState([])
   const [eventsLoading, setEventsLoading] = useState(true)
   const [adminClubs, setAdminClubs] = useState([])
+  const [stats, setStats] = useState(null)
+  const [statsLoading, setStatsLoading] = useState(true)
+
+  useEffect(() => {
+    client.get('/stats/dashboard')
+      .then((res) => setStats(res.data))
+      .catch(() => {})
+      .finally(() => setStatsLoading(false))
+  }, [])
 
   useEffect(() => {
     client.get('/memberships/my-clubs')
@@ -49,6 +73,44 @@ export default function Dashboard() {
         </p>
       </div>
 
+      {statsLoading ? (
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-4">
+                <Skeleton className="h-4 w-20 mb-2" />
+                <Skeleton className="h-8 w-16" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : stats && (
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+          {user?.role === 'PLATFORM_ADMIN' && (
+            <>
+              <StatCard label="Total Clubs" value={stats.totalClubs} icon={<Users className="h-5 w-5" />} />
+              <StatCard label="Total Users" value={stats.totalUsers} icon={<Users className="h-5 w-5" />} />
+              <StatCard label="Upcoming Events" value={stats.upcomingEvents} icon={<Calendar className="h-5 w-5" />} />
+              <StatCard label="Pending Requests" value={stats.pendingMemberships} icon={<Shield className="h-5 w-5" />} />
+            </>
+          )}
+          {user?.role === 'CLUB_ADMIN' && (
+            <>
+              <StatCard label="My Clubs" value={stats.myClubs} />
+              <StatCard label="Total Members" value={stats.totalMembers} />
+              <StatCard label="Upcoming Events" value={stats.upcomingEvents} />
+              <StatCard label="Pending Requests" value={stats.pendingRequests} />
+            </>
+          )}
+          {user?.role === 'STUDENT' && (
+            <>
+              <StatCard label="My Clubs" value={stats.myClubs} />
+              <StatCard label="Upcoming Events" value={stats.upcomingEvents} />
+            </>
+          )}
+        </div>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -59,7 +121,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             {clubsLoading ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-primary" />
+              <ListSkeleton rows={3} />
             ) : myClubs.length > 0 ? (
               <div className="space-y-2">
                 {myClubs.map((club) => (
@@ -94,7 +156,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             {eventsLoading ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-primary" />
+              <ListSkeleton rows={3} />
             ) : upcomingEvents.length > 0 ? (
               <div className="space-y-2">
                 {upcomingEvents.map((event) => (
@@ -144,7 +206,7 @@ export default function Dashboard() {
                   You manage the following clubs:
                 </p>
                 {clubsLoading ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-primary" />
+                  <ListSkeleton rows={2} />
                 ) : adminClubs.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No clubs assigned yet.</p>
                 ) : (

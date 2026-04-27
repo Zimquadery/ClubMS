@@ -22,6 +22,7 @@ import {
 import { Users, ArrowLeft, ArrowRightLeft, GraduationCap, Trash2 } from 'lucide-react'
 import { formatShortDate } from '@/lib/format'
 import { toast } from 'sonner'
+import { ListSkeleton } from '@/components/ui/skeleton'
 
 export default function ClubMembers() {
   const { id: clubId } = useParams()
@@ -158,9 +159,7 @@ export default function ClubMembers() {
       )}
 
       {loading ? (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary" />
-        </div>
+        <ListSkeleton rows={5} />
       ) : displayMembers.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
