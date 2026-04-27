@@ -45,9 +45,9 @@
 | Mount Point | Router | File | Has Parametric Routes | Safe Literal Paths |
 |---|---|---|---|---|
 | `/api/auth` | `authRoutes` | `auth/auth.routes.js` | No | Any |
-| `/api/clubs` | `clubRoutes` | `clubs/clubs.routes.js` | **Yes: `GET /:id`, `DELETE /:id`** | Only multi-segment (`/:id/action`) |
-| `/api/clubs` | `membershipsRoutes` | `memberships/memberships.routes.js` | Yes: `/:clubId/join`, `/:clubId/members/*`, `/:clubId/transfer` | Only multi-segment |
-| `/api/events` | `eventsRoutes` | `events/events.routes.js` | Yes: `DELETE /:id` | Any (only one router here) |
+| `/api/clubs` | `clubRoutes` | `clubs/clubs.routes.js` | **Yes: `GET /:id`, `PATCH /:id`, `DELETE /:id`** | Only multi-segment (`/:id/action`) |
+| `/api/clubs` | `membershipsRoutes` | `memberships/memberships.routes.js` | Yes: `/:clubId/join`, `/:clubId/leave`, `/:clubId/members/*`, `/:clubId/transfer` | Only multi-segment |
+| `/api/events` | `eventsRoutes` | `events/events.routes.js` | Yes: `PATCH /:id`, `DELETE /:id` | Any (only one router here) |
 | `/api/memberships` | `membershipsAdminRouter` | `memberships/memberships.routes.js` | No | **Any — this is the safe mount for literal paths** |
 
 **Collision zone:** `/api/clubs` has TWO routers. `clubRoutes` registers `GET /:id` which swallows ANY single-segment GET path (e.g., `/my-clubs`, `/categories`, `/stats`). `GET /categories` works only because it is registered BEFORE `/:id` **within the same router**. Adding a literal path to the OTHER router (`membershipsRoutes`) will always fail — Express already consumed the request in `clubRoutes`.
@@ -108,3 +108,19 @@ Controllers must NOT import services from other modules for authorization checks
 ### Duplicate Service Functions
 
 When multiple service functions differ only in an expected-status/new-status pair (e.g., approve/reject/setAlumni), extract a shared private helper (`updateMembershipStatus`). Do not copy-paste function bodies with minor token changes.
+
+### Transactional Operations
+
+Multi-step DB operations (e.g., club creation: create club + create membership + update user role) MUST be wrapped in `prisma.$transaction()`. Non-transactional multi-step operations cause data corruption on partial failure.
+
+### Date Validation
+
+`new Date(garbage)` returns `Invalid Date` (NaN). `NaN < NaN` is `false`, so `end < start` checks pass for invalid input. Always validate with `isNaN(date.getTime())` before comparison.
+
+### Rejected User Re-application
+
+REJECTED users can re-apply by updating their membership status back to PENDING (not creating a new record, since `@@unique([userId, clubId])` prevents duplicates). The requestJoin service handles this automatically.
+
+### Security Middleware Stack
+
+Backend uses: `helmet()` for headers, `cors({ origin: FRONTEND_URL })`, `express.json({ limit: '10kb' })`, `express-rate-limit` (auth: 20/15min, general: 100/min). `JWT_SECRET` has no fallback — throws at startup if missing.

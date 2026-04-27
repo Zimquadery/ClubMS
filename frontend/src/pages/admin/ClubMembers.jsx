@@ -19,8 +19,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Users, ArrowLeft, ArrowRightLeft, GraduationCap } from 'lucide-react'
+import { Users, ArrowLeft, ArrowRightLeft, GraduationCap, Trash2 } from 'lucide-react'
 import { formatShortDate } from '@/lib/format'
+import { toast } from 'sonner'
 
 export default function ClubMembers() {
   const { id: clubId } = useParams()
@@ -34,6 +35,10 @@ export default function ClubMembers() {
   const [transferTarget, setTransferTarget] = useState(null)
   const [transferring, setTransferring] = useState(false)
   const [actionLoading, setActionLoading] = useState({})
+  const [removeTarget, setRemoveTarget] = useState(null)
+  const [removing, setRemoving] = useState(false)
+  const [alumniTarget, setAlumniTarget] = useState(null)
+  const [settingAlumni, setSettingAlumni] = useState(false)
 
   useEffect(() => {
     fetchAdminClubs()
@@ -74,8 +79,9 @@ export default function ClubMembers() {
     try {
       await client.patch(`/clubs/${clubId}/members/${userId}/alumni`)
       await fetchMembers()
+      toast.success('Member set to alumni')
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to set alumni')
+      toast.error(err.response?.data?.message || 'Failed to set alumni')
     } finally {
       setActionLoading((prev) => ({ ...prev, [userId]: false }))
     }
@@ -87,11 +93,27 @@ export default function ClubMembers() {
     try {
       await client.post(`/clubs/${clubId}/transfer`, { newAdminId: transferTarget.userId })
       setTransferTarget(null)
+      toast.success('Admin role transferred')
       await fetchMembers()
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to transfer admin')
+      toast.error(err.response?.data?.message || 'Failed to transfer admin')
     } finally {
       setTransferring(false)
+    }
+  }
+
+  async function handleRemove() {
+    if (!removeTarget) return
+    setRemoving(true)
+    try {
+      await client.delete(`/clubs/${clubId}/members/${removeTarget.userId}`)
+      toast.success('Member removed')
+      setRemoveTarget(null)
+      await fetchMembers()
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to remove member')
+    } finally {
+      setRemoving(false)
     }
   }
 
@@ -183,7 +205,7 @@ export default function ClubMembers() {
                       variant="outline"
                       size="sm"
                       disabled={actionLoading[membership.userId]}
-                      onClick={() => handleSetAlumni(membership.userId)}
+                      onClick={() => setAlumniTarget(membership)}
                     >
                       <GraduationCap className="h-4 w-4 mr-1" /> Set Alumni
                     </Button>
@@ -193,6 +215,15 @@ export default function ClubMembers() {
                       onClick={() => setTransferTarget(membership)}
                     >
                       <ArrowRightLeft className="h-4 w-4 mr-1" /> Transfer Admin
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      disabled={actionLoading[membership.userId]}
+                      onClick={() => setRemoveTarget(membership)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" /> Remove
                     </Button>
                   </div>
                 )}
@@ -221,6 +252,49 @@ export default function ClubMembers() {
               disabled={transferring}
             >
               {transferring ? 'Transferring...' : 'Transfer'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!alumniTarget} onOpenChange={(open) => !open && setAlumniTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Set Member as Alumni</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to set <strong>{alumniTarget?.user?.name}</strong> as alumni? They will no longer be an active member.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAlumniTarget(null)} disabled={settingAlumni}>Cancel</Button>
+            <Button
+              className="bg-brand-primary hover:bg-brand-primary/90 text-white"
+              onClick={async () => {
+                setSettingAlumni(true)
+                await handleSetAlumni(alumniTarget.userId)
+                setAlumniTarget(null)
+                setSettingAlumni(false)
+              }}
+              disabled={settingAlumni}
+            >
+              {settingAlumni ? 'Setting...' : 'Set Alumni'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!removeTarget} onOpenChange={(open) => !open && setRemoveTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove Member</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove <strong>{removeTarget?.user?.name}</strong> from this club? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRemoveTarget(null)} disabled={removing}>Cancel</Button>
+            <Button variant="destructive" onClick={handleRemove} disabled={removing}>
+              {removing ? 'Removing...' : 'Remove'}
             </Button>
           </DialogFooter>
         </DialogContent>

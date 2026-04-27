@@ -6,6 +6,7 @@ const { requireRole } = require('../../middleware/rbac');
 const router = express.Router();
 
 router.get('/', authMiddleware, eventsController.list);
+router.patch('/:id', authMiddleware, requireRole('CLUB_ADMIN'), eventsController.updateEvent);
 router.delete('/:id', authMiddleware, requireRole('CLUB_ADMIN'), eventsController.deleteEvent);
 
 module.exports = router;

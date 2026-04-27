@@ -8,6 +8,7 @@ const router = express.Router();
 
 router.get('/categories', authMiddleware, clubsController.getCategories);
 router.get('/', authMiddleware, clubsController.list);
+router.patch('/:id', authMiddleware, requireRole('PLATFORM_ADMIN'), clubsController.update);
 router.get('/:id', authMiddleware, clubsController.getById);
 router.post('/', authMiddleware, requireRole('PLATFORM_ADMIN'), clubsController.create);
 router.post('/:clubId/events', authMiddleware, requireRole('CLUB_ADMIN'), requireClubAdmin, eventsController.create);

@@ -21,6 +21,12 @@ const create = asyncHandler(async (req, res) => {
   res.status(201).json(club);
 });
 
+const update = asyncHandler(async (req, res) => {
+  const { name, description, category, logoUrl } = req.body;
+  const club = await clubsService.update(req.params.id, { name, description, category, logoUrl });
+  res.status(200).json(club);
+});
+
 const deleteClub = asyncHandler(async (req, res) => {
   const result = await clubsService.deleteClub(req.params.id);
   res.status(200).json(result);
@@ -31,4 +37,4 @@ const getCategories = asyncHandler(async (_req, res) => {
   res.status(200).json(categories);
 });
 
-module.exports = { list, getById, create, deleteClub, getCategories };
+module.exports = { list, getById, create, update, deleteClub, getCategories };

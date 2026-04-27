@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
 import { Users, Calendar, MapPin, ArrowLeft, ImageIcon, Clock, UserPlus, Shield, GraduationCap, Trash2 } from 'lucide-react'
 import { formatDate, formatTime } from '@/lib/format'
+import { toast } from 'sonner'
 
 export default function ClubDetail() {
   const { id } = useParams()
@@ -19,6 +20,7 @@ export default function ClubDetail() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [joinLoading, setJoinLoading] = useState(false)
+  const [leaveLoading, setLeaveLoading] = useState(false)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [newEvent, setNewEvent] = useState({ title: '', description: '', startTime: '', endTime: '', location: '', bannerUrl: '' })
@@ -42,14 +44,27 @@ export default function ClubDetail() {
 
   async function handleJoin() {
     setJoinLoading(true)
-    setError('')
     try {
       await client.post(`/clubs/${id}/join`)
       await fetchClub()
+      toast.success('Join request submitted!')
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to join club')
+      toast.error(err.response?.data?.message || 'Failed to join club')
     } finally {
       setJoinLoading(false)
+    }
+  }
+
+  async function handleLeave() {
+    setLeaveLoading(true)
+    try {
+      await client.post(`/clubs/${id}/leave`)
+      toast.success('You have left the club')
+      await fetchClub()
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to leave club')
+    } finally {
+      setLeaveLoading(false)
     }
   }
 
@@ -84,22 +99,23 @@ export default function ClubDetail() {
     try {
       await client.post(`/clubs/${id}/events`, newEvent)
       setShowCreateDialog(false)
+      toast.success('Event created!')
       setNewEvent({ title: '', description: '', startTime: '', endTime: '', location: '', bannerUrl: '' })
       await fetchClub()
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create event')
+      toast.error(err.response?.data?.message || 'Failed to create event')
     } finally {
       setSubmitting(false)
     }
   }
 
   async function handleDeleteEvent(eventId) {
-    if (!confirm('Are you sure you want to delete this event?')) return
     try {
       await client.delete(`/events/${eventId}`)
       await fetchClub()
+      toast.success('Event deleted')
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to delete event')
+      toast.error(err.response?.data?.message || 'Failed to delete event')
     }
   }
 
@@ -113,7 +129,7 @@ export default function ClubDetail() {
             <Shield className="h-3 w-3 mr-1" />
             {userMembership.role === 'OFFICER' ? 'Officer' : 'Member'}
           </Badge>
-          {userMembership.role === 'OFFICER' && (
+          {userMembership.role === 'OFFICER' ? (
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => navigate(`/admin/clubs/${id}/requests`)}>
                 Pending Requests
@@ -122,6 +138,10 @@ export default function ClubDetail() {
                 Manage Members
               </Button>
             </div>
+          ) : (
+            <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" disabled={leaveLoading} onClick={handleLeave}>
+              {leaveLoading ? 'Leaving...' : 'Leave Club'}
+            </Button>
           )}
         </div>
       )

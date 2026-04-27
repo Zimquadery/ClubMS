@@ -13,6 +13,15 @@ import {
 } from '@/components/ui/select'
 import { Check, X, Users, ArrowLeft } from 'lucide-react'
 import { formatShortDate } from '@/lib/format'
+import { toast } from 'sonner'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 export default function PendingRequests() {
   const { id: clubId } = useParams()
@@ -22,6 +31,8 @@ export default function PendingRequests() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [actionLoading, setActionLoading] = useState({})
+  const [rejectTarget, setRejectTarget] = useState(null)
+  const [rejecting, setRejecting] = useState(false)
 
   useEffect(() => {
     fetchAdminClubs()
@@ -58,8 +69,9 @@ export default function PendingRequests() {
     try {
       await client.patch(`/clubs/${clubId}/members/${userId}/${action}`)
       setRequests((prev) => prev.filter((r) => r.userId !== userId))
+      toast.success(`Request ${action === 'approve' ? 'approved' : 'rejected'}`)
     } catch (err) {
-      setError(err.response?.data?.message || `Failed to ${action} request`)
+      toast.error(err.response?.data?.message || `Failed to ${action} request`)
     } finally {
       setActionLoading((prev) => ({ ...prev, [userId]: false }))
     }
@@ -68,6 +80,7 @@ export default function PendingRequests() {
   const currentClub = adminClubs.find((c) => c.id === clubId)
 
   return (
+    <>
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
@@ -135,7 +148,7 @@ export default function PendingRequests() {
                     variant="destructive"
                     size="sm"
                     disabled={actionLoading[req.userId]}
-                    onClick={() => handleAction(req.userId, 'reject')}
+                    onClick={() => setRejectTarget(req)}
                   >
                     <X className="h-4 w-4 mr-1" /> Reject
                   </Button>
@@ -146,5 +159,27 @@ export default function PendingRequests() {
         </div>
       )}
     </div>
+    <Dialog open={!!rejectTarget} onOpenChange={(open) => !open && setRejectTarget(null)}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Reject Membership Request</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to reject <strong>{rejectTarget?.user?.name}</strong>&apos;s request to join this club?
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setRejectTarget(null)} disabled={rejecting}>Cancel</Button>
+          <Button variant="destructive" onClick={async () => {
+            setRejecting(true)
+            await handleAction(rejectTarget.userId, 'reject')
+            setRejectTarget(null)
+            setRejecting(false)
+          }} disabled={rejecting}>
+            {rejecting ? 'Rejecting...' : 'Reject'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   )
 }

@@ -16,6 +16,14 @@ const create = asyncHandler(async (req, res) => {
   res.status(201).json(event);
 });
 
+const updateEvent = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { title, description, startTime, endTime, location, bannerUrl } = req.body;
+  const isPlatformAdmin = req.user.role === 'PLATFORM_ADMIN';
+  const event = await eventsService.update(id, req.user.userId, { title, description, startTime, endTime, location, bannerUrl }, isPlatformAdmin);
+  res.status(200).json(event);
+});
+
 const deleteEvent = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const isPlatformAdmin = req.user.role === 'PLATFORM_ADMIN';
@@ -23,4 +31,4 @@ const deleteEvent = asyncHandler(async (req, res) => {
   res.status(200).json(result);
 });
 
-module.exports = { list, create, deleteEvent };
+module.exports = { list, create, updateEvent, deleteEvent };

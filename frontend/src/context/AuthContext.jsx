@@ -33,7 +33,12 @@ export function AuthProvider({ children }) {
 
   const register = async (email, password, name) => {
     const response = await client.post('/auth/register', { email, password, name });
-    return response.data;
+    const user = response.data;
+    const loginResponse = await client.post('/auth/login', { email, password });
+    const { token: newToken, user: newUser } = loginResponse.data;
+    localStorage.setItem('token', newToken);
+    setUser(newUser);
+    return { token: newToken, user: newUser };
   };
 
   const logout = () => {

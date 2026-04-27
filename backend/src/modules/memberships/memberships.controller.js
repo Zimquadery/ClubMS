@@ -35,6 +35,16 @@ const transferAdmin = asyncHandler(async (req, res) => {
   res.status(200).json(result);
 });
 
+const leaveClub = asyncHandler(async (req, res) => {
+  const result = await membershipsService.leaveClub(req.params.clubId, req.user.userId);
+  res.status(200).json(result);
+});
+
+const removeMember = asyncHandler(async (req, res) => {
+  const result = await membershipsService.removeMember(req.params.clubId, req.params.userId);
+  res.status(200).json(result);
+});
+
 const getMyClubs = asyncHandler(async (req, res) => {
   const clubs = await membershipsService.getMyClubs(req.user.userId);
   res.status(200).json(clubs);
@@ -45,4 +55,4 @@ const getAdminClubs = asyncHandler(async (req, res) => {
   res.status(200).json(clubs);
 });
 
-module.exports = { requestJoin, listMembers, approve, reject, setAlumni, transferAdmin, getAdminClubs, getMyClubs };
+module.exports = { requestJoin, listMembers, approve, reject, setAlumni, transferAdmin, leaveClub, removeMember, getAdminClubs, getMyClubs };

@@ -6,10 +6,12 @@ const { requireRole, requireClubAdmin } = require('../../middleware/rbac');
 const router = express.Router();
 
 router.post('/:clubId/join', authMiddleware, requireRole('STUDENT'), membershipsController.requestJoin);
+router.post('/:clubId/leave', authMiddleware, requireRole('STUDENT'), membershipsController.leaveClub);
 router.get('/:clubId/members', authMiddleware, requireRole('CLUB_ADMIN'), requireClubAdmin, membershipsController.listMembers);
 router.patch('/:clubId/members/:userId/approve', authMiddleware, requireRole('CLUB_ADMIN'), requireClubAdmin, membershipsController.approve);
 router.patch('/:clubId/members/:userId/reject', authMiddleware, requireRole('CLUB_ADMIN'), requireClubAdmin, membershipsController.reject);
 router.patch('/:clubId/members/:userId/alumni', authMiddleware, requireRole('CLUB_ADMIN'), requireClubAdmin, membershipsController.setAlumni);
+router.delete('/:clubId/members/:userId', authMiddleware, requireRole('CLUB_ADMIN'), requireClubAdmin, membershipsController.removeMember);
 router.post('/:clubId/transfer', authMiddleware, requireRole('CLUB_ADMIN'), requireClubAdmin, membershipsController.transferAdmin);
 
 const adminRouter = express.Router();

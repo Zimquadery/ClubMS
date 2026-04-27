@@ -70,37 +70,70 @@ async function create({ name, description, category, logoUrl, adminUserId }) {
     throw new AppError(`Invalid category. Must be one of: ${CLUB_CATEGORIES.join(', ')}`, 400);
   }
 
-  const club = await prisma.club.create({
-    data: {
-      name,
-      description: description || null,
-      category,
-      logoUrl: logoUrl || null,
-    },
-  });
+  const clubData = {
+    name,
+    description: description || null,
+    category,
+    logoUrl: logoUrl || null,
+  };
 
   if (adminUserId) {
     const user = await prisma.user.findUnique({ where: { id: adminUserId } });
     if (!user) {
       throw new AppError('Specified admin user not found', 400);
     }
-
-    await prisma.clubMembership.create({
-      data: {
-        userId: adminUserId,
-        clubId: club.id,
-        status: 'ACTIVE',
-        role: 'OFFICER',
-      },
-    });
-
-    await prisma.user.update({
-      where: { id: adminUserId },
-      data: { role: 'CLUB_ADMIN' },
-    });
   }
 
-  return club;
+  const result = await prisma.$transaction(async (tx) => {
+    const club = await tx.club.create({ data: clubData });
+
+    if (adminUserId) {
+      await tx.clubMembership.create({
+        data: {
+          userId: adminUserId,
+          clubId: club.id,
+          status: 'ACTIVE',
+          role: 'OFFICER',
+        },
+      });
+
+      await tx.user.update({
+        where: { id: adminUserId },
+        data: { role: 'CLUB_ADMIN' },
+      });
+    }
+
+    return club;
+  });
+
+  return result;
+}
+
+async function update(id, { name, description, category, logoUrl }) {
+  const club = await prisma.club.findUnique({ where: { id } });
+  if (!club) {
+    throw new AppError('Club not found', 404);
+  }
+
+  const data = {};
+  if (name !== undefined) data.name = name;
+  if (description !== undefined) data.description = description || null;
+  if (category !== undefined) {
+    if (!CLUB_CATEGORIES.includes(category)) {
+      throw new AppError(`Invalid category. Must be one of: ${CLUB_CATEGORIES.join(', ')}`, 400);
+    }
+    data.category = category;
+  }
+  if (logoUrl !== undefined) data.logoUrl = logoUrl || null;
+
+  if (Object.keys(data).length === 0) {
+    throw new AppError('No fields to update', 400);
+  }
+
+  return prisma.club.update({
+    where: { id },
+    data,
+  });
 }
 
 async function deleteClub(id) {
@@ -118,4 +151,4 @@ function getCategories() {
   return CLUB_CATEGORIES;
 }
 
-module.exports = { list, getById, create, deleteClub, getCategories };
+module.exports = { list, getById, create, update, deleteClub, getCategories };

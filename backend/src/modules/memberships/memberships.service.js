@@ -29,14 +29,16 @@ async function requestJoin(clubId, userId) {
   });
 
   if (existing) {
-    const msgs = {
-      ACTIVE: 'You are already a member of this club',
-      PENDING: 'You already have a pending request for this club',
-      ALUMNI: 'You are an alumni of this club',
-      REJECTED: 'Your previous request was rejected',
-    };
-    const msg = msgs[existing.status];
-    if (msg) throw new AppError(msg, 409);
+    if (existing.status === 'ACTIVE') throw new AppError('You are already a member of this club', 409);
+    if (existing.status === 'PENDING') throw new AppError('You already have a pending request for this club', 409);
+    if (existing.status === 'ALUMNI') throw new AppError('You are an alumni of this club', 409);
+    if (existing.status === 'REJECTED') {
+      return prisma.clubMembership.update({
+        where: { userId_clubId: { userId, clubId } },
+        data: { status: 'PENDING' },
+        include: { user: { select: USER_SELECT } },
+      });
+    }
   }
 
   return prisma.clubMembership.create({
@@ -89,40 +91,80 @@ async function transferAdmin(clubId, currentAdminId, newAdminId) {
     throw new AppError('Target user is not an active member of this club', 400);
   }
 
-  const remainingOfficerCount = await prisma.clubMembership.count({
-    where: {
-      userId: currentAdminId,
-      clubId: { not: clubId },
-      role: 'OFFICER',
-      status: 'ACTIVE',
-    },
+  const result = await prisma.$transaction(async (tx) => {
+    const remainingOfficerCount = await tx.clubMembership.count({
+      where: {
+        userId: currentAdminId,
+        clubId: { not: clubId },
+        role: 'OFFICER',
+        status: 'ACTIVE',
+      },
+    });
+
+    const ops = [
+      tx.clubMembership.update({
+        where: { userId_clubId: { userId: currentAdminId, clubId } },
+        data: { role: 'MEMBER' },
+      }),
+      tx.clubMembership.update({
+        where: { userId_clubId: { userId: newAdminId, clubId } },
+        data: { role: 'OFFICER' },
+      }),
+      tx.user.update({
+        where: { id: newAdminId },
+        data: { role: 'CLUB_ADMIN' },
+      }),
+    ];
+
+    if (remainingOfficerCount === 0) {
+      ops.push(
+        tx.user.update({
+          where: { id: currentAdminId },
+          data: { role: 'STUDENT' },
+        })
+      );
+    }
+
+    await Promise.all(ops);
+    return { success: true };
   });
 
-  const transactionOps = [
-    prisma.clubMembership.update({
-      where: { userId_clubId: { userId: currentAdminId, clubId } },
-      data: { role: 'MEMBER' },
-    }),
-    prisma.clubMembership.update({
-      where: { userId_clubId: { userId: newAdminId, clubId } },
-      data: { role: 'OFFICER' },
-    }),
-    prisma.user.update({
-      where: { id: newAdminId },
-      data: { role: 'CLUB_ADMIN' },
-    }),
-  ];
+  return result;
+}
 
-  if (remainingOfficerCount === 0) {
-    transactionOps.push(
-      prisma.user.update({
-        where: { id: currentAdminId },
-        data: { role: 'STUDENT' },
-      })
-    );
+async function leaveClub(clubId, userId) {
+  const membership = await prisma.clubMembership.findUnique({
+    where: { userId_clubId: { userId, clubId } },
+  });
+
+  if (!membership) throw new AppError('Membership not found', 404);
+  if (membership.status !== 'ACTIVE' && membership.status !== 'PENDING') {
+    throw new AppError('You are not an active or pending member of this club', 400);
+  }
+  if (membership.role === 'OFFICER') {
+    throw new AppError('Officers cannot leave. Transfer admin rights first.', 400);
   }
 
-  await prisma.$transaction(transactionOps);
+  await prisma.clubMembership.delete({
+    where: { userId_clubId: { userId, clubId } },
+  });
+
+  return { success: true };
+}
+
+async function removeMember(clubId, userId) {
+  const membership = await prisma.clubMembership.findUnique({
+    where: { userId_clubId: { userId, clubId } },
+  });
+
+  if (!membership) throw new AppError('Membership not found', 404);
+  if (membership.role === 'OFFICER') {
+    throw new AppError('Cannot remove an officer. Transfer admin rights first.', 400);
+  }
+
+  await prisma.clubMembership.delete({
+    where: { userId_clubId: { userId, clubId } },
+  });
 
   return { success: true };
 }
@@ -156,4 +198,4 @@ async function getAdminClubs(userId) {
   return memberships.map((m) => m.club);
 }
 
-module.exports = { requestJoin, listMembers, approve, reject, setAlumni, transferAdmin, isClubAdmin, getAdminClubs, getMyClubs };
+module.exports = { requestJoin, listMembers, approve, reject, setAlumni, transferAdmin, leaveClub, removeMember, isClubAdmin, getAdminClubs, getMyClubs };

@@ -24,6 +24,7 @@ import {
 import { Plus, Trash2, Users, UserCheck, ClipboardList } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { CLUB_CATEGORIES } from '@/lib/constants'
+import { toast } from 'sonner'
 
 export default function ManageClubs() {
   const [clubs, setClubs] = useState([])
@@ -64,10 +65,12 @@ export default function ManageClubs() {
     try {
       await client.post('/clubs', form)
       setDialogOpen(false)
+      toast.success('Club created')
       setForm({ name: '', description: '', category: '', logoUrl: '' })
       await fetchClubs()
     } catch (err) {
       setFormError(err.response?.data?.message || 'Failed to create club')
+      toast.error(err.response?.data?.message || 'Failed to create club')
     } finally {
       setSubmitting(false)
     }
@@ -78,9 +81,10 @@ export default function ManageClubs() {
     try {
       await client.delete(`/clubs/${id}`)
       setDeleteTarget(null)
+      toast.success('Club deleted')
       await fetchClubs()
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to delete club')
+      toast.error(err.response?.data?.message || 'Failed to delete club')
     } finally {
       setDeleting(false)
     }
