@@ -116,7 +116,11 @@ async function update(id, { name, description, category, logoUrl }) {
   }
 
   const data = {};
-  if (name !== undefined) data.name = name;
+  if (name !== undefined && name !== club.name) {
+    const existing = await prisma.club.findFirst({ where: { name } });
+    if (existing) throw new AppError('A club with this name already exists', 409);
+    data.name = name;
+  }
   if (description !== undefined) data.description = description || null;
   if (category !== undefined) {
     if (!CLUB_CATEGORIES.includes(category)) {

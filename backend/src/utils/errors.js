@@ -8,6 +8,14 @@ class AppError extends Error {
 }
 
 function errorHandler(err, _req, res, _next) {
+  if (err.code === 'P2002') {
+    return res.status(409).json({
+      status: 'error',
+      statusCode: 409,
+      message: `Duplicate value for ${err.meta?.target?.join(', ') ?? 'unique field'}`,
+    });
+  }
+
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
 

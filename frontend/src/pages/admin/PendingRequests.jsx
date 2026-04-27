@@ -171,9 +171,16 @@ export default function PendingRequests() {
           <Button variant="outline" onClick={() => setRejectTarget(null)} disabled={rejecting}>Cancel</Button>
           <Button variant="destructive" onClick={async () => {
             setRejecting(true)
-            await handleAction(rejectTarget.userId, 'reject')
-            setRejectTarget(null)
-            setRejecting(false)
+            try {
+              await client.patch(`/clubs/${clubId}/members/${rejectTarget.userId}/reject`)
+              setRequests((prev) => prev.filter((r) => r.userId !== rejectTarget.userId))
+              toast.success('Request rejected')
+              setRejectTarget(null)
+            } catch (err) {
+              toast.error(err.response?.data?.message || 'Failed to reject request')
+            } finally {
+              setRejecting(false)
+            }
           }} disabled={rejecting}>
             {rejecting ? 'Rejecting...' : 'Reject'}
           </Button>

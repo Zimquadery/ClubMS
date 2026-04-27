@@ -271,9 +271,16 @@ export default function ClubMembers() {
               className="bg-brand-primary hover:bg-brand-primary/90 text-white"
               onClick={async () => {
                 setSettingAlumni(true)
-                await handleSetAlumni(alumniTarget.userId)
-                setAlumniTarget(null)
-                setSettingAlumni(false)
+                try {
+                  await client.patch(`/clubs/${clubId}/members/${alumniTarget.userId}/alumni`)
+                  toast.success('Member set to alumni')
+                  setAlumniTarget(null)
+                  await fetchMembers()
+                } catch (err) {
+                  toast.error(err.response?.data?.message || 'Failed to set alumni')
+                } finally {
+                  setSettingAlumni(false)
+                }
               }}
               disabled={settingAlumni}
             >

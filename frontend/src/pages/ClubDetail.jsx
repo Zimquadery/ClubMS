@@ -138,11 +138,11 @@ export default function ClubDetail() {
                 Manage Members
               </Button>
             </div>
-          ) : (
+          ) : user?.role === 'STUDENT' ? (
             <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" disabled={leaveLoading} onClick={handleLeave}>
               {leaveLoading ? 'Leaving...' : 'Leave Club'}
             </Button>
-          )}
+          ) : null}
         </div>
       )
     }
@@ -164,6 +164,18 @@ export default function ClubDetail() {
     }
 
     if (userMembership?.status === 'REJECTED') {
+      if (user?.role === 'STUDENT') {
+        return (
+          <Button
+            className="bg-brand-primary hover:bg-brand-primary/90 text-white"
+            disabled={joinLoading}
+            onClick={handleJoin}
+          >
+            <UserPlus className="h-4 w-4 mr-2" />
+            {joinLoading ? 'Requesting...' : 'Re-apply'}
+          </Button>
+        )
+      }
       return null
     }
 

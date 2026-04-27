@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Users, Calendar, Shield } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { formatDateTime } from '@/lib/format'
+import { toast } from 'sonner'
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -20,14 +21,14 @@ export default function Dashboard() {
   useEffect(() => {
     client.get('/memberships/my-clubs')
       .then((res) => setMyClubs(res.data))
-      .catch(() => {})
+      .catch(() => toast.error('Failed to load your clubs'))
       .finally(() => setClubsLoading(false))
   }, [])
 
   useEffect(() => {
     client.get('/events?joined=true')
       .then((res) => setUpcomingEvents(res.data))
-      .catch(() => {})
+      .catch(() => toast.error('Failed to load events'))
       .finally(() => setEventsLoading(false))
   }, [])
 
@@ -35,7 +36,7 @@ export default function Dashboard() {
     if (isClubAdmin) {
       client.get('/memberships/my-admin-clubs')
         .then((res) => setAdminClubs(res.data))
-        .catch(() => {})
+        .catch(() => toast.error('Failed to load admin clubs'))
     }
   }, [isClubAdmin])
 
