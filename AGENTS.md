@@ -27,7 +27,9 @@
 1. `requireRole()` uses hierarchy: PLATFORM_ADMIN inherits CLUB_ADMIN (not STUDENT).
 2. CLUB_ADMIN-scoped endpoints need `requireClubAdmin` after `requireRole('CLUB_ADMIN')` for per-resource checks.
 3. `requireClubAdmin` auto-bypasses PLATFORM_ADMIN — do not add manual checks for this.
-4. Frontend `ProtectedRoute` has NO hierarchy awareness — always list all allowed roles explicitly (e.g., `roles={['CLUB_ADMIN', 'PLATFORM_ADMIN']}`).
+4. `requireClubAdmin` lives in `middleware/rbac.js` alongside `requireRole` — import both from the same file.
+5. `requireClubAdmin` reads `req.params.clubId` — only works on routes with `:clubId` param. For other resources (e.g., event delete where only `:id` is available), do the ownership check inside the service/controller.
+6. Frontend `ProtectedRoute` has NO hierarchy awareness — always list all allowed roles explicitly (e.g., `roles={['CLUB_ADMIN', 'PLATFORM_ADMIN']}`).
 
 ### Before modifying frontend data fetching
 
@@ -94,3 +96,15 @@ Missing required fields (`endTime` on `Event`) and missing roles (no CLUB_ADMIN 
 ### Deseed Deletion Order
 
 Foreign key constraints require reverse dependency order: Event → ClubMembership → Club → User. Explicit deletion is safer than relying on `onDelete: Cascade`.
+
+### Controller Boilerplate — asyncHandler
+
+All controller functions use `asyncHandler` wrapper from `utils/asyncHandler.js` instead of manual try/catch blocks. New controllers MUST use `asyncHandler` — do not re-introduce try/catch boilerplate.
+
+### Cross-Module Dependencies
+
+Controllers must NOT import services from other modules for authorization checks. Use `requireClubAdmin` middleware from `middleware/rbac.js` instead. If `requireClubAdmin` cannot be used (no `:clubId` param), do the check in the service layer — never import another module's service into a controller for auth.
+
+### Duplicate Service Functions
+
+When multiple service functions differ only in an expected-status/new-status pair (e.g., approve/reject/setAlumni), extract a shared private helper (`updateMembershipStatus`). Do not copy-paste function bodies with minor token changes.

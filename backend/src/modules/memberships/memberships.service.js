@@ -1,128 +1,71 @@
 const { prisma } = require('../../lib/prisma');
 const { AppError } = require('../../utils/errors');
 
+const USER_SELECT = { id: true, name: true, email: true };
+
+async function updateMembershipStatus(clubId, userId, expectedStatus, newStatus) {
+  const membership = await prisma.clubMembership.findUnique({
+    where: { userId_clubId: { userId, clubId } },
+  });
+
+  if (!membership) throw new AppError('Membership not found', 404);
+  if (membership.status !== expectedStatus) {
+    throw new AppError(`Membership is not in ${expectedStatus} status`, 400);
+  }
+
+  return prisma.clubMembership.update({
+    where: { userId_clubId: { userId, clubId } },
+    data: { status: newStatus },
+    include: { user: { select: USER_SELECT } },
+  });
+}
+
 async function requestJoin(clubId, userId) {
   const club = await prisma.club.findUnique({ where: { id: clubId } });
-  if (!club) {
-    throw new AppError('Club not found', 404);
-  }
+  if (!club) throw new AppError('Club not found', 404);
 
   const existing = await prisma.clubMembership.findUnique({
     where: { userId_clubId: { userId, clubId } },
   });
 
   if (existing) {
-    if (existing.status === 'ACTIVE') {
-      throw new AppError('You are already a member of this club', 409);
-    }
-    if (existing.status === 'PENDING') {
-      throw new AppError('You already have a pending request for this club', 409);
-    }
-    if (existing.status === 'ALUMNI') {
-      throw new AppError('You are an alumni of this club', 409);
-    }
-    if (existing.status === 'REJECTED') {
-      throw new AppError('Your previous request was rejected', 409);
-    }
+    const msgs = {
+      ACTIVE: 'You are already a member of this club',
+      PENDING: 'You already have a pending request for this club',
+      ALUMNI: 'You are an alumni of this club',
+      REJECTED: 'Your previous request was rejected',
+    };
+    const msg = msgs[existing.status];
+    if (msg) throw new AppError(msg, 409);
   }
 
-  const membership = await prisma.clubMembership.create({
+  return prisma.clubMembership.create({
     data: { userId, clubId, status: 'PENDING', role: 'MEMBER' },
-    include: {
-      user: { select: { id: true, name: true, email: true } },
-    },
+    include: { user: { select: USER_SELECT } },
   });
-
-  return membership;
 }
 
 async function listMembers(clubId, { status } = {}) {
   const where = { clubId };
-  if (status) {
-    where.status = status;
-  }
+  if (status) where.status = status;
 
-  const memberships = await prisma.clubMembership.findMany({
+  return prisma.clubMembership.findMany({
     where,
-    include: {
-      user: { select: { id: true, name: true, email: true } },
-    },
+    include: { user: { select: USER_SELECT } },
     orderBy: { createdAt: 'asc' },
   });
-
-  return memberships;
 }
 
 async function approve(clubId, userId) {
-  const membership = await prisma.clubMembership.findUnique({
-    where: { userId_clubId: { userId, clubId } },
-  });
-
-  if (!membership) {
-    throw new AppError('Membership not found', 404);
-  }
-
-  if (membership.status !== 'PENDING') {
-    throw new AppError('Membership is not in PENDING status', 400);
-  }
-
-  const updated = await prisma.clubMembership.update({
-    where: { userId_clubId: { userId, clubId } },
-    data: { status: 'ACTIVE' },
-    include: {
-      user: { select: { id: true, name: true, email: true } },
-    },
-  });
-
-  return updated;
+  return updateMembershipStatus(clubId, userId, 'PENDING', 'ACTIVE');
 }
 
 async function reject(clubId, userId) {
-  const membership = await prisma.clubMembership.findUnique({
-    where: { userId_clubId: { userId, clubId } },
-  });
-
-  if (!membership) {
-    throw new AppError('Membership not found', 404);
-  }
-
-  if (membership.status !== 'PENDING') {
-    throw new AppError('Membership is not in PENDING status', 400);
-  }
-
-  const updated = await prisma.clubMembership.update({
-    where: { userId_clubId: { userId, clubId } },
-    data: { status: 'REJECTED' },
-    include: {
-      user: { select: { id: true, name: true, email: true } },
-    },
-  });
-
-  return updated;
+  return updateMembershipStatus(clubId, userId, 'PENDING', 'REJECTED');
 }
 
 async function setAlumni(clubId, userId) {
-  const membership = await prisma.clubMembership.findUnique({
-    where: { userId_clubId: { userId, clubId } },
-  });
-
-  if (!membership) {
-    throw new AppError('Membership not found', 404);
-  }
-
-  if (membership.status !== 'ACTIVE') {
-    throw new AppError('Membership is not in ACTIVE status', 400);
-  }
-
-  const updated = await prisma.clubMembership.update({
-    where: { userId_clubId: { userId, clubId } },
-    data: { status: 'ALUMNI' },
-    include: {
-      user: { select: { id: true, name: true, email: true } },
-    },
-  });
-
-  return updated;
+  return updateMembershipStatus(clubId, userId, 'ACTIVE', 'ALUMNI');
 }
 
 async function transferAdmin(clubId, currentAdminId, newAdminId) {

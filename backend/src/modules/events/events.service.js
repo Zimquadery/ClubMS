@@ -28,21 +28,6 @@ async function list({ clubId, joined, userId }) {
   return events;
 }
 
-async function getById(eventId) {
-  const event = await prisma.event.findUnique({
-    where: { id: eventId },
-    include: {
-      club: { select: { id: true, name: true, logoUrl: true } },
-    },
-  });
-
-  if (!event) {
-    throw new AppError('Event not found', 404);
-  }
-
-  return event;
-}
-
 async function create(clubId, { title, description, startTime, endTime, location, bannerUrl }) {
   const club = await prisma.club.findUnique({ where: { id: clubId } });
   if (!club) {
@@ -105,4 +90,4 @@ async function remove(eventId, userId, skipOwnershipCheck = false) {
   return { success: true };
 }
 
-module.exports = { list, getById, create, remove };
+module.exports = { list, create, remove };

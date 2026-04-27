@@ -1,25 +1,7 @@
 const express = require('express');
 const membershipsController = require('./memberships.controller');
 const { authMiddleware } = require('../../middleware/auth');
-const { requireRole } = require('../../middleware/rbac');
-const membershipsService = require('./memberships.service');
-const { AppError } = require('../../utils/errors');
-
-async function requireClubAdmin(req, res, next) {
-  try {
-    if (req.user.role === 'PLATFORM_ADMIN') {
-      return next();
-    }
-    const clubId = req.params.clubId;
-    const isAdmin = await membershipsService.isClubAdmin(req.user.userId, clubId);
-    if (!isAdmin) {
-      throw new AppError('Not an admin of this club', 403);
-    }
-    next();
-  } catch (err) {
-    next(err);
-  }
-}
+const { requireRole, requireClubAdmin } = require('../../middleware/rbac');
 
 const router = express.Router();
 
