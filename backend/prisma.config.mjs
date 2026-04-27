@@ -3,7 +3,7 @@ import { dirname, resolve } from 'path';
 import dotenv from 'dotenv';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: resolve(__dirname, '../../.env') });
+dotenv.config({ path: resolve(__dirname, '../.env') });
 
 import { defineConfig } from 'prisma/config';
 

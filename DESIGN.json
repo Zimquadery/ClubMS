@@ -1,0 +1,223 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-04-28T00:00:00Z",
+  "title": "Design System: ClubMS",
+  "extensions": {
+    "colorMeta": {
+      "institutional-navy": {
+        "role": "primary",
+        "displayName": "Institutional Navy",
+        "canonical": "oklch(36.6% 0.168 262)",
+        "tonalRamp": [
+          "oklch(15% 0.04 262)",
+          "oklch(22% 0.07 262)",
+          "oklch(28% 0.1 262)",
+          "oklch(33% 0.13 262)",
+          "oklch(36.6% 0.168 262)",
+          "oklch(50% 0.18 262)",
+          "oklch(65% 0.15 262)",
+          "oklch(80% 0.1 262)",
+          "oklch(93% 0.04 262)"
+        ]
+      },
+      "canvas-white": {
+        "role": "neutral",
+        "displayName": "Canvas White",
+        "canonical": "oklch(100% 0 0)",
+        "tonalRamp": [
+          "oklch(15% 0.005 262)",
+          "oklch(30% 0.005 262)",
+          "oklch(45% 0.005 262)",
+          "oklch(60% 0.005 262)",
+          "oklch(75% 0.005 262)",
+          "oklch(85% 0.005 262)",
+          "oklch(92% 0.005 262)",
+          "oklch(96% 0.005 262)",
+          "oklch(100% 0 0)"
+        ]
+      },
+      "ink-slate": {
+        "role": "neutral",
+        "displayName": "Ink Slate",
+        "canonical": "oklch(20.8% 0.042 262)",
+        "tonalRamp": [
+          "oklch(12% 0.042 262)",
+          "oklch(16% 0.042 262)",
+          "oklch(20.8% 0.042 262)",
+          "oklch(30% 0.042 262)",
+          "oklch(40% 0.042 262)",
+          "oklch(55% 0.035 262)",
+          "oklch(72% 0.02 262)",
+          "oklch(88% 0.01 262)",
+          "oklch(97% 0.005 262)"
+        ]
+      },
+      "signal-red": {
+        "role": "status",
+        "displayName": "Signal Red",
+        "canonical": "oklch(57.7% 0.245 27.3)",
+        "tonalRamp": [
+          "oklch(15% 0.06 27)",
+          "oklch(25% 0.12 27)",
+          "oklch(35% 0.18 27)",
+          "oklch(45% 0.22 27)",
+          "oklch(57.7% 0.245 27.3)",
+          "oklch(68% 0.22 27)",
+          "oklch(78% 0.16 27)",
+          "oklch(88% 0.08 27)",
+          "oklch(95% 0.03 27)"
+        ]
+      },
+      "status-green": {
+        "role": "status",
+        "displayName": "Status Green",
+        "canonical": "oklch(64.8% 0.2 145)",
+        "tonalRamp": [
+          "oklch(15% 0.05 145)",
+          "oklch(25% 0.1 145)",
+          "oklch(35% 0.15 145)",
+          "oklch(50% 0.18 145)",
+          "oklch(64.8% 0.2 145)",
+          "oklch(74% 0.18 145)",
+          "oklch(83% 0.13 145)",
+          "oklch(91% 0.07 145)",
+          "oklch(96% 0.03 145)"
+        ]
+      },
+      "status-yellow": {
+        "role": "status",
+        "displayName": "Status Yellow",
+        "canonical": "oklch(74.5% 0.19 85)",
+        "tonalRamp": [
+          "oklch(20% 0.05 85)",
+          "oklch(30% 0.08 85)",
+          "oklch(42% 0.12 85)",
+          "oklch(55% 0.16 85)",
+          "oklch(74.5% 0.19 85)",
+          "oklch(82% 0.16 85)",
+          "oklch(88% 0.1 85)",
+          "oklch(93% 0.05 85)",
+          "oklch(97% 0.02 85)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "title": { "displayName": "Title", "purpose": "Page headings. The visual anchor of each page." },
+      "card-title": { "displayName": "Card Title", "purpose": "Section headings inside cards and dialogs." },
+      "body": { "displayName": "Body", "purpose": "Helper text, descriptions, most on-screen text." },
+      "label": { "displayName": "Label", "purpose": "Form field labels, nav link text." },
+      "button": { "displayName": "Button", "purpose": "All button text." },
+      "badge": { "displayName": "Badge", "purpose": "Tags, categories, status pills." },
+      "metadata": { "displayName": "Metadata", "purpose": "Audit log metadata, monospace data." }
+    },
+    "shadows": [
+      { "name": "ambient", "value": "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)", "purpose": "Cards at rest, default buttons." },
+      { "name": "low", "value": "0 1px 2px 0 rgb(0 0 0 / 0.05)", "purpose": "Outline and secondary buttons, subtle inputs." },
+      { "name": "medium", "value": "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)", "purpose": "Dropdowns, card hover." },
+      { "name": "high", "value": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)", "purpose": "Dialog overlays." }
+    ],
+    "motion": [
+      { "name": "transition-colors", "value": "color 150ms, background-color 150ms, border-color 150ms", "purpose": "Buttons, nav links, interactive elements." },
+      { "name": "transition-shadow", "value": "box-shadow 150ms", "purpose": "Card hover lift." },
+      { "name": "dialog-enter", "value": "opacity 200ms ease-out, transform 200ms ease-out", "purpose": "Dialog and dropdown entrance." },
+      { "name": "skeleton-pulse", "value": "opacity 1.5s ease-in-out infinite", "purpose": "Loading skeleton animation." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main CTA using the configurable brand color.",
+      "html": "<button class=\"ds-btn-primary\">Sign In</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; border-radius: 0.375rem; font-size: 0.875rem; font-weight: 500; height: 36px; padding: 0.5rem 1rem; background: var(--brand-primary, #1E40AF); color: #f8fafc; border: none; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1); transition: background-color 150ms; cursor: pointer; } .ds-btn-primary:hover { background: oklch(from var(--brand-primary, #1E40AF) l c h / 0.9); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 0 0 1px #94a3b8; } .ds-btn-primary:disabled { pointer-events: none; opacity: 0.5; }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary action with border and transparent background.",
+      "html": "<button class=\"ds-btn-outline\">Cancel</button>",
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; border-radius: 0.375rem; font-size: 0.875rem; font-weight: 500; height: 36px; padding: 0.5rem 1rem; background: #ffffff; color: #0f172a; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); transition: background-color 150ms, color 150ms; cursor: pointer; } .ds-btn-outline:hover { background: #f1f5f9; color: #0f172a; } .ds-btn-outline:focus-visible { outline: none; box-shadow: 0 0 0 1px #94a3b8; } .ds-btn-outline:disabled { pointer-events: none; opacity: 0.5; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Minimal button for tertiary actions, no chrome at rest.",
+      "html": "<button class=\"ds-btn-ghost\">Edit</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; border-radius: 0.375rem; font-size: 0.875rem; font-weight: 500; height: 36px; padding: 0.5rem 1rem; background: transparent; color: #0f172a; border: none; transition: background-color 150ms, color 150ms; cursor: pointer; } .ds-btn-ghost:hover { background: #f1f5f9; color: #0f172a; } .ds-btn-ghost:focus-visible { outline: none; box-shadow: 0 0 0 1px #94a3b8; } .ds-btn-ghost:disabled { pointer-events: none; opacity: 0.5; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "The primary content container. Always carries ambient shadow.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-header\"><h3 class=\"ds-card-title\">Your Clubs</h3></div><div class=\"ds-card-content\"><p class=\"ds-card-body\">Club list goes here.</p></div></div>",
+      "css": ".ds-card { border-radius: 0.75rem; border: 1px solid #e2e8f0; background: #ffffff; color: #0f172a; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1); } .ds-card-header { display: flex; flex-direction: column; gap: 6px; padding: 1.5rem; } .ds-card-title { font-size: inherit; font-weight: 600; letter-spacing: -0.025em; line-height: 1; margin: 0; } .ds-card-content { padding: 0 1.5rem 1.5rem; } .ds-card-body { font-size: 0.875rem; color: #64748b; margin: 0; }"
+    },
+    {
+      "name": "Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Text input with transparent background and border stroke.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"you@university.edu\" />",
+      "css": ".ds-input { display: flex; height: 36px; width: 100%; border-radius: 0.375rem; border: 1px solid #e2e8f0; background: transparent; padding: 0.25rem 0.75rem; font-size: 0.875rem; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); transition: box-shadow 150ms; box-sizing: border-box; } .ds-input::placeholder { color: #64748b; } .ds-input:focus-visible { outline: none; box-shadow: 0 0 0 1px #94a3b8; } .ds-input:disabled { cursor: not-allowed; opacity: 0.5; }"
+    },
+    {
+      "name": "Badge",
+      "kind": "chip",
+      "refersTo": "badge-secondary",
+      "description": "Category and status tag. Secondary variant shown.",
+      "html": "<span class=\"ds-badge\">Technology</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; border-radius: 0.375rem; border: 1px solid transparent; padding: 0.125rem 0.625rem; font-size: 0.75rem; font-weight: 600; background: #f1f5f9; color: #0f172a; line-height: 1; }"
+    },
+    {
+      "name": "Navigation Bar",
+      "kind": "nav",
+      "description": "Sticky top navigation with logo, links, and user menu.",
+      "html": "<nav class=\"ds-nav\"><div class=\"ds-nav-brand\"><svg class=\"ds-nav-logo\" width=\"32\" height=\"32\" viewBox=\"0 0 32 32\" fill=\"none\"><rect width=\"32\" height=\"32\" rx=\"6\" fill=\"var(--brand-primary, #1E40AF)\"/><text x=\"16\" y=\"20\" text-anchor=\"middle\" fill=\"#f8fafc\" font-size=\"14\" font-weight=\"700\">C</text></svg><span class=\"ds-nav-name\">ClubMS</span></div><div class=\"ds-nav-links\"><a class=\"ds-nav-link ds-nav-link-active\">Dashboard</a><a class=\"ds-nav-link\">Clubs</a><a class=\"ds-nav-link\">Events</a></div></nav>",
+      "css": ".ds-nav { position: sticky; top: 0; z-index: 50; display: flex; height: 56px; align-items: center; justify-content: space-between; padding: 0 1rem; border-bottom: 1px solid #e2e8f0; background: #ffffff; } .ds-nav-brand { display: flex; align-items: center; gap: 0.5rem; font-weight: 700; color: var(--brand-primary, #1E40AF); } .ds-nav-logo { width: 32px; height: 32px; } .ds-nav-name { font-size: 1rem; } .ds-nav-links { display: flex; align-items: center; gap: 1rem; } .ds-nav-link { font-size: 0.875rem; color: #64748b; text-decoration: none; transition: color 150ms; cursor: pointer; } .ds-nav-link:hover { color: #0f172a; } .ds-nav-link-active { color: #0f172a; font-weight: 500; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Campus Bulletin",
+    "overview": "An open, inviting surface alive with activity. Imagine a well-maintained campus bulletin board: club flyers layered with personality, event cards pinned with purpose, clear headings that draw your eye to what matters. The information is dense but never cluttered, colorful but never chaotic. Every piece earns its pushpin.\n\nThis system serves three audiences at once. Students scanning for their next club between classes need fast visual hierarchy and scannable layouts. Officers managing rosters need efficient bulk actions and unmistakable status indicators. Platform admins checking in occasionally need clear admin navigation without cluttering anyone else's view. The design responds to each without compromising the others.\n\nThe visual language is Restrained in the product sense: tinted neutrals carry 90% of the surface, with the configurable brand color appearing only on primary actions, active states, and navigation identity. This restraint is strategic. Since the brand color swaps per university deployment, every element must look intentional whether the accent is navy blue, forest green, or crimson.",
+    "keyCharacteristics": [
+      "Configurable accent on a slate neutral base",
+      "Cards always carry a light ambient shadow, gaining strength on hover",
+      "System font stack throughout. Hierarchy through weight and size contrast, not display fonts",
+      "Status colors (green, yellow, red) are the only fixed palette beyond neutrals",
+      "Compact density: page gaps at 24px, card padding at 16-24px, form groups at 16px"
+    ],
+    "rules": [
+      { "name": "The Configurable Accent Rule", "body": "The brand color is the only hue that changes per deployment. All accent usage must trace back to var(--brand-primary).", "section": "colors" },
+      { "name": "The Always-Lifted Rule", "body": "Cards never sit flat on the page. Even at rest, the ambient shadow separates them from the background. Hover intensifies the lift; it never introduces it from zero.", "section": "elevation" },
+      { "name": "The Size Floor Rule", "body": "No text below 12px (0.75rem). Badge and metadata are the floor; everything else is 14px or above.", "section": "typography" }
+    ],
+    "dos": [
+      "Do use var(--brand-primary) for all accent-colored elements so white-label recoloring works with a single CSS variable change.",
+      "Do give cards ambient shadow at rest and medium shadow on hover.",
+      "Do use status colors (green, yellow, red) consistently for membership state, RSVP response, and validation feedback.",
+      "Do keep body text at 14px (0.875rem) and above.",
+      "Do use the 12px radius for cards and 6px for inputs and buttons.",
+      "Do use system font stack. No custom font loading.",
+      "Do test dark mode for every new component."
+    ],
+    "donts": [
+      "Don't use emojis, illustrations, or confetti animations.",
+      "Don't create hero-metric dashboards with big numbers and gradient accents.",
+      "Don't use glassmorphism, gradient text, or side-stripe borders.",
+      "Don't build identical card grids (same-sized icon + heading + text repeated).",
+      "Don't hardcode colors outside the token system.",
+      "Don't use display fonts in UI labels, buttons, or data.",
+      "Don't add animated page-load sequences.",
+      "Don't use spinners for content loading states."
+    ]
+  }
+}
