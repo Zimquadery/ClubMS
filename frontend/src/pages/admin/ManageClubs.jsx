@@ -70,7 +70,6 @@ export default function ManageClubs() {
       await fetchClubs()
     } catch (err) {
       setFormError(err.response?.data?.message || 'Failed to create club')
-      toast.error(err.response?.data?.message || 'Failed to create club')
     } finally {
       setSubmitting(false)
     }

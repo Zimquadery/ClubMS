@@ -129,7 +129,7 @@ export default function ClubDetail() {
             <Shield className="h-3 w-3 mr-1" />
             {userMembership.role === 'OFFICER' ? 'Officer' : 'Member'}
           </Badge>
-          {userMembership.role === 'OFFICER' ? (
+          {userMembership.role === 'OFFICER' || user?.role === 'PLATFORM_ADMIN' ? (
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => navigate(`/admin/clubs/${id}/requests`)}>
                 Pending Requests

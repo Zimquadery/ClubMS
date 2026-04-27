@@ -34,7 +34,6 @@ export default function ClubMembers() {
   const [tab, setTab] = useState('active')
   const [transferTarget, setTransferTarget] = useState(null)
   const [transferring, setTransferring] = useState(false)
-  const [actionLoading, setActionLoading] = useState({})
   const [removeTarget, setRemoveTarget] = useState(null)
   const [removing, setRemoving] = useState(false)
   const [alumniTarget, setAlumniTarget] = useState(null)
@@ -71,19 +70,6 @@ export default function ClubMembers() {
       setError(err.response?.data?.message || 'Failed to load members')
     } finally {
       setLoading(false)
-    }
-  }
-
-  async function handleSetAlumni(userId) {
-    setActionLoading((prev) => ({ ...prev, [userId]: true }))
-    try {
-      await client.patch(`/clubs/${clubId}/members/${userId}/alumni`)
-      await fetchMembers()
-      toast.success('Member set to alumni')
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to set alumni')
-    } finally {
-      setActionLoading((prev) => ({ ...prev, [userId]: false }))
     }
   }
 
@@ -204,7 +190,6 @@ export default function ClubMembers() {
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={actionLoading[membership.userId]}
                       onClick={() => setAlumniTarget(membership)}
                     >
                       <GraduationCap className="h-4 w-4 mr-1" /> Set Alumni
@@ -220,7 +205,6 @@ export default function ClubMembers() {
                       variant="outline"
                       size="sm"
                       className="text-destructive hover:text-destructive"
-                      disabled={actionLoading[membership.userId]}
                       onClick={() => setRemoveTarget(membership)}
                     >
                       <Trash2 className="h-4 w-4 mr-1" /> Remove

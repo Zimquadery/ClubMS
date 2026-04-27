@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, Outlet, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import {
@@ -29,31 +29,34 @@ export function Layout() {
     ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
     : '?'
 
+  const linkClass = ({ isActive }) =>
+    `flex items-center gap-1 transition-colors ${isActive ? 'text-foreground font-medium' : 'text-muted-foreground hover:text-foreground'}`
+
   const navLinks = user ? (
     <>
-      <Link to="/dashboard" className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors" onClick={() => setMobileMenuOpen(false)}>
+      <NavLink to="/dashboard" className={linkClass} onClick={() => setMobileMenuOpen(false)}>
         <LayoutDashboard className="h-4 w-4" />
         Dashboard
-      </Link>
-      <Link to="/clubs" className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors" onClick={() => setMobileMenuOpen(false)}>
+      </NavLink>
+      <NavLink to="/clubs" className={linkClass} onClick={() => setMobileMenuOpen(false)}>
         <Users className="h-4 w-4" />
         Clubs
-      </Link>
-      <Link to="/events" className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors" onClick={() => setMobileMenuOpen(false)}>
+      </NavLink>
+      <NavLink to="/events" className={linkClass} onClick={() => setMobileMenuOpen(false)}>
         <Calendar className="h-4 w-4" />
         Events
-      </Link>
+      </NavLink>
       {user.role === 'PLATFORM_ADMIN' && (
-        <Link to="/admin/clubs" className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors" onClick={() => setMobileMenuOpen(false)}>
+        <NavLink to="/admin/clubs" className={linkClass} onClick={() => setMobileMenuOpen(false)}>
           <Shield className="h-4 w-4" />
           Manage Clubs
-        </Link>
+        </NavLink>
       )}
       {user.role === 'CLUB_ADMIN' && (
-        <Link to="/dashboard" className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors" onClick={() => setMobileMenuOpen(false)}>
+        <NavLink to="/dashboard" className={linkClass} onClick={() => setMobileMenuOpen(false)}>
           <Shield className="h-4 w-4" />
           My Clubs
-        </Link>
+        </NavLink>
       )}
     </>
   ) : null
