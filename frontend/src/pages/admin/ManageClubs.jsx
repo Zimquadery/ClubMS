@@ -25,7 +25,73 @@ import { Plus, Trash2, Users, UserCheck, ClipboardList, Pencil } from 'lucide-re
 import { Link } from 'react-router-dom'
 import { CLUB_CATEGORIES } from '@/lib/constants'
 import { toast } from 'sonner'
-import { Skeleton } from '@/components/ui/skeleton'
+import { ListSkeleton } from '@/components/ui/skeleton'
+
+function ClubFormFields({ form, setForm, uploading, onUpload, error, idPrefix }) {
+  return (
+    <div className="space-y-4 py-4">
+      {error && (
+        <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
+      )}
+      <div className="space-y-2">
+        <Label htmlFor={`${idPrefix}name`}>Name *</Label>
+        <Input
+          id={`${idPrefix}name`}
+          value={form.name}
+          onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+          placeholder="e.g. Coding Club"
+          required
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={`${idPrefix}category`}>Category *</Label>
+        <Select value={form.category} onValueChange={(val) => setForm((f) => ({ ...f, category: val }))}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select a category" />
+          </SelectTrigger>
+          <SelectContent>
+            {CLUB_CATEGORIES.map((cat) => (
+              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={`${idPrefix}description`}>Description</Label>
+        <Input
+          id={`${idPrefix}description`}
+          value={form.description}
+          onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+          placeholder="A brief description of the club"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={`${idPrefix}logoUrl`}>Logo</Label>
+        <div className="flex gap-2">
+          <Input
+            id={`${idPrefix}logoUrl`}
+            value={form.logoUrl}
+            onChange={(e) => setForm((f) => ({ ...f, logoUrl: e.target.value }))}
+            placeholder="https://example.com/logo.png"
+            className="flex-1"
+          />
+          <label className="inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-3 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground cursor-pointer">
+            {uploading ? '...' : 'Upload'}
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files[0]
+                if (file) onUpload(file, (url) => setForm((f) => ({ ...f, logoUrl: url })))
+              }}
+            />
+          </label>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function ManageClubs() {
   const [clubs, setClubs] = useState([])
@@ -145,7 +211,7 @@ export default function ManageClubs() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Manage Clubs</h1>
-          <p className="text-muted-foreground">Create and delete clubs</p>
+          <p className="text-sm text-muted-foreground">Create and delete clubs</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
@@ -159,67 +225,7 @@ export default function ManageClubs() {
               <DialogDescription>Fill in the details for the new club.</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleCreate}>
-              <div className="space-y-4 py-4">
-                {formError && (
-                  <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{formError}</div>
-                )}
-                <div className="space-y-2">
-                  <Label htmlFor="name">Name *</Label>
-                  <Input
-                    id="name"
-                    value={form.name}
-                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                    placeholder="e.g. Coding Club"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="category">Category *</Label>
-                  <Select value={form.category} onValueChange={(val) => setForm((f) => ({ ...f, category: val }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CLUB_CATEGORIES.map((cat) => (
-                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Input
-                    id="description"
-                    value={form.description}
-                    onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                    placeholder="A brief description of the club"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="logoUrl">Logo</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="logoUrl"
-                      value={form.logoUrl}
-                      onChange={(e) => setForm((f) => ({ ...f, logoUrl: e.target.value }))}
-                      placeholder="https://example.com/logo.png"
-                      className="flex-1"
-                    />
-                    <label className="inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-3 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground cursor-pointer">
-                      {uploading ? '...' : 'Upload'}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files[0]
-                          if (file) handleFileUpload(file, (url) => setForm((f) => ({ ...f, logoUrl: url })))
-                        }}
-                      />
-                    </label>
-                  </div>
-                </div>
-              </div>
+              <ClubFormFields form={form} setForm={setForm} uploading={uploading} onUpload={handleFileUpload} error={formError} idPrefix="create-" />
               <DialogFooter>
                 <Button type="submit" className="bg-brand-primary hover:bg-brand-primary/90 text-white" disabled={submitting}>
                   {submitting ? 'Creating...' : 'Create Club'}
@@ -235,17 +241,7 @@ export default function ManageClubs() {
       )}
 
       {loading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="rounded-xl border p-4 flex items-center justify-between">
-              <div className="space-y-2 flex-1">
-                <Skeleton className="h-5 w-1/4" />
-                <Skeleton className="h-3 w-1/6" />
-              </div>
-              <Skeleton className="h-9 w-24" />
-            </div>
-          ))}
-        </div>
+        <ListSkeleton rows={4} />
       ) : clubs.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
@@ -259,7 +255,7 @@ export default function ManageClubs() {
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-semibold truncate">{club.name}</h3>
+                    <h3 className="text-sm font-medium truncate">{club.name}</h3>
                     <Badge variant="secondary" className="text-xs">{club.category}</Badge>
                   </div>
                   <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
@@ -320,65 +316,7 @@ export default function ManageClubs() {
             <DialogDescription>Update the details for &quot;{editTarget?.name}&quot;.</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleEdit}>
-            <div className="space-y-4 py-4">
-              {editError && (
-                <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{editError}</div>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="edit-name">Name *</Label>
-                <Input
-                  id="edit-name"
-                  value={editForm.name}
-                  onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-category">Category *</Label>
-                <Select value={editForm.category} onValueChange={(val) => setEditForm((f) => ({ ...f, category: val }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CLUB_CATEGORIES.map((cat) => (
-                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-description">Description</Label>
-                <Input
-                  id="edit-description"
-                  value={editForm.description}
-                  onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-logoUrl">Logo</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="edit-logoUrl"
-                    value={editForm.logoUrl}
-                    onChange={(e) => setEditForm((f) => ({ ...f, logoUrl: e.target.value }))}
-                    placeholder="https://example.com/logo.png"
-                    className="flex-1"
-                  />
-                  <label className="inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-3 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground cursor-pointer">
-                    {uploading ? '...' : 'Upload'}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files[0]
-                        if (file) handleFileUpload(file, (url) => setEditForm((f) => ({ ...f, logoUrl: url })))
-                      }}
-                    />
-                  </label>
-                </div>
-              </div>
-            </div>
+            <ClubFormFields form={editForm} setForm={setEditForm} uploading={uploading} onUpload={handleFileUpload} error={editError} idPrefix="edit-" />
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setEditTarget(null)} disabled={editing}>Cancel</Button>
               <Button type="submit" className="bg-brand-primary hover:bg-brand-primary/90 text-white" disabled={editing}>

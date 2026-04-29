@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import client from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -10,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Shield, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { formatDateTime } from '@/lib/format'
 import { toast } from 'sonner'
 import { Pagination } from '@/components/Pagination'
@@ -58,11 +59,8 @@ export default function AuditLog() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Shield className="h-6 w-6 text-brand-primary" />
-          Audit Log
-        </h1>
-        <p className="text-muted-foreground">Track admin actions across the platform</p>
+        <h1 className="text-2xl font-bold">Audit Logs</h1>
+        <p className="text-sm text-muted-foreground">Track admin actions across the platform</p>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
@@ -90,16 +88,16 @@ export default function AuditLog() {
       ) : (
         <>
           <div className="text-sm text-muted-foreground">{total} log{total !== 1 ? 's' : ''} found</div>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {logs.map((log) => (
               <Card key={log.id}>
-                <CardContent className="p-3">
+                <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="inline-flex items-center rounded-md bg-brand-primary/10 px-2 py-0.5 text-xs font-medium text-brand-primary">
+                        <Badge variant="secondary" className="bg-brand-primary/10 text-brand-primary border-transparent">
                           {log.action.replace(/_/g, ' ')}
-                        </span>
+                        </Badge>
                         {log.targetType && (
                           <span className="text-xs text-muted-foreground">
                             {log.targetType}{log.targetId ? `: ${log.targetId.slice(0, 8)}...` : ''}

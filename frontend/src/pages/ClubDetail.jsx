@@ -7,8 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
-import { Users, Calendar, MapPin, ArrowLeft, ImageIcon, Clock, UserPlus, Shield, GraduationCap, Trash2 } from 'lucide-react'
+import { Users, Calendar, MapPin, ImageIcon, Clock, UserPlus, Shield, GraduationCap, Trash2 } from 'lucide-react'
+import BackLink from '@/components/BackLink'
+import { ImageUploadButton } from '@/components/ImageUploadButton'
 import { formatDate, formatTime } from '@/lib/format'
 import { toast } from 'sonner'
 import { DetailSkeleton } from '@/components/ui/skeleton'
@@ -81,9 +84,7 @@ export default function ClubDetail() {
   if (error) {
     return (
       <div className="space-y-4">
-        <Link to="/clubs" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" /> Back to Directory
-        </Link>
+        <BackLink to="/clubs" label="Back to Directory" />
         <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">{error}</div>
       </div>
     )
@@ -94,6 +95,17 @@ export default function ClubDetail() {
   const memberCount = club.memberships?.length ?? 0
   const userMembership = club.userMembership
   const canManageEvents = (userMembership?.role === 'OFFICER' && userMembership?.status === 'ACTIVE') || user?.role === 'PLATFORM_ADMIN'
+
+  const adminButtons = (
+    <div className="flex gap-2">
+      <Button variant="outline" size="sm" onClick={() => navigate(`/admin/clubs/${id}/requests`)}>
+        Pending Requests
+      </Button>
+      <Button variant="outline" size="sm" onClick={() => navigate(`/admin/clubs/${id}/members`)}>
+        Manage Members
+      </Button>
+    </div>
+  )
 
   async function handleCreateEvent(e) {
     e.preventDefault()
@@ -138,19 +150,12 @@ export default function ClubDetail() {
     if (userMembership?.status === 'ACTIVE') {
       return (
         <div className="flex items-center gap-2">
-          <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+          <Badge className="bg-status-green/15 text-status-green">
             <Shield className="h-3 w-3 mr-1" />
             {userMembership.role === 'OFFICER' ? 'Officer' : 'Member'}
           </Badge>
           {userMembership.role === 'OFFICER' || user?.role === 'PLATFORM_ADMIN' ? (
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => navigate(`/admin/clubs/${id}/requests`)}>
-                Pending Requests
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => navigate(`/admin/clubs/${id}/members`)}>
-                Manage Members
-              </Button>
-            </div>
+            adminButtons
           ) : user?.role === 'STUDENT' ? (
             <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" disabled={leaveLoading} onClick={handleLeave}>
               {leaveLoading ? 'Leaving...' : 'Leave Club'}
@@ -162,7 +167,7 @@ export default function ClubDetail() {
 
     if (userMembership?.status === 'PENDING') {
       return (
-        <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+        <Badge variant="secondary" className="bg-status-yellow/15 text-status-yellow">
           Request Pending
         </Badge>
       )
@@ -170,7 +175,7 @@ export default function ClubDetail() {
 
     if (userMembership?.status === 'ALUMNI') {
       return (
-        <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+        <Badge variant="secondary" className="bg-brand-primary/10 text-brand-primary">
           <GraduationCap className="h-3 w-3 mr-1" /> Alumni
         </Badge>
       )
@@ -206,16 +211,7 @@ export default function ClubDetail() {
     }
 
     if (user?.role === 'PLATFORM_ADMIN') {
-      return (
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => navigate(`/admin/clubs/${id}/requests`)}>
-            Pending Requests
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => navigate(`/admin/clubs/${id}/members`)}>
-            Manage Members
-          </Button>
-        </div>
-      )
+      return adminButtons
     }
 
     return null
@@ -223,9 +219,7 @@ export default function ClubDetail() {
 
   return (
     <div className="space-y-6">
-      <Link to="/clubs" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" /> Back to Directory
-      </Link>
+      <BackLink to="/clubs" label="Back to Directory" />
 
       <div className="flex flex-col sm:flex-row gap-4 items-start">
         <div className="flex-shrink-0 h-16 w-16 rounded-xl bg-muted flex items-center justify-center overflow-hidden">
@@ -241,7 +235,7 @@ export default function ClubDetail() {
             <Badge variant="secondary">{club.category}</Badge>
           </div>
           {club.description && (
-            <p className="text-muted-foreground mt-1">{club.description}</p>
+            <p className="text-sm text-muted-foreground mt-1">{club.description}</p>
           )}
           <div className="flex items-center justify-between mt-2">
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -253,7 +247,7 @@ export default function ClubDetail() {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -279,7 +273,7 @@ export default function ClubDetail() {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="event-description">Description</Label>
-                        <textarea id="event-description" className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" value={newEvent.description} onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })} />
+                        <Textarea id="event-description" value={newEvent.description} onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })} />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="event-start">Start Time</Label>
@@ -297,26 +291,7 @@ export default function ClubDetail() {
                         <Label htmlFor="event-banner">Banner</Label>
                         <div className="flex gap-2">
                           <Input id="event-banner" value={newEvent.bannerUrl} onChange={(e) => setNewEvent({ ...newEvent, bannerUrl: e.target.value })} className="flex-1" />
-                          <label className="inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-3 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground cursor-pointer">
-                            Upload
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={async (e) => {
-                                const file = e.target.files[0]
-                                if (!file) return
-                                try {
-                                  const formData = new FormData()
-                                  formData.append('file', file)
-                                  const res = await client.post('/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
-                                  setNewEvent({ ...newEvent, bannerUrl: res.data.url })
-                                } catch (err) {
-                                  toast.error('Failed to upload image')
-                                }
-                              }}
-                            />
-                          </label>
+                          <ImageUploadButton onUploadComplete={(url) => setNewEvent({ ...newEvent, bannerUrl: url })} />
                         </div>
                       </div>
                       <DialogFooter>
@@ -333,9 +308,9 @@ export default function ClubDetail() {
             {!club.events || club.events.length === 0 ? (
               <p className="text-sm text-muted-foreground">No upcoming events scheduled.</p>
             ) : (
-              <div className="space-y-3">
+              <div className="divide-y">
                 {club.events.map((event) => (
-                  <div key={event.id} className="rounded-lg border p-3 space-y-1">
+                  <div key={event.id} className="space-y-1 py-2 first:pt-0 last:pb-0">
                     <div className="flex items-start justify-between gap-2">
                       <Link to={`/events/${event.id}`} className="font-medium text-sm hover:underline">{event.title}</Link>
                       {canManageEvents && (
@@ -381,10 +356,10 @@ export default function ClubDetail() {
             {!club.memberships || club.memberships.length === 0 ? (
               <p className="text-sm text-muted-foreground">No active members yet.</p>
             ) : (
-              <div className="space-y-2">
+              <div className="divide-y">
                 {club.memberships.map((membership) => (
-                  <div key={membership.id} className="flex items-center justify-between text-sm">
-                    <span>{membership.user.name}</span>
+                  <div key={membership.id} className="flex items-center justify-between text-sm py-2 first:pt-0 last:pb-0">
+                    <span className="font-medium">{membership.user.name}</span>
                     {membership.role === 'OFFICER' && (
                       <Badge variant="outline" className="text-xs">Officer</Badge>
                     )}

@@ -1,16 +1,8 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
 import client from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import {
   Dialog,
   DialogContent,
@@ -19,15 +11,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Users, ArrowLeft, ArrowRightLeft, GraduationCap, Trash2, Download, ChevronUp, ChevronDown } from 'lucide-react'
+import { Users, ArrowRightLeft, GraduationCap, Trash2, Download, ChevronUp, ChevronDown } from 'lucide-react'
+import BackLink from '@/components/BackLink'
 import { formatShortDate } from '@/lib/format'
 import { toast } from 'sonner'
+import { downloadBlob } from '@/lib/download'
 import { ListSkeleton } from '@/components/ui/skeleton'
+import { useAdminClubSelector } from '@/hooks/useAdminClubSelector'
+import { AdminClubHeader } from '@/components/admin/AdminClubHeader'
 
 export default function ClubMembers() {
-  const { id: clubId } = useParams()
-  const navigate = useNavigate()
-  const [adminClubs, setAdminClubs] = useState([])
+  const { clubId, adminClubs, currentClub, adminError, navigateToClub } = useAdminClubSelector((val) => `/admin/clubs/${val}/members`)
   const [activeMembers, setActiveMembers] = useState([])
   const [alumniMembers, setAlumniMembers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -41,21 +35,8 @@ export default function ClubMembers() {
   const [settingAlumni, setSettingAlumni] = useState(false)
 
   useEffect(() => {
-    fetchAdminClubs()
-  }, [])
-
-  useEffect(() => {
     if (clubId) fetchMembers()
   }, [clubId])
-
-  async function fetchAdminClubs() {
-    try {
-      const res = await client.get('/memberships/my-admin-clubs')
-      setAdminClubs(res.data)
-    } catch {
-      setError('Failed to load admin clubs')
-    }
-  }
 
   async function fetchMembers() {
     setLoading(true)
@@ -107,70 +88,38 @@ export default function ClubMembers() {
   async function handleExport() {
     try {
       const res = await client.get(`/clubs/${clubId}/members/export`, { responseType: 'blob' })
-      const url = window.URL.createObjectURL(new Blob([res.data]))
-      const link = document.createElement('a')
-      link.href = url
-      link.setAttribute('download', `members-${clubId}.csv`)
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
-      window.URL.revokeObjectURL(url)
+      downloadBlob(res.data, `members-${clubId}.csv`)
       toast.success('Members exported')
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to export members')
     }
   }
 
-  async function handlePromote(membership) {
+  async function handleRoleAction(membership, action, successMsg, errorMsg) {
     try {
-      await client.patch(`/clubs/${clubId}/members/${membership.userId}/promote`)
-      toast.success(`${membership.user.name} promoted to officer`)
+      await client.patch(`/clubs/${clubId}/members/${membership.userId}/${action}`)
+      toast.success(successMsg)
       await fetchMembers()
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to promote member')
+      toast.error(err.response?.data?.message || errorMsg)
     }
+  }
+
+  async function handlePromote(membership) {
+    await handleRoleAction(membership, 'promote', `${membership.user.name} promoted to officer`, 'Failed to promote member')
   }
 
   async function handleDemote(membership) {
-    try {
-      await client.patch(`/clubs/${clubId}/members/${membership.userId}/demote`)
-      toast.success(`${membership.user.name} demoted to member`)
-      await fetchMembers()
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to demote member')
-    }
+    await handleRoleAction(membership, 'demote', `${membership.user.name} demoted to member`, 'Failed to demote member')
   }
 
-  const currentClub = adminClubs.find((c) => c.id === clubId)
   const displayMembers = tab === 'active' ? activeMembers : alumniMembers
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold">Club Members</h1>
-          <p className="text-muted-foreground">Manage members and alumni</p>
-        </div>
-        {adminClubs.length > 1 && (
-          <Select value={clubId} onValueChange={(val) => navigate(`/admin/clubs/${val}/members`)}>
-            <SelectTrigger className="w-64">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {adminClubs.map((club) => (
-                <SelectItem key={club.id} value={club.id}>{club.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-      </div>
+      <BackLink to="/admin/clubs" label="Back to Clubs" />
 
-      {currentClub && (
-        <Badge variant="secondary">{currentClub.name}</Badge>
-      )}
+      <AdminClubHeader title="Club Members" subtitle="Manage members and alumni" adminClubs={adminClubs} currentClub={currentClub} clubId={clubId} onClubChange={navigateToClub} />
 
       <div className="flex gap-2">
         <Button
@@ -197,8 +146,8 @@ export default function ClubMembers() {
         </Button>
       </div>
 
-      {error && (
-        <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">{error}</div>
+      {(adminError || error) && (
+        <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">{adminError || error}</div>
       )}
 
       {loading ? (
@@ -217,7 +166,7 @@ export default function ClubMembers() {
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="font-medium">{membership.user.name}</p>
+                    <p className="text-sm font-medium">{membership.user.name}</p>
                     {membership.role === 'OFFICER' && (
                       <Badge variant="outline" className="text-xs">Officer</Badge>
                     )}

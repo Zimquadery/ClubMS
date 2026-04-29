@@ -7,19 +7,39 @@ import { Users, Calendar, Shield } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { formatDateTime } from '@/lib/format'
 import { toast } from 'sonner'
-import { Skeleton, ListSkeleton, CardSkeleton } from '@/components/ui/skeleton'
+import { Skeleton, ListSkeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils'
 
-function StatCard({ label, value, icon }) {
+function formatStat(n) {
+  return typeof n === 'number' ? n.toLocaleString() : n
+}
+
+function getGreeting() {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Good morning'
+  if (hour < 17) return 'Good afternoon'
+  return 'Good evening'
+}
+
+function StatItem({ value, label, divided, attention }) {
+  const hasValue = Number(value) > 0
   return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">{label}</p>
-          {icon && <span className="text-muted-foreground">{icon}</span>}
-        </div>
-        <p className="text-2xl font-bold">{value}</p>
-      </CardContent>
-    </Card>
+    <span className="whitespace-nowrap text-sm text-muted-foreground">
+      {divided && (
+        <span className="mx-1.5 text-muted-foreground/40 select-none" aria-hidden="true">·</span>
+      )}
+      <strong className={cn(
+        "font-semibold",
+        hasValue ? "text-foreground" : "text-muted-foreground"
+      )}>{formatStat(value)}</strong>{' '}
+      {label}
+      {attention && hasValue && (
+        <span
+          className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-status-yellow animate-pulse motion-reduce:animate-none"
+          aria-label={`${value} pending`}
+        />
+      )}
+    </span>
   )
 }
 
@@ -65,125 +85,48 @@ export default function Dashboard() {
   }, [isClubAdmin])
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Welcome, {user?.name}</h1>
-        <p className="text-muted-foreground">
-          {user?.role.replace('_', ' ').toLowerCase()} dashboard
-        </p>
-      </div>
-
-      {statsLoading ? (
-        <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i}>
-              <CardContent className="p-4">
-                <Skeleton className="h-4 w-20 mb-2" />
-                <Skeleton className="h-8 w-16" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : stats && (
-        <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
-          {user?.role === 'PLATFORM_ADMIN' && (
-            <>
-              <StatCard label="Total Clubs" value={stats.totalClubs} icon={<Users className="h-5 w-5" />} />
-              <StatCard label="Total Users" value={stats.totalUsers} icon={<Users className="h-5 w-5" />} />
-              <StatCard label="Upcoming Events" value={stats.upcomingEvents} icon={<Calendar className="h-5 w-5" />} />
-              <StatCard label="Pending Requests" value={stats.pendingMemberships} icon={<Shield className="h-5 w-5" />} />
-            </>
-          )}
-          {user?.role === 'CLUB_ADMIN' && (
-            <>
-              <StatCard label="My Clubs" value={stats.myClubs} />
-              <StatCard label="Total Members" value={stats.totalMembers} />
-              <StatCard label="Upcoming Events" value={stats.upcomingEvents} />
-              <StatCard label="Pending Requests" value={stats.pendingRequests} />
-            </>
-          )}
-          {user?.role === 'STUDENT' && (
-            <>
-              <StatCard label="My Clubs" value={stats.myClubs} />
-              <StatCard label="Upcoming Events" value={stats.upcomingEvents} />
-            </>
-          )}
-        </div>
-      )}
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Users className="h-5 w-5 text-brand-primary" />
-              Your Clubs
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {clubsLoading ? (
-              <ListSkeleton rows={3} />
-            ) : myClubs.length > 0 ? (
-              <div className="space-y-2">
-                {myClubs.map((club) => (
-                  <div key={club.id} className="flex items-center justify-between rounded-md border bg-background p-2">
-                    <div className="flex items-center gap-2">
-                      <Link to={`/clubs/${club.id}`} className="text-sm font-medium hover:underline">
-                        {club.name}
-                      </Link>
-                      <Badge variant="secondary" className="text-xs">{club.category}</Badge>
-                      {club.membershipStatus === 'PENDING' && (
-                        <Badge variant="outline" className="text-xs text-yellow-600 border-yellow-400">Pending</Badge>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                You haven&apos;t joined any clubs yet.{' '}
-                <Link to="/clubs" className="text-brand-primary hover:underline">Browse clubs →</Link>
-              </p>
+    <div>
+      <h1 className="text-2xl font-bold">
+        <span className="font-normal text-muted-foreground">{getGreeting()},</span>{' '}
+        <span className="font-display italic text-brand-primary">{user?.name}</span>
+      </h1>
+      <div className="mt-2 ml-2">
+        {statsLoading ? (
+          <div className="flex items-center gap-2" aria-hidden="true">
+            {Array.from({ length: user?.role === 'STUDENT' ? 2 : 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-4 w-16" />
+            ))}
+          </div>
+        ) : stats && (
+          <div className="flex items-center flex-wrap animate-fade-in" aria-busy={false}>
+            {user?.role === 'PLATFORM_ADMIN' && (
+              <>
+                <StatItem value={stats.totalClubs} label="clubs" />
+                <StatItem value={stats.totalUsers} label="users" divided />
+                <StatItem value={stats.upcomingEvents} label="events" divided />
+                <StatItem value={stats.pendingMemberships} label="pending" divided attention />
+              </>
             )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Calendar className="h-5 w-5 text-brand-primary" />
-              Upcoming Events
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {eventsLoading ? (
-              <ListSkeleton rows={3} />
-            ) : upcomingEvents.length > 0 ? (
-              <div className="space-y-2">
-                {upcomingEvents.map((event) => (
-                  <div key={event.id} className="rounded-md border bg-background p-2">
-                    <div className="flex items-center gap-2">
-                      <Link to={`/events/${event.id}`} className="text-sm font-medium hover:underline">
-                        {event.title}
-                      </Link>
-                      <Badge variant="secondary" className="text-xs">{event.club?.name}</Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {formatDateTime(event.startTime)}{event.location && ` · ${event.location}`}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                No upcoming events. Join a club to see events here.
-              </p>
+            {user?.role === 'CLUB_ADMIN' && (
+              <>
+                <StatItem value={stats.myClubs} label="clubs" />
+                <StatItem value={stats.totalMembers} label="members" divided />
+                <StatItem value={stats.upcomingEvents} label="events" divided />
+                <StatItem value={stats.pendingRequests} label="pending" divided attention />
+              </>
             )}
-          </CardContent>
-        </Card>
+            {user?.role === 'STUDENT' && (
+              <>
+                <StatItem value={stats.myClubs} label="clubs" />
+                <StatItem value={stats.upcomingEvents} label="events" divided />
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {(isAdmin || isClubAdmin) && (
-        <Card className="border-brand-primary/20 bg-brand-primary/5">
+        <Card className="border-brand-primary/20 bg-brand-primary/5 mt-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Shield className="h-5 w-5 text-brand-primary" />
@@ -210,9 +153,9 @@ export default function Dashboard() {
                 ) : adminClubs.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No clubs assigned yet.</p>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="divide-y">
                     {adminClubs.map((club) => (
-                      <div key={club.id} className="flex items-center justify-between rounded-md border bg-background p-2">
+                      <div key={club.id} className="flex items-center justify-between py-2 first:pt-0 last:pb-0">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium">{club.name}</span>
                           <Badge variant="secondary" className="text-xs">{club.category}</Badge>
@@ -240,6 +183,77 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       )}
+
+      <div className="grid gap-4 md:grid-cols-2 mt-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Calendar className="h-5 w-5 text-brand-primary" />
+              Upcoming Events
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {eventsLoading ? (
+              <ListSkeleton rows={3} />
+            ) : upcomingEvents.length > 0 ? (
+              <div className="space-y-3">
+                {upcomingEvents.map((event) => (
+                  <div key={event.id}>
+                    <div className="flex items-center gap-2">
+                      <Link to={`/events/${event.id}`} className="text-sm font-medium hover:underline">
+                        {event.title}
+                      </Link>
+                      <Badge variant="secondary" className="text-xs">{event.club?.name}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {formatDateTime(event.startTime)}{event.location && ` · ${event.location}`}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No upcoming events. Join a club to see events here.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Users className="h-5 w-5 text-brand-primary" />
+              Your Clubs
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {clubsLoading ? (
+              <ListSkeleton rows={3} />
+            ) : myClubs.length > 0 ? (
+              <div className="divide-y">
+                {myClubs.map((club) => (
+                  <div key={club.id} className="flex items-center justify-between py-2 first:pt-0 last:pb-0">
+                    <div className="flex items-center gap-2">
+                      <Link to={`/clubs/${club.id}`} className="text-sm font-medium hover:underline">
+                        {club.name}
+                      </Link>
+                      <Badge variant="secondary" className="text-xs">{club.category}</Badge>
+                      {club.membershipStatus === 'PENDING' && (
+                        <Badge variant="outline" className="text-xs text-status-yellow border-status-yellow">Pending</Badge>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                You haven&apos;t joined any clubs yet.{' '}
+                <Link to="/clubs" className="font-bold text-brand-primary hover:underline">Browse clubs →</Link>
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

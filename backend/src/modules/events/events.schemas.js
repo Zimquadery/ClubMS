@@ -1,4 +1,5 @@
 const { z } = require('zod');
+const { PAGINATION, OPTIONAL_URL } = require('../../middleware/validate');
 
 const create = z.object({
   title: z.string().min(1, 'Title is required').max(200),
@@ -6,7 +7,7 @@ const create = z.object({
   startTime: z.string().min(1, 'Start time is required'),
   endTime: z.string().min(1, 'End time is required'),
   location: z.string().max(200).optional(),
-  bannerUrl: z.string().url().max(500).optional().or(z.literal('')),
+  bannerUrl: OPTIONAL_URL,
 });
 
 const update = z.object({
@@ -15,15 +16,14 @@ const update = z.object({
   startTime: z.string().optional(),
   endTime: z.string().optional(),
   location: z.string().max(200).optional().or(z.literal('')),
-  bannerUrl: z.string().url().max(500).optional().or(z.literal('')),
+  bannerUrl: OPTIONAL_URL,
 });
 
 const listQuery = z.object({
   clubId: z.string().uuid().optional(),
   joined: z.enum(['true', 'false']).optional(),
   timeRange: z.enum(['upcoming', 'past', 'all']).default('upcoming'),
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+  ...PAGINATION,
 });
 
 module.exports = { create, update, listQuery };

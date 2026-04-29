@@ -1,6 +1,36 @@
 const { prisma } = require('../../lib/prisma');
 const { AppError } = require('../../utils/errors');
 
+function validateDateRange(start, end) {
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    throw new AppError('Invalid date format for start or end time', 400);
+  }
+
+  if (end < start) {
+    throw new AppError('End time must be after start time', 422);
+  }
+}
+
+async function getEventWithOwnership(eventId, userId, skipOwnershipCheck) {
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    include: { club: true },
+  });
+
+  if (!event) throw new AppError('Event not found', 404);
+
+  if (!skipOwnershipCheck) {
+    const membership = await prisma.clubMembership.findUnique({
+      where: { userId_clubId: { userId, clubId: event.clubId } },
+    });
+    if (!membership || membership.role !== 'OFFICER' || membership.status !== 'ACTIVE') {
+      throw new AppError('Not an admin of this club', 403);
+    }
+  }
+
+  return event;
+}
+
 async function list({ clubId, joined, timeRange = 'upcoming', userId, page = 1, limit = 20 }) {
   const now = new Date();
   const where = {};
@@ -65,13 +95,7 @@ async function create(clubId, { title, description, startTime, endTime, location
   const start = new Date(startTime);
   const end = new Date(endTime);
 
-  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-    throw new AppError('Invalid date format for start or end time', 400);
-  }
-
-  if (end < start) {
-    throw new AppError('End time must be after start time', 422);
-  }
+  validateDateRange(start, end);
 
   return prisma.event.create({
     data: {
@@ -88,21 +112,7 @@ async function create(clubId, { title, description, startTime, endTime, location
 }
 
 async function update(eventId, userId, { title, description, startTime, endTime, location, bannerUrl }, skipOwnershipCheck = false) {
-  const event = await prisma.event.findUnique({
-    where: { id: eventId },
-    include: { club: true },
-  });
-
-  if (!event) throw new AppError('Event not found', 404);
-
-  if (!skipOwnershipCheck) {
-    const membership = await prisma.clubMembership.findUnique({
-      where: { userId_clubId: { userId, clubId: event.clubId } },
-    });
-    if (!membership || membership.role !== 'OFFICER' || membership.status !== 'ACTIVE') {
-      throw new AppError('Not an admin of this club', 403);
-    }
-  }
+  const event = await getEventWithOwnership(eventId, userId, skipOwnershipCheck);
 
   const data = {};
   if (title !== undefined) data.title = title;
@@ -114,13 +124,7 @@ async function update(eventId, userId, { title, description, startTime, endTime,
     const start = new Date(startTime ?? event.startTime);
     const end = new Date(endTime ?? event.endTime);
 
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      throw new AppError('Invalid date format for start or end time', 400);
-    }
-
-    if (end < start) {
-      throw new AppError('End time must be after start time', 422);
-    }
+    validateDateRange(start, end);
 
     if (startTime !== undefined) data.startTime = start;
     if (endTime !== undefined) data.endTime = end;
@@ -136,21 +140,7 @@ async function update(eventId, userId, { title, description, startTime, endTime,
 }
 
 async function remove(eventId, userId, skipOwnershipCheck = false) {
-  const event = await prisma.event.findUnique({
-    where: { id: eventId },
-    include: { club: true },
-  });
-
-  if (!event) throw new AppError('Event not found', 404);
-
-  if (!skipOwnershipCheck) {
-    const membership = await prisma.clubMembership.findUnique({
-      where: { userId_clubId: { userId, clubId: event.clubId } },
-    });
-    if (!membership || membership.role !== 'OFFICER' || membership.status !== 'ACTIVE') {
-      throw new AppError('Not an admin of this club', 403);
-    }
-  }
+  await getEventWithOwnership(eventId, userId, skipOwnershipCheck);
 
   await prisma.event.delete({ where: { id: eventId } });
   return { success: true };

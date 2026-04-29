@@ -1,17 +1,9 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
 import client from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Check, X, Users, ArrowLeft, Download, CheckSquare, XSquare } from 'lucide-react'
+import { Check, X, Users, CheckSquare, XSquare } from 'lucide-react'
+import BackLink from '@/components/BackLink'
 import { formatShortDate } from '@/lib/format'
 import { toast } from 'sonner'
 import {
@@ -23,11 +15,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { ListSkeleton } from '@/components/ui/skeleton'
+import { useAdminClubSelector } from '@/hooks/useAdminClubSelector'
+import { AdminClubHeader } from '@/components/admin/AdminClubHeader'
 
 export default function PendingRequests() {
-  const { id: clubId } = useParams()
-  const navigate = useNavigate()
-  const [adminClubs, setAdminClubs] = useState([])
+  const { clubId, adminClubs, currentClub, adminError, navigateToClub } = useAdminClubSelector((val) => `/admin/clubs/${val}/requests`)
   const [requests, setRequests] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -38,21 +30,8 @@ export default function PendingRequests() {
   const [bulkLoading, setBulkLoading] = useState(false)
 
   useEffect(() => {
-    fetchAdminClubs()
-  }, [])
-
-  useEffect(() => {
     if (clubId) fetchRequests()
   }, [clubId])
-
-  async function fetchAdminClubs() {
-    try {
-      const res = await client.get('/memberships/my-admin-clubs')
-      setAdminClubs(res.data)
-    } catch {
-      setError('Failed to load admin clubs')
-    }
-  }
 
   async function fetchRequests() {
     setLoading(true)
@@ -80,8 +59,6 @@ export default function PendingRequests() {
     }
   }
 
-  const currentClub = adminClubs.find((c) => c.id === clubId)
-
   function toggleSelect(userId) {
     setSelected((prev) => {
       const next = new Set(prev)
@@ -99,64 +76,35 @@ export default function PendingRequests() {
     }
   }
 
-  async function handleBulkApprove() {
+  async function handleBulkAction(action, successVerb, errorContext) {
     if (selected.size === 0) return
     setBulkLoading(true)
     try {
-      await client.post(`/clubs/${clubId}/members/bulk-approve`, { userIds: Array.from(selected) })
-      toast.success(`${selected.size} request(s) approved`)
+      await client.post(`/clubs/${clubId}/members/bulk-${action}`, { userIds: Array.from(selected) })
+      toast.success(`${selected.size} request(s) ${successVerb}`)
       setSelected(new Set())
       await fetchRequests()
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to bulk approve')
+      toast.error(err.response?.data?.message || `Failed to ${errorContext}`)
     } finally {
       setBulkLoading(false)
     }
   }
 
-  async function handleBulkReject() {
-    if (selected.size === 0) return
-    setBulkLoading(true)
-    try {
-      await client.post(`/clubs/${clubId}/members/bulk-reject`, { userIds: Array.from(selected) })
-      toast.success(`${selected.size} request(s) rejected`)
-      setSelected(new Set())
-      await fetchRequests()
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to bulk reject')
-    } finally {
-      setBulkLoading(false)
-    }
+  function handleBulkApprove() {
+    handleBulkAction('approve', 'approved', 'bulk approve')
+  }
+
+  function handleBulkReject() {
+    handleBulkAction('reject', 'rejected', 'bulk reject')
   }
 
   return (
     <>
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold">Pending Requests</h1>
-          <p className="text-muted-foreground">Review membership requests</p>
-        </div>
-        {adminClubs.length > 1 && (
-          <Select value={clubId} onValueChange={(val) => navigate(`/admin/clubs/${val}/requests`)}>
-            <SelectTrigger className="w-64">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {adminClubs.map((club) => (
-                <SelectItem key={club.id} value={club.id}>{club.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-      </div>
+      <BackLink to="/admin/clubs" label="Back to Clubs" />
 
-      {currentClub && (
-        <Badge variant="secondary">{currentClub.name}</Badge>
-      )}
+      <AdminClubHeader title="Pending Requests" subtitle="Review membership requests" adminClubs={adminClubs} currentClub={currentClub} clubId={clubId} onClubChange={navigateToClub} />
 
       {requests.length > 0 && (
         <div className="flex items-center gap-2">
@@ -164,14 +112,14 @@ export default function PendingRequests() {
             type="checkbox"
             checked={selected.size === requests.length && requests.length > 0}
             onChange={toggleSelectAll}
-            className="h-4 w-4 rounded border-gray-300"
+            className="h-4 w-4 rounded border-input"
           />
           <span className="text-sm text-muted-foreground">Select all ({requests.length})</span>
         </div>
       )}
 
-      {error && (
-        <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">{error}</div>
+      {(adminError || error) && (
+        <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">{adminError || error}</div>
       )}
 
       {loading ? (
@@ -193,10 +141,10 @@ export default function PendingRequests() {
                     type="checkbox"
                     checked={selected.has(req.userId)}
                     onChange={() => toggleSelect(req.userId)}
-                    className="h-4 w-4 rounded border-gray-300"
+                    className="h-4 w-4 rounded border-input"
                   />
                   <div>
-                    <p className="font-medium">{req.user.name}</p>
+                    <p className="text-sm font-medium">{req.user.name}</p>
                     <p className="text-sm text-muted-foreground">{req.user.email}</p>
                     <p className="text-xs text-muted-foreground mt-1">
                       Requested {formatShortDate(req.createdAt)}

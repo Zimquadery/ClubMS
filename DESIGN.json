@@ -1,23 +1,22 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-04-28T00:00:00Z",
+  "generatedAt": "2026-04-28T12:00:00Z",
   "title": "Design System: ClubMS",
   "extensions": {
     "colorMeta": {
       "institutional-navy": {
         "role": "primary",
         "displayName": "Institutional Navy",
-        "canonical": "oklch(36.6% 0.168 262)",
+        "canonical": "oklch(39% 0.16 262)",
         "tonalRamp": [
-          "oklch(15% 0.04 262)",
-          "oklch(22% 0.07 262)",
-          "oklch(28% 0.1 262)",
-          "oklch(33% 0.13 262)",
-          "oklch(36.6% 0.168 262)",
-          "oklch(50% 0.18 262)",
-          "oklch(65% 0.15 262)",
-          "oklch(80% 0.1 262)",
-          "oklch(93% 0.04 262)"
+          "#0a1a5c",
+          "#0f2580",
+          "#1E40AF",
+          "#2f5bd4",
+          "#5b7fe0",
+          "#8da6ec",
+          "#bfcff5",
+          "#e8edfb"
         ]
       },
       "canvas-white": {
@@ -25,107 +24,161 @@
         "displayName": "Canvas White",
         "canonical": "oklch(100% 0 0)",
         "tonalRamp": [
-          "oklch(15% 0.005 262)",
-          "oklch(30% 0.005 262)",
-          "oklch(45% 0.005 262)",
-          "oklch(60% 0.005 262)",
-          "oklch(75% 0.005 262)",
-          "oklch(85% 0.005 262)",
-          "oklch(92% 0.005 262)",
-          "oklch(96% 0.005 262)",
-          "oklch(100% 0 0)"
+          "#1e293b",
+          "#334155",
+          "#64748b",
+          "#94a3b8",
+          "#cbd5e1",
+          "#e2e8f0",
+          "#f1f5f9",
+          "#ffffff"
         ]
       },
       "ink-slate": {
         "role": "neutral",
         "displayName": "Ink Slate",
-        "canonical": "oklch(20.8% 0.042 262)",
+        "canonical": "oklch(22% 0.02 261)",
         "tonalRamp": [
-          "oklch(12% 0.042 262)",
-          "oklch(16% 0.042 262)",
-          "oklch(20.8% 0.042 262)",
-          "oklch(30% 0.042 262)",
-          "oklch(40% 0.042 262)",
-          "oklch(55% 0.035 262)",
-          "oklch(72% 0.02 262)",
-          "oklch(88% 0.01 262)",
-          "oklch(97% 0.005 262)"
+          "#020617",
+          "#0f172a",
+          "#1e293b",
+          "#334155",
+          "#475569",
+          "#64748b",
+          "#94a3b8",
+          "#cbd5e1"
         ]
       },
       "signal-red": {
         "role": "status",
         "displayName": "Signal Red",
-        "canonical": "oklch(57.7% 0.245 27.3)",
+        "canonical": "oklch(63% 0.24 25)",
         "tonalRamp": [
-          "oklch(15% 0.06 27)",
-          "oklch(25% 0.12 27)",
-          "oklch(35% 0.18 27)",
-          "oklch(45% 0.22 27)",
-          "oklch(57.7% 0.245 27.3)",
-          "oklch(68% 0.22 27)",
-          "oklch(78% 0.16 27)",
-          "oklch(88% 0.08 27)",
-          "oklch(95% 0.03 27)"
+          "#7f1d1d",
+          "#991b1b",
+          "#dc2626",
+          "#ef4444",
+          "#f87171",
+          "#fca5a5",
+          "#fecaca",
+          "#fee2e2"
         ]
       },
       "status-green": {
         "role": "status",
         "displayName": "Status Green",
-        "canonical": "oklch(64.8% 0.2 145)",
+        "canonical": "oklch(70% 0.19 142)",
         "tonalRamp": [
-          "oklch(15% 0.05 145)",
-          "oklch(25% 0.1 145)",
-          "oklch(35% 0.15 145)",
-          "oklch(50% 0.18 145)",
-          "oklch(64.8% 0.2 145)",
-          "oklch(74% 0.18 145)",
-          "oklch(83% 0.13 145)",
-          "oklch(91% 0.07 145)",
-          "oklch(96% 0.03 145)"
+          "#14532d",
+          "#166534",
+          "#16a34a",
+          "#22c55e",
+          "#4ade80",
+          "#86efac",
+          "#bbf7d0",
+          "#dcfce7"
         ]
       },
       "status-yellow": {
         "role": "status",
         "displayName": "Status Yellow",
-        "canonical": "oklch(74.5% 0.19 85)",
+        "canonical": "oklch(75% 0.17 85)",
         "tonalRamp": [
-          "oklch(20% 0.05 85)",
-          "oklch(30% 0.08 85)",
-          "oklch(42% 0.12 85)",
-          "oklch(55% 0.16 85)",
-          "oklch(74.5% 0.19 85)",
-          "oklch(82% 0.16 85)",
-          "oklch(88% 0.1 85)",
-          "oklch(93% 0.05 85)",
-          "oklch(97% 0.02 85)"
+          "#713f12",
+          "#854d0e",
+          "#ca8a04",
+          "#eab308",
+          "#facc15",
+          "#fde047",
+          "#fef08a",
+          "#fef9c3"
         ]
       }
     },
     "typographyMeta": {
-      "title": { "displayName": "Title", "purpose": "Page headings. The visual anchor of each page." },
-      "card-title": { "displayName": "Card Title", "purpose": "Section headings inside cards and dialogs." },
-      "body": { "displayName": "Body", "purpose": "Helper text, descriptions, most on-screen text." },
-      "label": { "displayName": "Label", "purpose": "Form field labels, nav link text." },
-      "button": { "displayName": "Button", "purpose": "All button text." },
-      "badge": { "displayName": "Badge", "purpose": "Tags, categories, status pills." },
-      "metadata": { "displayName": "Metadata", "purpose": "Audit log metadata, monospace data." }
+      "title": {
+        "displayName": "Title",
+        "purpose": "Page headings. The visual anchor of each page."
+      },
+      "card-title": {
+        "displayName": "Card Title",
+        "purpose": "Section headings inside cards and dialogs."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Helper text, descriptions, form labels. Most on-screen text."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Form field labels, nav link text."
+      },
+      "button": {
+        "displayName": "Button",
+        "purpose": "All button text."
+      },
+      "badge": {
+        "displayName": "Badge",
+        "purpose": "Tags, categories, status pills."
+      },
+      "metadata": {
+        "displayName": "Metadata",
+        "purpose": "Audit log metadata. Monospace for data alignment."
+      }
     },
     "shadows": [
-      { "name": "ambient", "value": "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)", "purpose": "Cards at rest, default buttons." },
-      { "name": "low", "value": "0 1px 2px 0 rgb(0 0 0 / 0.05)", "purpose": "Outline and secondary buttons, subtle inputs." },
-      { "name": "medium", "value": "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)", "purpose": "Dropdowns, card hover." },
-      { "name": "high", "value": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)", "purpose": "Dialog overlays." }
+      {
+        "name": "ambient",
+        "value": "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
+        "purpose": "Cards at rest, default buttons. Gentle presence."
+      },
+      {
+        "name": "low",
+        "value": "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+        "purpose": "Outline, secondary, destructive buttons. Subtle inputs."
+      },
+      {
+        "name": "medium",
+        "value": "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+        "purpose": "Dropdown menus, select content, card hover states."
+      },
+      {
+        "name": "high",
+        "value": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+        "purpose": "Dialog overlays. The top of the elevation stack."
+      }
     ],
     "motion": [
-      { "name": "transition-colors", "value": "color 150ms, background-color 150ms, border-color 150ms", "purpose": "Buttons, nav links, interactive elements." },
-      { "name": "transition-shadow", "value": "box-shadow 150ms", "purpose": "Card hover lift." },
-      { "name": "dialog-enter", "value": "opacity 200ms ease-out, transform 200ms ease-out", "purpose": "Dialog and dropdown entrance." },
-      { "name": "skeleton-pulse", "value": "opacity 1.5s ease-in-out infinite", "purpose": "Loading skeleton animation." }
+      {
+        "name": "transition-colors",
+        "value": "transition-property: color, background-color, border-color; duration: 150ms; timing: cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Default state transitions for buttons, nav links, badges, inputs."
+      },
+      {
+        "name": "transition-shadow",
+        "value": "transition-property: box-shadow; duration: 150ms; timing: cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Card hover lift. Shadow intensifies, not introduced from zero."
+      },
+      {
+        "name": "dialog-enter",
+        "value": "animation: fade-in 200ms ease-out, zoom-in-95 200ms ease-out, slide-in-from-center 200ms ease-out",
+        "purpose": "Dialog entrance. Fade + slight zoom + slide from center."
+      },
+      {
+        "name": "dialog-exit",
+        "value": "animation: fade-out 200ms ease-in, zoom-out-95 200ms ease-in",
+        "purpose": "Dialog exit. Reverse of entrance."
+      },
+      {
+        "name": "skeleton-pulse",
+        "value": "animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        "purpose": "Skeleton loading placeholder. Gentle pulsing on muted surface."
+      }
     ],
     "breakpoints": [
       { "name": "sm", "value": "640px" },
       { "name": "md", "value": "768px" },
-      { "name": "lg", "value": "1024px" }
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
     ]
   },
   "components": [
@@ -133,61 +186,68 @@
       "name": "Primary Button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "Main CTA using the configurable brand color.",
-      "html": "<button class=\"ds-btn-primary\">Sign In</button>",
-      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; border-radius: 0.375rem; font-size: 0.875rem; font-weight: 500; height: 36px; padding: 0.5rem 1rem; background: var(--brand-primary, #1E40AF); color: #f8fafc; border: none; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1); transition: background-color 150ms; cursor: pointer; } .ds-btn-primary:hover { background: oklch(from var(--brand-primary, #1E40AF) l c h / 0.9); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 0 0 1px #94a3b8; } .ds-btn-primary:disabled { pointer-events: none; opacity: 0.5; }"
+      "description": "Brand-colored CTA. Used for primary actions: submit forms, create resources, confirm dialogs.",
+      "html": "<button class=\"ds-btn-primary\">Save changes</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; border-radius: 0.375rem; font-family: system-ui, -apple-system, sans-serif; font-size: 0.875rem; font-weight: 500; line-height: 1.25; padding: 0.5rem 1rem; height: 36px; background: var(--brand-primary, #1E40AF); color: #f8fafc; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1); border: none; cursor: pointer; transition: background-color 150ms, opacity 150ms; } .ds-btn-primary:hover { opacity: 0.9; } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1), 0 0 0 1px #94a3b8; } .ds-btn-primary:disabled { opacity: 0.5; pointer-events: none; }"
     },
     {
       "name": "Outline Button",
       "kind": "button",
       "refersTo": "button-outline",
-      "description": "Secondary action with border and transparent background.",
+      "description": "Secondary action button. White background with border for non-primary actions.",
       "html": "<button class=\"ds-btn-outline\">Cancel</button>",
-      "css": ".ds-btn-outline { display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; border-radius: 0.375rem; font-size: 0.875rem; font-weight: 500; height: 36px; padding: 0.5rem 1rem; background: #ffffff; color: #0f172a; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); transition: background-color 150ms, color 150ms; cursor: pointer; } .ds-btn-outline:hover { background: #f1f5f9; color: #0f172a; } .ds-btn-outline:focus-visible { outline: none; box-shadow: 0 0 0 1px #94a3b8; } .ds-btn-outline:disabled { pointer-events: none; opacity: 0.5; }"
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; border-radius: 0.375rem; font-family: system-ui, -apple-system, sans-serif; font-size: 0.875rem; font-weight: 500; line-height: 1.25; padding: 0.5rem 1rem; height: 36px; background: #ffffff; color: #0f172a; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); border: 1px solid #e2e8f0; cursor: pointer; transition: background-color 150ms, color 150ms; } .ds-btn-outline:hover { background: #f1f5f9; } .ds-btn-outline:focus-visible { outline: none; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05), 0 0 0 1px #94a3b8; } .ds-btn-outline:disabled { opacity: 0.5; pointer-events: none; }"
     },
     {
       "name": "Ghost Button",
       "kind": "button",
       "refersTo": "button-ghost",
-      "description": "Minimal button for tertiary actions, no chrome at rest.",
+      "description": "Tertiary button with no visual chrome. Appears on hover only.",
       "html": "<button class=\"ds-btn-ghost\">Edit</button>",
-      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; border-radius: 0.375rem; font-size: 0.875rem; font-weight: 500; height: 36px; padding: 0.5rem 1rem; background: transparent; color: #0f172a; border: none; transition: background-color 150ms, color 150ms; cursor: pointer; } .ds-btn-ghost:hover { background: #f1f5f9; color: #0f172a; } .ds-btn-ghost:focus-visible { outline: none; box-shadow: 0 0 0 1px #94a3b8; } .ds-btn-ghost:disabled { pointer-events: none; opacity: 0.5; }"
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; border-radius: 0.375rem; font-family: system-ui, -apple-system, sans-serif; font-size: 0.875rem; font-weight: 500; line-height: 1.25; padding: 0.5rem 1rem; height: 36px; background: transparent; color: #0f172a; border: none; cursor: pointer; transition: background-color 150ms, color 150ms; } .ds-btn-ghost:hover { background: #f1f5f9; } .ds-btn-ghost:focus-visible { outline: none; box-shadow: 0 0 0 1px #94a3b8; } .ds-btn-ghost:disabled { opacity: 0.5; pointer-events: none; }"
     },
     {
       "name": "Card",
       "kind": "card",
       "refersTo": "card",
-      "description": "The primary content container. Always carries ambient shadow.",
-      "html": "<div class=\"ds-card\"><div class=\"ds-card-header\"><h3 class=\"ds-card-title\">Your Clubs</h3></div><div class=\"ds-card-content\"><p class=\"ds-card-body\">Club list goes here.</p></div></div>",
-      "css": ".ds-card { border-radius: 0.75rem; border: 1px solid #e2e8f0; background: #ffffff; color: #0f172a; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1); } .ds-card-header { display: flex; flex-direction: column; gap: 6px; padding: 1.5rem; } .ds-card-title { font-size: inherit; font-weight: 600; letter-spacing: -0.025em; line-height: 1; margin: 0; } .ds-card-content { padding: 0 1.5rem 1.5rem; } .ds-card-body { font-size: 0.875rem; color: #64748b; margin: 0; }"
+      "description": "Content container with ambient shadow. The primary surface for grouping related content.",
+      "html": "<div class=\"ds-card\">\n  <div class=\"ds-card-header\">\n    <h3 class=\"ds-card-title\">Section Title</h3>\n  </div>\n  <div class=\"ds-card-content\">\n    <p class=\"ds-card-body\">Card content goes here.</p>\n  </div>\n</div>",
+      "css": ".ds-card { border-radius: 0.75rem; border: 1px solid #e2e8f0; background: #ffffff; color: #0f172a; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1); transition: box-shadow 150ms; } .ds-card:hover { box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); } .ds-card-header { display: flex; flex-direction: column; gap: 6px; padding: 24px; } .ds-card-title { font-family: system-ui, -apple-system, sans-serif; font-weight: 600; letter-spacing: -0.025em; line-height: 1; margin: 0; } .ds-card-content { padding: 0 24px 24px; } .ds-card-body { font-family: system-ui, -apple-system, sans-serif; font-size: 0.875rem; font-weight: 400; line-height: 1.5; color: #64748b; margin: 0; }"
     },
     {
-      "name": "Input",
+      "name": "Text Input",
       "kind": "input",
       "refersTo": "input",
-      "description": "Text input with transparent background and border stroke.",
-      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"you@university.edu\" />",
-      "css": ".ds-input { display: flex; height: 36px; width: 100%; border-radius: 0.375rem; border: 1px solid #e2e8f0; background: transparent; padding: 0.25rem 0.75rem; font-size: 0.875rem; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); transition: box-shadow 150ms; box-sizing: border-box; } .ds-input::placeholder { color: #64748b; } .ds-input:focus-visible { outline: none; box-shadow: 0 0 0 1px #94a3b8; } .ds-input:disabled { cursor: not-allowed; opacity: 0.5; }"
+      "description": "Standard form input. Transparent background with border stroke.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Enter value...\" />",
+      "css": ".ds-input { display: flex; width: 100%; height: 36px; border-radius: 0.375rem; border: 1px solid #e2e8f0; background: transparent; padding: 4px 12px; font-family: system-ui, -apple-system, sans-serif; font-size: 0.875rem; line-height: 1.5; color: #0f172a; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); transition: box-shadow 150ms; } .ds-input::placeholder { color: #64748b; } .ds-input:focus-visible { outline: none; box-shadow: 0 0 0 1px #94a3b8; } .ds-input:disabled { opacity: 0.5; cursor: not-allowed; }"
     },
     {
-      "name": "Badge",
+      "name": "Secondary Badge",
       "kind": "chip",
       "refersTo": "badge-secondary",
-      "description": "Category and status tag. Secondary variant shown.",
-      "html": "<span class=\"ds-badge\">Technology</span>",
-      "css": ".ds-badge { display: inline-flex; align-items: center; border-radius: 0.375rem; border: 1px solid transparent; padding: 0.125rem 0.625rem; font-size: 0.75rem; font-weight: 600; background: #f1f5f9; color: #0f172a; line-height: 1; }"
+      "description": "Category and label chip. Cloud surface background with ink slate text.",
+      "html": "<span class=\"ds-badge-secondary\">Category</span>",
+      "css": ".ds-badge-secondary { display: inline-flex; align-items: center; border-radius: 0.375rem; padding: 2px 10px; font-family: system-ui, -apple-system, sans-serif; font-size: 0.75rem; font-weight: 600; line-height: 1; background: #f1f5f9; color: #0f172a; border: 1px solid transparent; }"
     },
     {
-      "name": "Navigation Bar",
+      "name": "Nav Link",
       "kind": "nav",
-      "description": "Sticky top navigation with logo, links, and user menu.",
-      "html": "<nav class=\"ds-nav\"><div class=\"ds-nav-brand\"><svg class=\"ds-nav-logo\" width=\"32\" height=\"32\" viewBox=\"0 0 32 32\" fill=\"none\"><rect width=\"32\" height=\"32\" rx=\"6\" fill=\"var(--brand-primary, #1E40AF)\"/><text x=\"16\" y=\"20\" text-anchor=\"middle\" fill=\"#f8fafc\" font-size=\"14\" font-weight=\"700\">C</text></svg><span class=\"ds-nav-name\">ClubMS</span></div><div class=\"ds-nav-links\"><a class=\"ds-nav-link ds-nav-link-active\">Dashboard</a><a class=\"ds-nav-link\">Clubs</a><a class=\"ds-nav-link\">Events</a></div></nav>",
-      "css": ".ds-nav { position: sticky; top: 0; z-index: 50; display: flex; height: 56px; align-items: center; justify-content: space-between; padding: 0 1rem; border-bottom: 1px solid #e2e8f0; background: #ffffff; } .ds-nav-brand { display: flex; align-items: center; gap: 0.5rem; font-weight: 700; color: var(--brand-primary, #1E40AF); } .ds-nav-logo { width: 32px; height: 32px; } .ds-nav-name { font-size: 1rem; } .ds-nav-links { display: flex; align-items: center; gap: 1rem; } .ds-nav-link { font-size: 0.875rem; color: #64748b; text-decoration: none; transition: color 150ms; cursor: pointer; } .ds-nav-link:hover { color: #0f172a; } .ds-nav-link-active { color: #0f172a; font-weight: 500; }"
+      "description": "Horizontal top bar navigation link. Muted when inactive, foreground weight when active.",
+      "html": "<nav class=\"ds-nav\">\n  <a class=\"ds-nav-link ds-nav-link-active\" href=\"#\">\n    <svg class=\"ds-nav-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"3\" width=\"7\" height=\"7\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\"/></svg>\n    Dashboard\n  </a>\n  <a class=\"ds-nav-link\" href=\"#\">\n    <svg class=\"ds-nav-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/><path d=\"M22 21v-2a4 4 0 0 0-3-3.87\"/><path d=\"M16 3.13a4 4 0 0 1 0 7.75\"/></svg>\n    Clubs\n  </a>\n</nav>",
+      "css": ".ds-nav { display: flex; align-items: center; gap: 16px; font-size: 0.875rem; } .ds-nav-link { display: flex; align-items: center; gap: 4px; color: #64748b; text-decoration: none; transition: color 150ms; } .ds-nav-link:hover { color: #0f172a; } .ds-nav-link-active { color: #0f172a; font-weight: 500; } .ds-nav-icon { width: 16px; height: 16px; }"
+    },
+    {
+      "name": "Stats Strip",
+      "kind": "custom",
+      "description": "Inline summary metrics beneath the dashboard greeting. Replaces hero-metric card grids.",
+      "html": "<div class=\"ds-stats-strip\">\n  <span class=\"ds-stat-item\"><strong class=\"ds-stat-value\">4</strong> clubs</span>\n  <span class=\"ds-stat-item ds-stat-divided\"><span class=\"ds-stat-divider\" aria-hidden=\"true\">·</span><strong class=\"ds-stat-value\">12</strong> events</span>\n  <span class=\"ds-stat-item ds-stat-divided\"><span class=\"ds-stat-divider\" aria-hidden=\"true\">·</span><strong class=\"ds-stat-value\">3</strong> pending</span>\n</div>",
+      "css": ".ds-stats-strip { display: flex; align-items: center; flex-wrap: wrap; margin-top: 8px; margin-left: 8px; } .ds-stat-item { white-space: nowrap; font-family: system-ui, -apple-system, sans-serif; font-size: 0.875rem; color: #64748b; } .ds-stat-value { font-weight: 600; color: #0f172a; } .ds-stat-divider { margin: 0 6px; color: rgba(100, 116, 139, 0.4); user-select: none; }"
     }
   ],
   "narrative": {
     "northStar": "The Campus Bulletin",
-    "overview": "An open, inviting surface alive with activity. Imagine a well-maintained campus bulletin board: club flyers layered with personality, event cards pinned with purpose, clear headings that draw your eye to what matters. The information is dense but never cluttered, colorful but never chaotic. Every piece earns its pushpin.\n\nThis system serves three audiences at once. Students scanning for their next club between classes need fast visual hierarchy and scannable layouts. Officers managing rosters need efficient bulk actions and unmistakable status indicators. Platform admins checking in occasionally need clear admin navigation without cluttering anyone else's view. The design responds to each without compromising the others.\n\nThe visual language is Restrained in the product sense: tinted neutrals carry 90% of the surface, with the configurable brand color appearing only on primary actions, active states, and navigation identity. This restraint is strategic. Since the brand color swaps per university deployment, every element must look intentional whether the accent is navy blue, forest green, or crimson.",
+    "overview": "An open, inviting surface alive with activity. Imagine a well-maintained campus bulletin board: club flyers layered with personality, event cards pinned with purpose, clear headings that draw your eye to what matters. The information is dense but never cluttered, colorful but never chaotic. Every piece earns its pushpin.\n\nThis system serves three audiences at once. Students scanning for their next club between classes need fast visual hierarchy and scannable layouts. Officers managing rosters need efficient bulk actions and unmistakable status indicators. Platform admins checking in occasionally need clear admin navigation without cluttering anyone else's view.\n\nThe visual language is Restrained in the product sense: tinted neutrals carry 90% of the surface, with the configurable brand color appearing only on primary actions, active states, and navigation identity. This restraint is strategic. Since the brand color swaps per university deployment, every element must look intentional whether the accent is navy blue, forest green, or crimson.",
     "keyCharacteristics": [
       "Configurable accent on a slate neutral base",
       "Cards always carry a light ambient shadow, gaining strength on hover",
@@ -196,28 +256,40 @@
       "Compact density: page gaps at 24px, card padding at 16-24px, form groups at 16px"
     ],
     "rules": [
-      { "name": "The Configurable Accent Rule", "body": "The brand color is the only hue that changes per deployment. All accent usage must trace back to var(--brand-primary).", "section": "colors" },
-      { "name": "The Always-Lifted Rule", "body": "Cards never sit flat on the page. Even at rest, the ambient shadow separates them from the background. Hover intensifies the lift; it never introduces it from zero.", "section": "elevation" },
-      { "name": "The Size Floor Rule", "body": "No text below 12px (0.75rem). Badge and metadata are the floor; everything else is 14px or above.", "section": "typography" }
+      {
+        "name": "The Configurable Accent Rule",
+        "body": "The brand color (--brand-primary, default #1E40AF) is the only hue that changes per deployment. Every other color is fixed. All accent usage on a given screen must trace back to var(--brand-primary) so a single env swap recolors the entire surface.",
+        "section": "colors"
+      },
+      {
+        "name": "The Size Floor Rule",
+        "body": "No text below 12px (0.75rem). Badge and metadata are the floor; everything else is 14px or above.",
+        "section": "typography"
+      },
+      {
+        "name": "The Always-Lifted Rule",
+        "body": "Cards never sit flat on the page. Even at rest, the ambient shadow separates them from the background. Hover intensifies the lift; it never introduces it from zero.",
+        "section": "elevation"
+      }
     ],
     "dos": [
       "Do use var(--brand-primary) for all accent-colored elements so white-label recoloring works with a single CSS variable change.",
-      "Do give cards ambient shadow at rest and medium shadow on hover.",
+      "Do give cards ambient shadow at rest and medium shadow on hover. The lift is always present.",
       "Do use status colors (green, yellow, red) consistently for membership state, RSVP response, and validation feedback.",
-      "Do keep body text at 14px (0.875rem) and above.",
-      "Do use the 12px radius for cards and 6px for inputs and buttons.",
-      "Do use system font stack. No custom font loading.",
-      "Do test dark mode for every new component."
+      "Do keep body text at 14px (0.875rem) and above. 12px is the absolute floor for badges and metadata only.",
+      "Do use the 12px radius (rounded-xl) for cards and 6px (rounded-md) for inputs and buttons. This two-tier system is the corner vocabulary.",
+      "Do use system font stack. No custom font loading. Performance and native feel over brand typography.",
+      "Do test dark mode for every new component. All colors must work against deep night (#0f172a) and raised surface (#1e293b)."
     ],
     "donts": [
-      "Don't use emojis, illustrations, or confetti animations.",
-      "Don't create hero-metric dashboards with big numbers and gradient accents.",
-      "Don't use glassmorphism, gradient text, or side-stripe borders.",
-      "Don't build identical card grids (same-sized icon + heading + text repeated).",
-      "Don't hardcode colors outside the token system.",
-      "Don't use display fonts in UI labels, buttons, or data.",
-      "Don't add animated page-load sequences.",
-      "Don't use spinners for content loading states."
+      "Don't use emojis, illustrations, or confetti animations. Per PRODUCT.md: \"This is a university tool, not a social app.\"",
+      "Don't create hero-metric dashboards with big numbers and gradient accents. Stats appear as inline strips beneath the greeting, not in card grids or dramatic hero layouts.",
+      "Don't use glassmorphism, gradient text (background-clip: text), or side-stripe borders (colored border-left/border-right greater than 1px).",
+      "Don't build identical card grids (same-sized icon + heading + text repeated). Cards should vary by content density and purpose.",
+      "Don't hardcode colors outside the token system. Known violations: Login/Register bg-gray-50, Register password strength colors, EventDetail RSVP button colors, Dashboard pending badge text-yellow-600.",
+      "Don't use display fonts or decorative type in UI labels, buttons, or data. System stack only.",
+      "Don't add animated page-load sequences. Per the product register: \"Product loads into a task; users don't want to watch it load.\"",
+      "Don't use spinners for content loading states. Skeletons match the layout. Spinners only for inline button loading indicators."
     ]
   }
 }

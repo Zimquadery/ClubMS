@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&display=swap');
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -27,6 +28,11 @@
   --radius-lg: 0.5rem;
   --radius-xl: 0.75rem;
   --color-brand-primary: var(--brand-primary, #1E40AF);
+  --color-status-green: #22c55e;
+  --color-status-yellow: #eab308;
+  --color-status-red: #ef4444;
+  --animate-fade-in: fade-in 200ms ease-out;
+  --font-display: "Lora", Georgia, "Times New Roman", serif;
 }
 
 :root {
@@ -63,4 +69,15 @@
   --color-border: #334155;
   --color-input: #334155;
   --color-ring: #475569;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in {
+    animation: none;
+  }
 }

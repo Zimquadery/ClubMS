@@ -1,4 +1,5 @@
 const { z } = require('zod');
+const { PAGINATION } = require('../../middleware/validate');
 
 const transferAdmin = z.object({
   newAdminId: z.string().uuid('Invalid user ID'),
@@ -6,8 +7,8 @@ const transferAdmin = z.object({
 
 const listMembersQuery = z.object({
   status: z.enum(['PENDING', 'ACTIVE', 'ALUMNI', 'REJECTED']).optional(),
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  ...PAGINATION,
+  limit: PAGINATION.limit.default(50),
 });
 
 const bulkAction = z.object({

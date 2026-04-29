@@ -237,30 +237,24 @@ async function demoteMember(clubId, userId) {
   return result;
 }
 
-async function bulkApprove(clubId, userIds) {
+async function bulkUpdateStatus(clubId, userIds, newStatus) {
   if (!Array.isArray(userIds) || userIds.length === 0) throw new AppError('userIds must be a non-empty array', 400);
 
-  const result = await prisma.$transaction(async (tx) => {
-    const updated = await tx.clubMembership.updateMany({
+  const updated = await prisma.$transaction(async (tx) => {
+    return tx.clubMembership.updateMany({
       where: { clubId, userId: { in: userIds }, status: 'PENDING' },
-      data: { status: 'ACTIVE' },
+      data: { status: newStatus },
     });
-    return { count: updated.count };
   });
-  return result;
+  return { count: updated.count };
+}
+
+async function bulkApprove(clubId, userIds) {
+  return bulkUpdateStatus(clubId, userIds, 'ACTIVE');
 }
 
 async function bulkReject(clubId, userIds) {
-  if (!Array.isArray(userIds) || userIds.length === 0) throw new AppError('userIds must be a non-empty array', 400);
-
-  const result = await prisma.$transaction(async (tx) => {
-    const updated = await tx.clubMembership.updateMany({
-      where: { clubId, userId: { in: userIds }, status: 'PENDING' },
-      data: { status: 'REJECTED' },
-    });
-    return { count: updated.count };
-  });
-  return result;
+  return bulkUpdateStatus(clubId, userIds, 'REJECTED');
 }
 
 async function exportMembersCsv(clubId) {

@@ -3,11 +3,15 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import client from '@/api/client'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { Calendar, MapPin, Clock, ArrowLeft, ImageIcon, Trash2, Pencil, Download } from 'lucide-react'
+import { Calendar, MapPin, Clock, ImageIcon, Trash2, Pencil, Download } from 'lucide-react'
+import BackLink from '@/components/BackLink'
+import { ImageUploadButton } from '@/components/ImageUploadButton'
 import { formatDate, formatTime } from '@/lib/format'
 import { toast } from 'sonner'
+import { downloadBlob } from '@/lib/download'
 import {
   Dialog,
   DialogContent,
@@ -97,14 +101,7 @@ export default function EventDetail() {
   async function handleExportRsvps() {
     try {
       const res = await client.get(`/events/${id}/rsvps/export`, { responseType: 'blob' })
-      const url = window.URL.createObjectURL(new Blob([res.data]))
-      const link = document.createElement('a')
-      link.href = url
-      link.setAttribute('download', `rsvps-${id}.csv`)
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
-      window.URL.revokeObjectURL(url)
+      downloadBlob(res.data, `rsvps-${id}.csv`)
       toast.success('RSVPs exported')
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to export RSVPs')
@@ -178,9 +175,7 @@ export default function EventDetail() {
   if (error) {
     return (
       <div className="space-y-4">
-        <Link to="/events" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" /> Back to Events
-        </Link>
+        <BackLink to="/events" label="Back to Events" />
         <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">{error}</div>
       </div>
     )
@@ -190,9 +185,7 @@ export default function EventDetail() {
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
-      <Link to="/events" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" /> Back to Events
-      </Link>
+      <BackLink to="/events" label="Back to Events" />
 
       {event.bannerUrl && (
         <div className="w-full h-48 sm:h-64 rounded-xl overflow-hidden">
@@ -206,7 +199,7 @@ export default function EventDetail() {
             <h1 className="text-2xl font-bold">{event.title}</h1>
             {isPast && <Badge variant="secondary">Past</Badge>}
           </div>
-          <Link to={`/clubs/${event.club?.id}`} className="inline-flex items-center gap-2 mt-2 text-sm text-muted-foreground hover:text-brand-primary">
+          <Link to={`/clubs/${event.club?.id}`} className="inline-flex items-center gap-2 mt-2 text-sm text-brand-primary hover:underline">
             {event.club?.logoUrl ? (
               <img src={event.club.logoUrl} alt="" className="h-5 w-5 rounded object-cover" />
             ) : (
@@ -228,19 +221,19 @@ export default function EventDetail() {
       </div>
 
       <Card>
-        <CardContent className="p-4 space-y-3">
+        <CardContent className="space-y-3">
           <div className="flex items-center gap-2 text-sm">
             <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span>{formatDate(event.startTime)}</span>
+            <span className="text-sm text-muted-foreground">{formatDate(event.startTime)}</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <Clock className="h-4 w-4 text-muted-foreground" />
-            <span>{formatTime(event.startTime)} – {formatTime(event.endTime)}</span>
+            <span className="text-sm text-muted-foreground">{formatTime(event.startTime)} – {formatTime(event.endTime)}</span>
           </div>
           {event.location && (
             <div className="flex items-center gap-2 text-sm">
               <MapPin className="h-4 w-4 text-muted-foreground" />
-              <span>{event.location}</span>
+              <span className="text-sm text-muted-foreground">{event.location}</span>
             </div>
           )}
         </CardContent>
@@ -248,8 +241,8 @@ export default function EventDetail() {
 
       {event.description && (
         <Card>
-          <CardContent className="p-4">
-            <h2 className="font-semibold mb-2">Description</h2>
+          <CardHeader><CardTitle>Description</CardTitle></CardHeader>
+          <CardContent>
             <p className="text-sm text-muted-foreground whitespace-pre-wrap">{event.description}</p>
           </CardContent>
         </Card>
@@ -257,9 +250,9 @@ export default function EventDetail() {
 
       {!isPast && (
         <Card>
-          <CardContent className="p-4 space-y-3">
+          <CardHeader><CardTitle>RSVP</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="font-semibold">RSVP</h2>
               <div className="flex items-center gap-3">
                 {attendeeCount > 0 && (
                   <span className="text-sm text-muted-foreground">{attendeeCount} attending</span>
@@ -275,7 +268,7 @@ export default function EventDetail() {
               <Button
                 size="sm"
                 variant={userRsvp?.status === 'GOING' ? 'default' : 'outline'}
-                className={userRsvp?.status === 'GOING' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}
+                className={userRsvp?.status === 'GOING' ? 'bg-status-green hover:bg-status-green/90 text-white' : ''}
                 onClick={() => handleRsvp('GOING')}
                 disabled={rsvpLoading}
               >
@@ -284,7 +277,7 @@ export default function EventDetail() {
               <Button
                 size="sm"
                 variant={userRsvp?.status === 'MAYBE' ? 'default' : 'outline'}
-                className={userRsvp?.status === 'MAYBE' ? 'bg-yellow-600 hover:bg-yellow-700 text-white' : ''}
+                className={userRsvp?.status === 'MAYBE' ? 'bg-status-yellow hover:bg-status-yellow/90 text-white' : ''}
                 onClick={() => handleRsvp('MAYBE')}
                 disabled={rsvpLoading}
               >
@@ -293,7 +286,7 @@ export default function EventDetail() {
               <Button
                 size="sm"
                 variant={userRsvp?.status === 'NOT_GOING' ? 'default' : 'outline'}
-                className={userRsvp?.status === 'NOT_GOING' ? 'bg-red-600 hover:bg-red-700 text-white' : ''}
+                className={userRsvp?.status === 'NOT_GOING' ? 'bg-destructive hover:bg-destructive/90 text-white' : ''}
                 onClick={() => handleRsvp('NOT_GOING')}
                 disabled={rsvpLoading}
               >
@@ -310,7 +303,7 @@ export default function EventDetail() {
       )}
       {isPast && attendeeCount > 0 && (
         <Card>
-          <CardContent className="p-4">
+          <CardContent>
             <span className="text-sm text-muted-foreground">{attendeeCount} attendee{attendeeCount !== 1 ? 's' : ''}</span>
           </CardContent>
         </Card>
@@ -328,7 +321,7 @@ export default function EventDetail() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="ed-desc">Description</Label>
-              <textarea id="ed-desc" className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+              <Textarea id="ed-desc" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -348,26 +341,7 @@ export default function EventDetail() {
               <Label htmlFor="ed-banner">Banner</Label>
               <div className="flex gap-2">
                 <Input id="ed-banner" value={form.bannerUrl} onChange={(e) => setForm({ ...form, bannerUrl: e.target.value })} className="flex-1" />
-                <label className="inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-3 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground cursor-pointer">
-                  Upload
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={async (e) => {
-                      const file = e.target.files[0]
-                      if (!file) return
-                      try {
-                        const formData = new FormData()
-                        formData.append('file', file)
-                        const res = await client.post('/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
-                        setForm({ ...form, bannerUrl: res.data.url })
-                      } catch (err) {
-                        toast.error('Failed to upload image')
-                      }
-                    }}
-                  />
-                </label>
+                <ImageUploadButton onUploadComplete={(url) => setForm({ ...form, bannerUrl: url })} />
               </div>
             </div>
             <DialogFooter>

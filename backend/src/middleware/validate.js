@@ -1,27 +1,32 @@
 const { z } = require('zod');
 const { AppError } = require('../utils/errors');
 
+function handleParseResult(result, next) {
+  if (!result.success) {
+    const messages = result.error.issues.map((i) => i.message).join('; ');
+    next(new AppError(messages, 400));
+    return false;
+  }
+  return true;
+}
+
 function validate(schema) {
   return (req, res, next) => {
     const result = schema.safeParse(req.body);
-    if (!result.success) {
-      const messages = result.error.issues.map((i) => i.message).join('; ');
-      return next(new AppError(messages, 400));
+    if (handleParseResult(result, next)) {
+      req.body = result.data;
+      next();
     }
-    req.body = result.data;
-    next();
   };
 }
 
 function validateQuery(schema) {
   return (req, res, next) => {
     const result = schema.safeParse(req.query);
-    if (!result.success) {
-      const messages = result.error.issues.map((i) => i.message).join('; ');
-      return next(new AppError(messages, 400));
+    if (handleParseResult(result, next)) {
+      req.query = result.data;
+      next();
     }
-    req.query = result.data;
-    next();
   };
 }
 

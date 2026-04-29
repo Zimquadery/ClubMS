@@ -1,7 +1,7 @@
 # Follow these guidelines
 
 - Proactively log your learning to AGENTS.md . Ensure who ever has this file will avoid any mistakes and gain desired success easily in this codebase. Similar mistakes shall not be made twice in this codebase.
-- You Dont have to communicate with the user. User will provide prompt, You will complete the work autonomously and say just "Done" at the end.
+
 - After finding an issue check if similar issue exists elsewhere. Though not all issues worth resolving at once.
 
 ---
@@ -216,3 +216,22 @@ Jest + supertest. 64 tests in `backend/tests/`. Service unit tests (memberships,
 ### Email Notifications (Scaffold)
 
 `lib/notifications.js` provides `sendNotification`, `notifyMembershipApproved`, `notifyMembershipRejected`, `notifyNewEvent`. Uses console provider by default. `setProvider(name, provider)` allows swapping to email service (SendGrid/Resend).
+
+### Frontend Styling Consistency (Dashboard as Reference)
+
+The Dashboard page is the styling gold standard. All pages must follow these patterns:
+
+1. **No hardcoded Tailwind colors.** Never use `bg-gray-50`, `text-gray-600`, `bg-green-600`, `border-gray-300`, etc. Use semantic tokens: `bg-background`, `text-muted-foreground`, `bg-destructive`, `bg-status-green`, `bg-status-yellow`, `border-input`, `text-brand-primary`, etc. Auth page outer containers use `bg-background` (not `bg-gray-50`).
+2. **Typography patterns.** Page headings: `text-2xl font-bold` on `<h1>`. Page subtitles: `text-sm text-muted-foreground`. Item titles in lists: `text-sm font-medium`. Metadata: `text-xs text-muted-foreground`. Password strength colors: `bg-destructive`, `bg-status-yellow`, `bg-status-green` (not `bg-red-500`, etc.).
+3. **Card structure.** Use `CardHeader` + `CardTitle` + `CardContent` for all card sections. Never use bare `<h2>` tags inside cards. Card titles get icon + label pattern: `<CardTitle className="flex items-center gap-2 text-lg"><Icon className="h-5 w-5 text-brand-primary" />Title</CardTitle>`.
+4. **Status badges.** Use semantic color tokens with opacity: `bg-status-green/15 text-status-green` for active, `bg-status-yellow/15 text-status-yellow` for pending, `bg-brand-primary/10 text-brand-primary` for alumni. Never use `bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200` patterns.
+5. **RSVP buttons.** Use `bg-status-green`, `bg-status-yellow`, `bg-destructive` with `hover:*/90` and `text-white`. Never hardcode `bg-green-600`, `bg-yellow-600`, `bg-red-600`.
+6. **List patterns inside cards.** Use `divide-y` with `py-2 first:pt-0 last:pb-0` rows. Not `space-y-2` with `rounded-lg border p-3` sub-boxes.
+7. **Loading states.** Use `ListSkeleton` component for list pages, not hand-built `Array.from` skeleton grids. Use `DetailSkeleton` for detail pages.
+8. **Form controls.** Use shadcn components (`Input`, `Textarea`, `Select`, `Label`). Never write raw `<textarea>` with inline Tailwind. `Textarea` component is at `components/ui/textarea.jsx`.
+9. **Page headings.** Use `<h1>` with explicit `text-2xl font-bold`, not `CardTitle` (which renders `<h3>` with `font-semibold`). If using `CardTitle` for auth pages, add `font-bold` to className override.
+10. **Grid pattern.** Two-column grids use `grid gap-4 md:grid-cols-2` (not `gap-6 lg:grid-cols-2`).
+
+### Textarea Component
+
+`components/ui/textarea.jsx` is the shadcn Textarea component. Use it instead of raw `<textarea>` elements. Same pattern as Input: `rounded-md border border-input bg-transparent px-3 py-2 text-sm`.

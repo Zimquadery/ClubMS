@@ -70,7 +70,7 @@ export default function EventCalendar() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Events</h1>
-        <p className="text-muted-foreground">Browse events from all clubs</p>
+        <p className="text-sm text-muted-foreground">Browse events from all clubs</p>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
@@ -159,7 +159,7 @@ export default function EventCalendar() {
                     <div className="mb-1 pt-2">
                       <span className="text-xs text-muted-foreground">{event.club?.name}</span>
                     </div>
-                    <h3 className="font-medium">{event.title}</h3>
+                    <h3 className="text-sm font-medium hover:underline">{event.title}</h3>
                     <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
                       <Calendar className="h-3 w-3" />
                       {formatDate(event.startTime)}

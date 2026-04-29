@@ -210,7 +210,8 @@ Cards and containers always carry a light ambient shadow. The default Card shado
 - **Background:** Canvas white (light) or raised surface (dark).
 - **Shadow:** Ambient at rest, medium on interactive hover.
 - **Border:** 1px line silver (light) or dusk border (dark).
-- **Internal Padding:** 24px default (CardHeader/CardContent), 16px for compact variants (StatCard, list items, audit entries).
+- **Internal Padding:** 24px default (CardHeader/CardContent), 16px for compact variants (list items, audit entries).
+- **List items inside cards:** Use `divide-y` with `py-2 first:pt-0 last:pb-0` rows. No nested borders or backgrounds inside a card.
 
 ### Inputs
 - **Shape:** 6px radius, 36px height, transparent background, 1px input border.
@@ -240,6 +241,15 @@ Cards and containers always carry a light ambient shadow. The default Card shado
 - **Animation:** `animate-pulse` on muted surface. No spinners for content areas.
 - **Variants:** CardSkeleton, EventCardSkeleton, ListSkeleton, DetailSkeleton.
 
+### Stats Strip
+- **Purpose:** Role-specific summary metrics beneath the dashboard greeting. Replaces the banned hero-metric card grid.
+- **Structure:** Inline flex row of labeled values separated by middle dot dividers (`·`). Each item is `whitespace-nowrap` to prevent divider orphaning on wrap.
+- **Typography:** Body size (14px), value in `font-semibold text-foreground`, label in `text-muted-foreground`.
+- **Divider:** Middle dot in `text-muted-foreground/40` with `mx-1.5` spacing. `aria-hidden` and `select-none`.
+- **Indent:** `ml-2` from the greeting, `mt-2` below it. Stats are subordinate to the heading.
+- **Loading:** Skeleton count matches the role's stat count (2 for students, 4 for admins).
+- **Format:** Numbers use `toLocaleString()` for thousand separators.
+
 ## 6. Do's and Don'ts
 
 ### Do:
@@ -253,10 +263,10 @@ Cards and containers always carry a light ambient shadow. The default Card shado
 
 ### Don't:
 - **Don't** use emojis, illustrations, or confetti animations. Per PRODUCT.md: "This is a university tool, not a social app."
-- **Don't** create hero-metric dashboards with big numbers and gradient accents. Stats appear in compact card rows, not dramatic hero layouts.
+- **Don't** create hero-metric dashboards with big numbers and gradient accents. Stats appear as inline strips beneath the greeting, not in card grids or dramatic hero layouts.
 - **Don't** use glassmorphism, gradient text (`background-clip: text`), or side-stripe borders (colored `border-left`/`border-right` greater than 1px).
 - **Don't** build identical card grids (same-sized icon + heading + text repeated). Cards should vary by content density and purpose.
-- **Don't** hardcode colors outside the token system. If a new semantic color is needed, add it to `@theme inline` in `index.css`.
+- **Don't** hardcode colors outside the token system. If a new semantic color is needed, add it to `@theme inline` in `index.css`. All known violations have been resolved: use `bg-background` (not `bg-gray-50`), `bg-destructive`/`bg-status-yellow`/`bg-status-green` (not `bg-red-500`/`bg-yellow-500`/`bg-green-500`), `bg-status-green`/`bg-status-yellow`/`bg-destructive` (not `bg-green-600`/`bg-yellow-600`/`bg-red-600`), `text-status-yellow` (not `text-yellow-600`), `border-input` (not `border-gray-300`).
 - **Don't** use display fonts or decorative type in UI labels, buttons, or data. System stack only.
 - **Don't** add animated page-load sequences. Per the product register: "Product loads into a task; users don't want to watch it load."
 - **Don't** use spinners for content loading states. Skeletons match the layout. Spinners only for inline button loading indicators.

@@ -60,7 +60,7 @@ export default function Profile() {
     <div className="space-y-6 max-w-2xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold">Profile</h1>
-        <p className="text-muted-foreground">Manage your account settings</p>
+        <p className="text-sm text-muted-foreground">Manage your account settings</p>
       </div>
 
       <Card>

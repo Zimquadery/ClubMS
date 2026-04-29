@@ -63,7 +63,7 @@ export default function ClubDirectory() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Club Directory</h1>
-        <p className="text-muted-foreground">Browse and discover clubs at your university</p>
+        <p className="text-sm text-muted-foreground">Browse and discover clubs at your university</p>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
@@ -122,7 +122,7 @@ export default function ClubDirectory() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold truncate">{club.name}</h3>
+                      <h3 className="text-sm font-medium truncate">{club.name}</h3>
                       <div className="flex items-center gap-2 mt-1">
                         <Badge variant="secondary" className="text-xs">{club.category}</Badge>
                       </div>
