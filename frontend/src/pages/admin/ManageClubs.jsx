@@ -3,8 +3,9 @@ import client from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import {
   Dialog,
   DialogContent,
@@ -211,7 +212,11 @@ export default function ManageClubs() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Manage Clubs</h1>
-          <p className="text-sm text-muted-foreground">Create and delete clubs</p>
+          {!loading && clubs.length > 0 && (
+            <p className="text-sm text-muted-foreground">
+              {clubs.length} club{clubs.length !== 1 ? 's' : ''}
+            </p>
+          )}
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
@@ -249,47 +254,61 @@ export default function ManageClubs() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-3">
-          {clubs.map((club) => (
-            <Card key={club.id}>
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-medium truncate">{club.name}</h3>
-                    <Badge variant="secondary" className="text-xs">{club.category}</Badge>
+        <Card>
+          <CardContent className="p-0">
+            <div className="divide-y">
+              {clubs.map((club) => (
+                <div key={club.id} className="flex items-center gap-3 px-4 py-3 first:pt-4 last:pb-4">
+                  <Avatar className="h-9 w-9 rounded-lg shrink-0">
+                    {club.logoUrl && <AvatarImage src={club.logoUrl} alt={club.name} />}
+                    <AvatarFallback className="rounded-lg bg-brand-primary/10 text-brand-primary text-xs font-semibold">
+                      {club.name.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium truncate">{club.name}</span>
+                      <Badge variant="secondary" className="text-xs shrink-0">{club.category}</Badge>
+                    </div>
+                    {club.description && (
+                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{club.description}</p>
+                    )}
                   </div>
-                  <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                  <span className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground shrink-0">
                     <Users className="h-3 w-3" />
-                    {club._count?.memberships ?? 0} member{(club._count?.memberships ?? 0) !== 1 ? 's' : ''}
+                    {club._count?.memberships ?? 0}
+                  </span>
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    <Link to={`/admin/clubs/${club.id}/requests`}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" title="Pending requests">
+                        <ClipboardList className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                    <Link to={`/admin/clubs/${club.id}/members`}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" title="Members">
+                        <UserCheck className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                    <div className="w-px h-4 bg-border mx-1" aria-hidden="true" />
+                    <Button variant="ghost" size="icon" className="h-8 w-8" title="Edit club" onClick={() => openEdit(club)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      title="Delete club"
+                      onClick={() => setDeleteTarget(club)}
+                      disabled={deleting}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <Link to={`/admin/clubs/${club.id}/requests`}>
-                    <Button variant="outline" size="sm">
-                      <ClipboardList className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                  <Link to={`/admin/clubs/${club.id}/members`}>
-                    <Button variant="outline" size="sm">
-                      <UserCheck className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                  <Button variant="outline" size="sm" onClick={() => openEdit(club)}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => setDeleteTarget(club)}
-                    disabled={deleting}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>

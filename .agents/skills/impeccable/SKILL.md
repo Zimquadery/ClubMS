@@ -67,7 +67,6 @@ Before choosing, write one sentence of physical scene: who uses this, where, und
 
 ### Typography
 
-- Cap body line length at 65–75ch.
 - Hierarchy through scale + weight contrast (≥1.25 ratio between steps). Avoid flat scales.
 
 ### Layout
