@@ -218,37 +218,37 @@ export default function ClubDetail() {
   }
 
   return (
-    <div className="space-y-6">
+    <div>
       <BackLink to="/clubs" label="Back to Directory" />
 
-      <div className="flex flex-col sm:flex-row gap-4 items-start">
-        <div className="flex-shrink-0 h-16 w-16 rounded-xl bg-muted flex items-center justify-center overflow-hidden">
+      <div className="mt-6 flex flex-col sm:flex-row gap-5 items-start">
+        <div className="flex-shrink-0 h-20 w-20 rounded-xl bg-muted flex items-center justify-center overflow-hidden">
           {club.logoUrl ? (
             <img src={club.logoUrl} alt={club.name} className="h-full w-full object-cover" />
           ) : (
-            <ImageIcon className="h-8 w-8 text-muted-foreground" />
+            <ImageIcon className="h-9 w-9 text-muted-foreground" />
           )}
         </div>
-        <div className="flex-1">
-          <div className="flex items-center gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-2xl font-bold">{club.name}</h1>
             <Badge variant="secondary">{club.category}</Badge>
           </div>
           {club.description && (
-            <p className="text-sm text-muted-foreground mt-1">{club.description}</p>
+            <p className="text-sm text-muted-foreground mt-2">{club.description}</p>
           )}
-          <div className="flex items-center justify-between mt-2">
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-3 mt-4">
+            <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
               <Users className="h-4 w-4" />
               {memberCount} active member{memberCount !== 1 ? 's' : ''}
-            </div>
+            </span>
             {renderMembershipAction()}
           </div>
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
+      <div className="grid gap-4 mt-8 md:grid-cols-3">
+        <Card className="md:col-span-2">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-lg">
