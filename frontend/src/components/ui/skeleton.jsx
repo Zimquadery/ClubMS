@@ -23,11 +23,15 @@ export function EventCardSkeleton() {
   return (
     <div className="rounded-xl border bg-card shadow h-full overflow-hidden">
       <Skeleton className="h-40 w-full" />
-      <div className="p-4 pt-5 space-y-2">
-        <Skeleton className="h-3 w-1/4" />
-        <Skeleton className="h-5 w-3/4" />
-        <Skeleton className="h-3 w-1/2" />
-        <Skeleton className="h-3 w-1/3" />
+      <div className="p-4 space-y-2">
+        <div className="pt-6 space-y-2">
+          <Skeleton className="h-3 w-1/4" />
+          <Skeleton className="h-4 w-3/4" />
+        </div>
+        <div className="mt-2.5 space-y-1">
+          <Skeleton className="h-3 w-1/2" />
+          <Skeleton className="h-3 w-1/3" />
+        </div>
       </div>
     </div>
   )
