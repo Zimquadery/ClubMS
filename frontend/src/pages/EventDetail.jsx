@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import client from '@/api/client'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Calendar, MapPin, Clock, ImageIcon, Trash2, Pencil, Download } from 'lucide-react'
@@ -184,87 +184,71 @@ export default function EventDetail() {
   if (!event) return null
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
+    <div className="max-w-3xl mx-auto">
       <BackLink to="/events" label="Back to Events" />
 
       {event.bannerUrl && (
-        <div className="w-full h-48 sm:h-64 rounded-xl overflow-hidden">
+        <div className="mt-4 w-full h-48 sm:h-64 rounded-xl overflow-hidden">
           <img src={event.bannerUrl} alt={event.title} className="w-full h-full object-cover" />
         </div>
       )}
 
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-bold">{event.title}</h1>
-            {isPast && <Badge variant="secondary">Past</Badge>}
+      <div className={event.bannerUrl ? 'mt-6' : 'mt-4'}>
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-2xl font-bold">{event.title}</h1>
+              {isPast && <Badge variant="secondary">Past</Badge>}
+            </div>
+            <Link to={`/clubs/${event.club?.id}`} className="inline-flex items-center gap-2 mt-1.5 text-sm text-brand-primary hover:underline">
+              {event.club?.logoUrl ? (
+                <img src={event.club.logoUrl} alt="" className="h-5 w-5 rounded object-cover" />
+              ) : (
+                <ImageIcon className="h-4 w-4" />
+              )}
+              {event.club?.name}
+            </Link>
           </div>
-          <Link to={`/clubs/${event.club?.id}`} className="inline-flex items-center gap-2 mt-2 text-sm text-brand-primary hover:underline">
-            {event.club?.logoUrl ? (
-              <img src={event.club.logoUrl} alt="" className="h-5 w-5 rounded object-cover" />
-            ) : (
-              <ImageIcon className="h-4 w-4" />
-            )}
-            {event.club?.name}
-          </Link>
+          {canManage && (
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={openEdit}>
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => setDeleteDialog(true)}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
-        {canManage && (
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={openEdit}>
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => setDeleteDialog(true)}>
-              <Trash2 className="h-4 w-4" />
-            </Button>
+
+        <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5">
+            <Calendar className="h-4 w-4" />
+            {formatDate(event.startTime)}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <Clock className="h-4 w-4" />
+            {formatTime(event.startTime)} – {formatTime(event.endTime)}
+          </span>
+          {event.location && (
+            <span className="inline-flex items-center gap-1.5">
+              <MapPin className="h-4 w-4" />
+              {event.location}
+            </span>
+          )}
+        </div>
+
+        {event.description && (
+          <div className="mt-4 text-sm leading-relaxed whitespace-pre-wrap">
+            {event.description}
           </div>
         )}
       </div>
 
-      <Card>
-        <CardContent className="space-y-3">
-          <div className="flex items-center gap-2 text-sm">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">{formatDate(event.startTime)}</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">{formatTime(event.startTime)} – {formatTime(event.endTime)}</span>
-          </div>
-          {event.location && (
-            <div className="flex items-center gap-2 text-sm">
-              <MapPin className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">{event.location}</span>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {event.description && (
-        <Card>
-          <CardHeader><CardTitle>Description</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{event.description}</p>
-          </CardContent>
-        </Card>
-      )}
-
       {!isPast && (
-        <Card>
-          <CardHeader><CardTitle>RSVP</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {attendeeCount > 0 && (
-                  <span className="text-sm text-muted-foreground">{attendeeCount} attending</span>
-                )}
-                {canManage && (
-                  <Button variant="outline" size="sm" onClick={handleExportRsvps}>
-                    <Download className="h-4 w-4 mr-1" /> Export
-                  </Button>
-                )}
-              </div>
-            </div>
-            <div className="flex gap-2 flex-wrap">
+        <Card className="mt-6">
+          <CardContent className="flex items-center justify-between flex-wrap gap-3 py-4">
+            <div className="flex flex-wrap gap-2">
               <Button
                 size="sm"
                 variant={userRsvp?.status === 'GOING' ? 'default' : 'outline'}
@@ -298,15 +282,24 @@ export default function EventDetail() {
                 </Button>
               )}
             </div>
+            <div className="flex items-center gap-3">
+              {attendeeCount > 0 && (
+                <span className="text-sm text-muted-foreground">{attendeeCount} attending</span>
+              )}
+              {canManage && (
+                <Button variant="outline" size="sm" onClick={handleExportRsvps}>
+                  <Download className="h-4 w-4 mr-1" /> Export
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}
+
       {isPast && attendeeCount > 0 && (
-        <Card>
-          <CardContent>
-            <span className="text-sm text-muted-foreground">{attendeeCount} attendee{attendeeCount !== 1 ? 's' : ''}</span>
-          </CardContent>
-        </Card>
+        <p className="mt-4 text-sm text-muted-foreground">
+          {attendeeCount} attendee{attendeeCount !== 1 ? 's' : ''}
+        </p>
       )}
 
       <Dialog open={editDialog} onOpenChange={setEditDialog}>
