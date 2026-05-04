@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import client from '@/api/client'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
   Select,
@@ -102,8 +102,9 @@ export default function ClubDirectory() {
       )}
 
       {!loading && !error && clubs.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground">
-          No clubs found. Try adjusting your search or filters.
+        <div className="text-center py-16 text-muted-foreground">
+          <ImageIcon className="h-10 w-10 mx-auto mb-3 text-muted-foreground/40" />
+          <p className="text-sm">No clubs found. Try adjusting your search or filters.</p>
         </div>
       )}
 
@@ -111,25 +112,30 @@ export default function ClubDirectory() {
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {clubs.map((club) => (
-              <Link key={club.id} to={`/clubs/${club.id}`}>
-                <Card className="hover:shadow-md transition-shadow h-full">
-                  <CardContent className="p-4 flex gap-4">
-                    <div className="flex-shrink-0 h-12 w-12 rounded-lg bg-muted flex items-center justify-center overflow-hidden">
-                      {club.logoUrl ? (
-                        <img src={club.logoUrl} alt={club.name} className="h-full w-full object-cover" />
-                      ) : (
-                        <ImageIcon className="h-6 w-6 text-muted-foreground" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-medium truncate">{club.name}</h3>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="secondary" className="text-xs">{club.category}</Badge>
-                      </div>
-                      <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+              <Link key={club.id} to={`/clubs/${club.id}`} className="group">
+                <Card className="h-full flex flex-col transition-shadow hover:shadow-md">
+                  <div className="h-24 rounded-t-xl bg-muted flex items-center justify-center overflow-hidden">
+                    {club.logoUrl ? (
+                      <img src={club.logoUrl} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <ImageIcon className="h-8 w-8 text-muted-foreground/40" />
+                    )}
+                  </div>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base truncate group-hover:text-brand-primary transition-colors">
+                      {club.name}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex-1 flex flex-col pt-0">
+                    {club.description && (
+                      <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{club.description}</p>
+                    )}
+                    <div className="mt-auto flex items-center gap-3">
+                      <Badge variant="secondary" className="text-xs">{club.category}</Badge>
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Users className="h-3 w-3" />
                         {club._count?.memberships ?? 0} member{(club._count?.memberships ?? 0) !== 1 ? 's' : ''}
-                      </div>
+                      </span>
                     </div>
                   </CardContent>
                 </Card>
