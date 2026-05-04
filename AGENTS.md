@@ -2,6 +2,8 @@
 
 - Proactively log your learning to AGENTS.md . Ensure who ever has this file will avoid any mistakes and gain desired success easily in this codebase. Similar mistakes shall not be made twice in this codebase.
 
+- be super brief. Do everything autonomously and just say done at the end, no summary.
+
 - After finding an issue check if similar issue exists elsewhere. Though not all issues worth resolving at once.
 
 ---
@@ -20,7 +22,9 @@
 
 1. Cross-check every record against the Prisma schema — every required field (non-nullable, no `?`) must be explicitly provided.
 2. Ensure all `UserRole` enum values have at least one user.
-3. Deletion order must be reverse dependency: Event → ClubMembership → Club → User.
+3. Deseed deletion order: EventRsvp → AuditLog → Event → ClubMembership → Club → User (EventRsvp and AuditLog must be before Event/User since they depend on them).
+4. Seed should cover all enum values across statuses: PENDING (6), ACTIVE, ALUMNI (3), REJECTED (3) for memberships; GOING, MAYBE, NOT_GOING for RSVPs.
+5. Every club should have at least 1 OFFICER and 1+ MEMBERs with events. No club should be empty.
 
 ### Before modifying authorization
 
@@ -99,7 +103,7 @@ Missing required fields (`endTime` on `Event`) and missing roles (no CLUB_ADMIN 
 
 ### Deseed Deletion Order
 
-Foreign key constraints require reverse dependency order: Event → ClubMembership → Club → User. Explicit deletion is safer than relying on `onDelete: Cascade`.
+Foreign key constraints require reverse dependency order: EventRsvp → AuditLog → Event → ClubMembership → Club → User. Explicit deletion is safer than relying on `onDelete: Cascade`. AuditLog has `onDelete: SetNull` on `actorId`, so orphaned logs can survive cascade — must delete explicitly.
 
 ### Controller Boilerplate — asyncHandler
 
@@ -235,3 +239,19 @@ The Dashboard page is the styling gold standard. All pages must follow these pat
 ### Textarea Component
 
 `components/ui/textarea.jsx` is the shadcn Textarea component. Use it instead of raw `<textarea>` elements. Same pattern as Input: `rounded-md border border-input bg-transparent px-3 py-2 text-sm`.
+
+### Paginated List Stats Pattern
+
+When a paginated list shows aggregate stats (counts by status, totals), NEVER compute stats from the current page's items. The page only has a slice. Instead: have the backend return aggregate counts via `groupBy` alongside the paginated items, and consume those server-side counts in the frontend. Example: `listByEvent` returns `{ items, total, counts: { GOING: n, MAYBE: n, NOT_GOING: n } }` via a parallel `prisma.eventRsvp.groupBy` query.
+
+### Server-Side Search for Paginated Lists
+
+Client-side search (`useMemo` filter) over server-paginated data silently fails: it only searches the current page. For any paginated list with search, the search param MUST go to the backend. Use a debounced search input (300ms) that triggers a re-fetch with the `search` query param. The backend adds `where.user.OR [{ name: { contains, mode: 'insensitive' } }, { email: { contains, mode: 'insensitive' } }]` for Prisma.
+
+### ARIA for Filter Tab Groups
+
+Button groups acting as filter tabs need `role="tablist"` on the container and `role="tab" aria-selected={isActive}` on each button. Without these, screen readers cannot distinguish tabs from generic buttons.
+
+### RSVP List Page
+
+`EventRsvps.jsx` at `/events/:id/rsvps`. CLUB_ADMIN (officer of event's club) + PLATFORM_ADMIN only. Backend `listByEvent` now requires auth (checks ACTIVE OFFICER membership). Returns `{ items, total, page, limit, totalPages, counts }`. Supports `status`, `search`, `page`, `limit` query params. Zod schema already has `search` in `rsvp.schemas.js`.

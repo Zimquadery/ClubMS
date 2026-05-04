@@ -23,24 +23,54 @@ async function remove(eventId, userId) {
   return { success: true };
 }
 
-async function listByEvent(eventId, { status, page = 1, limit = 50 } = {}) {
+async function listByEvent(eventId, { status, page = 1, limit = 50, userId, userRole, search } = {}) {
+  const event = await prisma.event.findUnique({ where: { id: eventId }, select: { clubId: true } });
+  if (!event) throw new AppError('Event not found', 404);
+
+  if (userRole !== 'PLATFORM_ADMIN') {
+    const membership = await prisma.clubMembership.findUnique({
+      where: { userId_clubId: { userId, clubId: event.clubId } },
+    });
+    if (!membership || membership.role !== 'OFFICER' || membership.status !== 'ACTIVE') {
+      throw new AppError('Not authorized to view RSVPs for this event', 403);
+    }
+  }
+
   const where = { eventId };
   if (status) where.status = status;
+  if (search) {
+    where.user = {
+      OR: [
+        { name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+      ],
+    };
+  }
 
   const skip = (page - 1) * limit;
 
-  const [items, total] = await Promise.all([
+  const [items, total, countRows] = await Promise.all([
     prisma.eventRsvp.findMany({
       where,
-      include: { user: { select: { id: true, name: true } } },
+      include: { user: { select: { id: true, name: true, email: true } } },
       skip,
       take: limit,
       orderBy: { createdAt: 'desc' },
     }),
     prisma.eventRsvp.count({ where }),
+    prisma.eventRsvp.groupBy({
+      by: ['status'],
+      where: { eventId },
+      _count: true,
+    }),
   ]);
 
-  return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
+  const counts = { GOING: 0, MAYBE: 0, NOT_GOING: 0 };
+  for (const row of countRows) {
+    if (counts[row.status] !== undefined) counts[row.status] = row._count;
+  }
+
+  return { items, total, page, limit, totalPages: Math.ceil(total / limit), counts };
 }
 
 async function getUserRsvp(eventId, userId) {

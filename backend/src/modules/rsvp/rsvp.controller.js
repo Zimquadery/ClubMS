@@ -14,8 +14,8 @@ const remove = asyncHandler(async (req, res) => {
 
 const listByEvent = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { status, page, limit } = req.query;
-  const result = await rsvpService.listByEvent(id, { status, page, limit });
+  const { status, page, limit, search } = req.query;
+  const result = await rsvpService.listByEvent(id, { status, page, limit, userId: req.user.userId, userRole: req.user.role, search });
   res.status(200).json(result);
 });
 

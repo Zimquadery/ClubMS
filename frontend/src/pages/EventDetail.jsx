@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { Calendar, MapPin, Clock, ImageIcon, Trash2, Pencil, Download } from 'lucide-react'
+import { Calendar, MapPin, Clock, ImageIcon, Trash2, Pencil, Download, Users } from 'lucide-react'
 import BackLink from '@/components/BackLink'
 import { ImageUploadButton } from '@/components/ImageUploadButton'
 import { formatDate, formatTime } from '@/lib/format'
@@ -287,9 +287,16 @@ export default function EventDetail() {
                 <span className="text-sm text-muted-foreground">{attendeeCount} attending</span>
               )}
               {canManage && (
-                <Button variant="outline" size="sm" onClick={handleExportRsvps}>
-                  <Download className="h-4 w-4 mr-1" /> Export
-                </Button>
+                <>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to={`/events/${id}/rsvps`}>
+                      <Users className="h-4 w-4 mr-1" /> RSVPs
+                    </Link>
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleExportRsvps}>
+                    <Download className="h-4 w-4 mr-1" /> Export
+                  </Button>
+                </>
               )}
             </div>
           </CardContent>

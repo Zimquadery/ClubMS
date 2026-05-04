@@ -4,6 +4,12 @@ const { prisma } = require('../src/lib/prisma');
 async function main() {
   console.log('Deseeding database...');
 
+  const deletedRsvps = await prisma.eventRsvp.deleteMany();
+  console.log(`Deleted ${deletedRsvps.count} RSVPs`);
+
+  const deletedAuditLogs = await prisma.auditLog.deleteMany();
+  console.log(`Deleted ${deletedAuditLogs.count} audit logs`);
+
   const deletedEvents = await prisma.event.deleteMany();
   console.log(`Deleted ${deletedEvents.count} events`);
 

@@ -11,6 +11,7 @@ const ClubDirectory = lazy(() => import('@/pages/ClubDirectory'))
 const ClubDetail = lazy(() => import('@/pages/ClubDetail'))
 const EventCalendar = lazy(() => import('@/pages/EventCalendar'))
 const EventDetail = lazy(() => import('@/pages/EventDetail'))
+const EventRsvps = lazy(() => import('@/pages/EventRsvps'))
 const Profile = lazy(() => import('@/pages/Profile'))
 const ManageClubs = lazy(() => import('@/pages/admin/ManageClubs'))
 const PendingRequests = lazy(() => import('@/pages/admin/PendingRequests'))
@@ -42,6 +43,9 @@ function App() {
             } />
             <Route path="events/:id" element={
               <ProtectedRoute><EventDetail /></ProtectedRoute>
+            } />
+            <Route path="events/:id/rsvps" element={
+              <ProtectedRoute roles={['CLUB_ADMIN', 'PLATFORM_ADMIN']}><EventRsvps /></ProtectedRoute>
             } />
             <Route path="profile" element={
               <ProtectedRoute><Profile /></ProtectedRoute>

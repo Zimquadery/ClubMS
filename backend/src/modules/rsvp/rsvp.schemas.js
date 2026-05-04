@@ -9,6 +9,7 @@ const upsert = z.object({
 
 const listQuery = z.object({
   status: rsvpStatus.optional(),
+  search: z.string().optional(),
   ...PAGINATION,
   limit: PAGINATION.limit.default(50),
 });
