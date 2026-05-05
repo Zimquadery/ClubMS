@@ -3,32 +3,27 @@
     {
       "type": "step",
       "agent": "opencode",
-      "prompt": "proceed with phase 2 of Report.md . Ensure apprppriate and complete implementaion, not bandaid, not over-engineereed. Think holistically. Dont make mistakes, utilize tools and delegation wisely"
+      "prompt": "/impeccable layout the events page seems a bit off. commit to git at the end."
     },
     {
       "type": "step",
       "agent": "opencode",
-      "prompt": "We have attempted phase 2 of Report.md . Ensure everything is complete and ready before we move to next phase. Find gaps and issues that needs to be fixed before moving on. Use subagents to fix those completely. Ensure no cascading issues arise. DO NOT OVER-SCOPE. commit to git at the end."
+      "prompt": "/impeccable layout the clubs page seems a bit off. commit to git at the end."
     },
     {
       "type": "step",
       "agent": "opencode",
-      "prompt": "proceed with phase 3 of Report.md . Ensure apprppriate and complete implementaion, not bandaid, not over-engineereed. Think holistically. Dont make mistakes, utilize tools and delegation wisely"
+      "prompt": "/impeccable layout the profile page seems a bit off. commit to git at the end."
     },
     {
       "type": "step",
       "agent": "opencode",
-      "prompt": "We have attempted phase 3 of Report.md . Ensure everything is complete and ready before we move to next phase. Find gaps and issues that needs to be fixed before moving on. Use subagents to fix those completely. Ensure no cascading issues arise. DO NOT OVER-SCOPE. commit to git at the end."
+      "prompt": "/impeccable layout the event details page seems a bit off. commit to git at the end."
     },
     {
       "type": "step",
       "agent": "opencode",
-      "prompt": "proceed with phase 4 of Report.md . Ensure apprppriate and complete implementaion, not bandaid, not over-engineereed. Think holistically. Dont make mistakes, utilize tools and delegation wisely"
-    },
-    {
-      "type": "step",
-      "agent": "opencode",
-      "prompt": "We have attempted phase 4 of Report.md . Ensure everything is complete and ready before we move to next phase. Find gaps and issues that needs to be fixed before moving on. Use subagents to fix those completely. Ensure no cascading issues arise. DO NOT OVER-SCOPE. commit to git at the end."
+      "prompt": "/impeccable layout the club details page seems a bit off. commit to git at the end."
     }
   ]
 }

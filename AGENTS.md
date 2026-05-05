@@ -1,10 +1,8 @@
-# Follow these guidelines
+# Guidelines
 
-- Proactively log your learning to AGENTS.md . Ensure who ever has this file will avoid any mistakes and gain desired success easily in this codebase. Similar mistakes shall not be made twice in this codebase.
-
-- be super brief. Do everything autonomously and just say done at the end, no summary.
-
-- After finding an issue check if similar issue exists elsewhere. Though not all issues worth resolving at once.
+- Log learnings to AGENTS.md to prevent repeated mistakes.
+- Be brief. Work autonomously. Say done, no summary.
+- After finding an issue, check if similar exists elsewhere.
 
 ---
 
@@ -13,32 +11,31 @@
 ### Before adding any backend route
 
 1. Check the **Route Mount Point Map** below.
-2. Identify which mount point your new route will live on.
-3. If that mount point has **more than one router**, check ALL other routers at that same mount point for parametric routes (e.g., `/:id`, `/:clubId`).
-4. If any other router has a parametric route that could match your new route's path, you **MUST** put your route on a different mount point. Do NOT rely on registration order.
-5. The only safe routes on a shared mount point are multi-segment paths like `/:resourceId/action` — these cannot collide with single-segment `/:id`.
+2. If the mount point has **multiple routers**, check ALL for parametric routes (`/:id`, `/:clubId`).
+3. If any could match your path, use a **different mount point**. Do NOT rely on registration order.
+4. Only multi-segment paths (`/:resourceId/action`) are safe on shared mount points.
 
 ### Before adding/modifying seed data
 
-1. Cross-check every record against the Prisma schema — every required field (non-nullable, no `?`) must be explicitly provided.
-2. Ensure all `UserRole` enum values have at least one user.
-3. Deseed deletion order: EventRsvp → AuditLog → Event → ClubMembership → Club → User (EventRsvp and AuditLog must be before Event/User since they depend on them).
-4. Seed should cover all enum values across statuses: PENDING (6), ACTIVE, ALUMNI (3), REJECTED (3) for memberships; GOING, MAYBE, NOT_GOING for RSVPs.
-5. Every club should have at least 1 OFFICER and 1+ MEMBERs with events. No club should be empty.
+1. Validate every record against Prisma schema — all required fields must be explicit.
+2. All `UserRole` enum values need at least one user.
+3. Deseed order: EventRsvp → AuditLog → Event → ClubMembership → Club → User.
+4. Cover all enum statuses: PENDING (6), ACTIVE, ALUMNI (3), REJECTED (3) for memberships; GOING, MAYBE, NOT_GOING for RSVPs.
+5. Every club: 1+ OFFICER, 1+ MEMBERs, 1+ events.
 
 ### Before modifying authorization
 
-1. `requireRole()` uses hierarchy: PLATFORM_ADMIN inherits CLUB_ADMIN (not STUDENT).
-2. CLUB_ADMIN-scoped endpoints need `requireClubAdmin` after `requireRole('CLUB_ADMIN')` for per-resource checks.
-3. `requireClubAdmin` auto-bypasses PLATFORM_ADMIN — do not add manual checks for this.
-4. `requireClubAdmin` lives in `middleware/rbac.js` alongside `requireRole` — import both from the same file.
-5. `requireClubAdmin` reads `req.params.clubId` — only works on routes with `:clubId` param. For other resources (e.g., event delete where only `:id` is available), do the ownership check inside the service/controller.
-6. Frontend `ProtectedRoute` has NO hierarchy awareness — always list all allowed roles explicitly (e.g., `roles={['CLUB_ADMIN', 'PLATFORM_ADMIN']}`).
+1. `requireRole()` hierarchy: PLATFORM_ADMIN inherits CLUB_ADMIN (not STUDENT).
+2. CLUB_ADMIN endpoints: `requireRole('CLUB_ADMIN')` then `requireClubAdmin` for per-resource checks.
+3. `requireClubAdmin` auto-bypasses PLATFORM_ADMIN — no manual check needed.
+4. Both live in `middleware/rbac.js`.
+5. `requireClubAdmin` reads `req.params.clubId` — only works with `:clubId` param. Otherwise check in service/controller.
+6. Frontend `ProtectedRoute` has NO hierarchy — list all allowed roles explicitly.
 
 ### Before modifying frontend data fetching
 
-1. If a page needs small extra context (e.g., user's membership status for a club), prefer extending an existing endpoint with an optional parameter over creating a new endpoint.
-2. If data shown to the user is hardcoded or static, check whether a backend endpoint already exists to fetch real data before creating a new one.
+1. Prefer extending existing endpoints with optional params over creating new ones.
+2. Check if a backend endpoint already exists before creating new ones for hardcoded/static data.
 
 ---
 
@@ -46,212 +43,106 @@
 
 ### Route Mount Point Map
 
-| Mount Point | Router | File | Has Parametric Routes | Safe Literal Paths |
-|---|---|---|---|---|
-| `/api/auth` | `authRoutes` | `auth/auth.routes.js` | No | Any |
-| `/api/clubs` | `clubRoutes` | `clubs/clubs.routes.js` | **Yes: `GET /:id`, `PATCH /:id`, `DELETE /:id`** | Only multi-segment (`/:id/action`) |
-| `/api/clubs` | `membershipsRoutes` | `memberships/memberships.routes.js` | Yes: `/:clubId/join`, `/:clubId/leave`, `/:clubId/members/*`, `/:clubId/transfer` | Only multi-segment |
-| `/api/events` | `eventsRoutes` | `events/events.routes.js` | **Yes: `GET /:id`, `PATCH /:id`, `DELETE /:id`** | Only multi-segment (`/:id/action`) |
-| `/api/events` | `rsvpRoutes` | `rsvp/rsvp.routes.js` | Yes: `/:id/rsvp`, `/:id/rsvps`, `/:id/rsvps/export` | Only multi-segment |
-| `/api/memberships` | `membershipsAdminRouter` | `memberships/memberships.routes.js` | No | **Any — this is the safe mount for literal paths** |
-| `/api/stats` | `statsRoutes` | `stats/stats.routes.js` | No | Any |
-| `/api/audit-logs` | `auditRoutes` | `audit/audit.routes.js` | No | Any |
-| `/api/upload` | `uploadRoutes` | `upload/upload.routes.js` | No | Any |
+| Mount Point | Router | Parametric? | Safe Paths |
+|---|---|---|---|
+| `/api/auth` | `authRoutes` | No | Any |
+| `/api/clubs` | `clubRoutes` | **`/:id` (GET/PATCH/DELETE)** | Multi-segment only |
+| `/api/clubs` | `membershipsRoutes` | `/:clubId/*` | Multi-segment only |
+| `/api/events` | `eventsRoutes` | **`/:id` (GET/PATCH/DELETE)** | Multi-segment only |
+| `/api/events` | `rsvpRoutes` | `/:id/rsvp`, `/:id/rsvps` | Multi-segment only |
+| `/api/memberships` | `membershipsAdminRouter` | No | **Any — safe for literal paths** |
+| `/api/stats` | `statsRoutes` | No | Any |
+| `/api/audit-logs` | `auditRoutes` | No | Any |
+| `/api/upload` | `uploadRoutes` | No | Any |
 
-**Collision zones:** `/api/clubs` and `/api/events` each have TWO routers. On `/api/clubs`, `clubRoutes` registers `GET /:id` which swallows ANY single-segment GET path. On `/api/events`, `eventsRoutes` registers `GET /:id` — but `rsvpRoutes` only uses multi-segment paths (`/:id/rsvp`, `/:id/rsvps`) so no collision occurs. Adding a single-segment literal path to `rsvpRoutes` would collide with `eventsRoutes` `/:id`.
+**Collision zones:** `/api/clubs` and `/api/events` each have TWO routers. `GET /:id` swallows any single-segment GET. Literal-path membership endpoints go on `membershipsAdminRouter` (`/api/memberships`), NOT `membershipsRoutes` (`/api/clubs`).
 
-**Rule:** When adding a new endpoint to the memberships module with a literal path (like `/my-clubs`, `/stats`, `/search`), add it to `membershipsAdminRouter` (mounted at `/api/memberships`). Do NOT add it to `membershipsRoutes` (mounted at `/api/clubs`).
+### Prisma v7
 
-### Prisma v7 Setup
-
-- `schema.prisma` datasource: only `provider = "postgresql"` (no `url`).
-- `prisma.config.mjs` at backend root: `defineConfig({ datasource: { url: process.env.DATABASE_URL ?? '' } })`.
-- PrismaClient requires `@prisma/adapter-pg` adapter with `pg` package.
-- `prisma.config.mjs` is ESM — use `import.meta.url` + `fileURLToPath`, not `__dirname`.
-- `prisma.config.mjs` uses `process.env.DATABASE_URL ?? ''` (not `env()`) because `env()` throws if missing.
-- `prisma.config.mjs` must be in Docker image before `prisma generate` or `prisma migrate deploy`.
+- `schema.prisma`: only `provider = "postgresql"` (no `url`).
+- `prisma.config.mjs`: `defineConfig({ datasource: { url: process.env.DATABASE_URL ?? '' } })`. ESM — use `import.meta.url` + `fileURLToPath`.
+- PrismaClient requires `@prisma/adapter-pg` with `pg`.
+- `prisma.config.mjs` must be in Docker image before `prisma generate`/`migrate deploy`.
+- Offline migration: `npx prisma migrate diff --from-empty --to-schema=prisma/schema.prisma --script`.
 
 ### Frontend Build
 
-- `frontend/index.html` is the Vite entry point — must exist.
-- Brand color: `main.jsx` sets `--brand-primary` CSS variable from `VITE_PRIMARY_BRAND_COLOR` env.
-- Migrations without live DB: `npx prisma migrate diff --from-empty --to-schema=prisma/schema.prisma --script`. Commit `prisma/migrations/` to source control.
+- Entry: `frontend/index.html`. Brand color: `--brand-primary` from `VITE_PRIMARY_BRAND_COLOR` env in `main.jsx`.
 
----
+### Tech Stack Quick Ref
 
-## Learnings
-
-### Express Route Collision — happened twice
-
-First `/my-admin-clubs`, then `/my-clubs` were added to `membershipsRoutes` (mounted at `/api/clubs`) where `clubRoutes` already had `GET /:id`. Both were swallowed by `/:id`. Root cause: the learning was passive prose, not an actionable rule. See **Rules → Before adding any backend route** above for the mandatory checklist.
-
-### Per-Resource Authorization
-
-`requireRole()` is global RBAC — insufficient for CLUB_ADMIN who should only manage their own clubs. Use `requireClubAdmin` middleware (queries `ClubMembership` for ACTIVE OFFICER membership) after `requireRole('CLUB_ADMIN')`. PLATFORM_ADMIN is auto-bypassed in `requireClubAdmin`.
-
-### Role Hierarchy
-
-`requireRole` uses `ROLE_INHERITS` map: PLATFORM_ADMIN inherits CLUB_ADMIN but not STUDENT. Frontend `ProtectedRoute` has no hierarchy — list all roles explicitly.
-
-### Extending Endpoints vs. Creating New Ones
-
-Prefer extending existing endpoints with optional params (e.g., `getById(id, userId)`) over creating separate endpoints for context like user membership status.
-
-### Seed Data Pitfalls
-
-Missing required fields (`endTime` on `Event`) and missing roles (no CLUB_ADMIN users) both caused seed failures. Always validate against schema and cover all `UserRole` enum values.
-
-### Deseed Deletion Order
-
-Foreign key constraints require reverse dependency order: EventRsvp → AuditLog → Event → ClubMembership → Club → User. Explicit deletion is safer than relying on `onDelete: Cascade`. AuditLog has `onDelete: SetNull` on `actorId`, so orphaned logs can survive cascade — must delete explicitly.
-
-### Controller Boilerplate — asyncHandler
-
-All controller functions use `asyncHandler` wrapper from `utils/asyncHandler.js` instead of manual try/catch blocks. New controllers MUST use `asyncHandler` — do not re-introduce try/catch boilerplate.
-
-### Cross-Module Dependencies
-
-Controllers must NOT import services from other modules for authorization checks. Use `requireClubAdmin` middleware from `middleware/rbac.js` instead. If `requireClubAdmin` cannot be used (no `:clubId` param), do the check in the service layer — never import another module's service into a controller for auth.
-
-### Duplicate Service Functions
-
-When multiple service functions differ only in an expected-status/new-status pair (e.g., approve/reject/setAlumni), extract a shared private helper (`updateMembershipStatus`). Do not copy-paste function bodies with minor token changes.
-
-### Transactional Operations
-
-Multi-step DB operations (e.g., club creation: create club + create membership + update user role) MUST be wrapped in `prisma.$transaction()`. Non-transactional multi-step operations cause data corruption on partial failure.
-
-### Date Validation
-
-`new Date(garbage)` returns `Invalid Date` (NaN). `NaN < NaN` is `false`, so `end < start` checks pass for invalid input. Always validate with `isNaN(date.getTime())` before comparison.
+- **Validation:** Zod schemas per module (`*.schemas.js`), `validate()`/`validateQuery()` from `middleware/validate.js`. Strips unknown fields.
+- **Controllers:** Use `asyncHandler` from `utils/asyncHandler.js` — no manual try/catch.
+- **Transactions:** Multi-step DB ops MUST use `prisma.$transaction()`.
+- **Date validation:** `isNaN(date.getTime())` before comparison — `new Date(garbage)` is `Invalid Date`, `NaN < NaN` is `false`.
+- **Cross-module auth:** Controllers must NOT import other modules' services for auth. Use `requireClubAdmin` middleware or check in service layer.
+- **Duplicate functions:** Extract shared helpers for status-update variants (approve/reject/alumni).
+- **Security:** `helmet()`, `cors({ origin: FRONTEND_URL })`, `express.json({ limit: '10kb' })`, `express-rate-limit` (auth: 20/15min, general: 100/min). `JWT_SECRET` has no fallback.
+- **Logging:** `pino-http` + `pino` at `lib/logger.js`. `LOG_LEVEL` env (default: `info`).
+- **Pagination:** All lists return `{ items, total, page, limit, totalPages }`. Defaults: 20 (clubs/events), 50 (members). Max 100. Frontend: `res.data.items || res.data`.
+- **Search:** Server-side only for paginated lists. Debounced 300ms input → backend `search` param. Client-side `useMemo` filter only searches current page.
+- **Aggregate stats:** Backend returns via `groupBy` alongside paginated items. Never compute from page slice.
+- **Tests:** Jest + supertest, `backend/tests/`, `backend/jest.config.js`. CI via GitHub Actions.
+- **API Docs:** `swagger-jsdoc` + `swagger-ui-express` at `/api/docs`.
+- **Email:** `lib/notifications.js` — console provider default, `setProvider()` to swap.
+- **Upload:** `multer` in `config/upload.js` → `backend/uploads/`, 5MB, images only. `POST /api/upload` returns `{ url }`.
+- **CSV:** `exportMembersCsv`/`exportRsvpsCsv` → blob download.
+- **Dark mode:** Tailwind v4 `.dark` class. `ThemeContext` + `useTheme`, persisted to localStorage.
+- **Code splitting:** `React.lazy()` + `Suspense` for all pages.
+- **Axios:** `api/client.js` — 15s timeout, 1 retry on timeout, 401 → hard reload `/login`.
 
 ### Rejected User Re-application
 
-REJECTED users can re-apply by updating their membership status back to PENDING (not creating a new record, since `@@unique([userId, clubId])` prevents duplicates). The requestJoin service handles this automatically.
-
-### Security Middleware Stack
-
-Backend uses: `helmet()` for headers, `cors({ origin: FRONTEND_URL })`, `express.json({ limit: '10kb' })`, `express-rate-limit` (auth: 20/15min, general: 100/min). `JWT_SECRET` has no fallback — throws at startup if missing.
-
-### Input Validation (Zod)
-
-All endpoints use Zod schemas for input validation via `validate()` and `validateQuery()` middleware from `middleware/validate.js`. Each module has its own `*.schemas.js` file. The `validate` middleware strips unknown fields by replacing `req.body` with `result.data`.
-
-### Pagination
-
-All list endpoints return `{ items, total, page, limit, totalPages }`. Default page size is 20 (clubs/events) or 50 (members). Max limit is 100. Frontend uses the `Pagination` component from `components/Pagination.jsx`. Backward compatibility: existing code that doesn't pass page/limit gets default pagination.
-
-### Frontend API Response Handling
-
-Backend list endpoints now return paginated objects. Frontend pages use `res.data.items || res.data` for backward compatibility. When fetching without pagination (e.g., dropdowns), pass `limit=100`.
-
-### Profile Management
-
-`PATCH /api/auth/profile` (name, email) and `PATCH /api/auth/password` (currentPassword, newPassword). AuthContext provides `refreshUser()` to update the user state after profile changes. Profile page at `/profile` with both forms.
-
-### Event Detail
-
-`GET /api/events/:id` returns event with club info and user membership. EventDetail.jsx at `/events/:id` shows full event details with edit/delete for authorized users. EventCalendar cards link to event detail pages.
-
-### Past Events
-
-`GET /events?timeRange=past|upcoming|all` — default is `upcoming`. Past events are sorted `startTime: 'desc'`. EventCalendar has a dropdown to switch between upcoming/past/all.
-
-### Event RSVP
-
-`EventRsvp` model with `@@unique([eventId, userId])`. Upsert pattern: `prisma.eventRsvp.upsert({ where: { eventId_userId: { eventId, userId } } })`. Routes mounted at `/api/events` via `rsvpRoutes` — uses multi-segment paths (`/:id/rsvp`, `/:id/rsvps`) to avoid collision with `eventsRoutes` `/:id`.
-
-### Dashboard Analytics
-
-`GET /api/stats/dashboard` returns role-specific stats. PLATFORM_ADMIN sees global counts. CLUB_ADMIN sees their clubs' counts. STUDENT sees their own counts. Frontend `StatCard` component renders metric cards. Stats module is a standalone module at `modules/stats/`.
-
-### Structured Logging
-
-`pino-http` middleware logs all requests. `pino` logger at `lib/logger.js`. Error handler logs 5xx with full error object, 4xx with status + message. `LOG_LEVEL` env var controls verbosity (default: `info`).
-
-### Frontend Loading States
-
-All pages use `Skeleton` component variants from `components/ui/skeleton.jsx` instead of spinner divs. Variants: `Skeleton` (base), `CardSkeleton`, `EventCardSkeleton`, `ListSkeleton`, `DetailSkeleton`. Each page imports the appropriate variant.
-
-### Frontend Axios Configuration
-
-`api/client.js` has 15s timeout and 1 retry on timeout (ECONNABORTED). 401 interceptor does hard reload to `/login` (acceptable trade-off since interceptors are outside React's component tree).
-
-### Frontend Form Validation
-
-Register: confirm password field + password strength meter (Weak/Fair/Strong based on length, uppercase, numbers, symbols). Event create/edit: frontend date validation (end > start) before API call. All backend validation via Zod remains the source of truth.
+`@@unique([userId, clubId])` prevents duplicates. REJECTED → PENDING via `requestJoin` (updates existing record).
 
 ### Audit Logging
 
-`AuditLog` model in Prisma stores action, actorId, targetType, targetId, metadata (JSON string), ipAddress. `auditLog` middleware in `middleware/auditLog.js` monkey-patches `res.end` to log successful operations. Applied to club CRUD, event CRUD, membership approve/reject/alumni/remove/transfer/promote/demote/bulk-approve/bulk-reject routes. Query endpoint at `GET /api/audit-logs` (PLATFORM_ADMIN only). Frontend page at `/admin/audit-logs`. When adding new admin actions, always add `auditLog` middleware and update the `ACTIONS` array in `AuditLog.jsx`.
+`AuditLog` model: action, actorId, targetType, targetId, metadata (JSON), ipAddress. Middleware in `middleware/auditLog.js`. Applied to club/event CRUD + membership actions. Query: `GET /api/audit-logs` (PLATFORM_ADMIN). Frontend: `/admin/audit-logs`. **New admin actions must add `auditLog` middleware + update `ACTIONS` array in `AuditLog.jsx`.**
 
-### Member Role Management
+### Member Roles
 
-`promoteMember` promotes MEMBER → OFFICER (transactional: updates ClubMembership + User role to CLUB_ADMIN). `demoteMember` demotes OFFICER → MEMBER (checks remaining officer count before downgrading user role). Routes: `PATCH /:clubId/members/:userId/promote`, `PATCH /:clubId/members/:userId/demote`. Both require CLUB_ADMIN + requireClubAdmin.
+- **promote:** MEMBER → OFFICER (transactional: ClubMembership + User role → CLUB_ADMIN).
+- **demote:** OFFICER → MEMBER (checks remaining officer count).
+- Routes: `PATCH /:clubId/members/:userId/promote|demote`. Requires CLUB_ADMIN + `requireClubAdmin`.
+- **Bulk:** `bulkApprove`/`bulkReject` accept `{ userIds: string[] }`, use `updateMany` in transaction. Max 100. Frontend: checkboxes + sticky bar.
 
-### Bulk Actions
+### RSVP
 
-`bulkApprove`/`bulkReject` accept `{ userIds: string[] }` and use `updateMany` in a transaction. Schemas validate array is non-empty with max 100 items. Frontend uses checkboxes + sticky bulk action bar in PendingRequests.
+`EventRsvp` with `@@unique([eventId, userId])`. Upsert: `prisma.eventRsvp.upsert({ where: { eventId_userId: { eventId, userId } } })`. Multi-segment routes to avoid collision. `EventRsvps.jsx` at `/events/:id/rsvps` — CLUB_ADMIN + PLATFORM_ADMIN only. Backend `listByEvent` requires auth, returns `{ items, total, counts }`.
 
-### File Upload
+### Frontend Styling (Dashboard = gold standard)
 
-`multer` configured in `config/upload.js` — disk storage to `backend/uploads/`, 5MB limit, image-only filter (JPEG/PNG/GIF/WebP). Upload endpoint at `POST /api/upload` returns `{ url }`. Static serving at `/uploads`. Frontend proxy and nginx config both proxy `/uploads` to backend. Docker volume `uploads` persists files. File upload UI replaces URL-only inputs in club create/edit and event create/edit forms.
+1. **No hardcoded Tailwind colors.** Use semantic tokens: `bg-background`, `text-muted-foreground`, `bg-destructive`, `bg-status-green`, `bg-status-yellow`, `border-input`, `text-brand-primary`.
+2. **Typography:** `<h1>` = `text-2xl font-bold`. Subtitles = `text-sm text-muted-foreground`. List items = `text-sm font-medium`. Metadata = `text-xs text-muted-foreground`.
+3. **Cards:** Always `CardHeader` + `CardTitle` + `CardContent`. Title = icon + label: `<CardTitle className="flex items-center gap-2 text-lg"><Icon className="h-5 w-5 text-brand-primary" />Title</CardTitle>`.
+4. **Status badges:** `bg-status-green/15 text-status-green` (active), `bg-status-yellow/15 text-status-yellow` (pending), `bg-brand-primary/10 text-brand-primary` (alumni).
+5. **RSVP buttons:** `bg-status-green`/`bg-status-yellow`/`bg-destructive` + `hover:*/90` + `text-white`.
+6. **Lists in cards:** `divide-y` + `py-2 first:pt-0 last:pb-0`. Not `space-y-2` sub-boxes.
+7. **Loading:** `ListSkeleton` for lists, `DetailSkeleton` for details, `CardSkeleton`/`EventCardSkeleton` for cards. From `components/ui/skeleton.jsx`.
+8. **Forms:** shadcn components (`Input`, `Textarea`, `Select`, `Label`). Never raw `<textarea>`.
+9. **Grids:** `grid gap-4 md:grid-cols-2`.
 
-### CSV Export
+### ARIA
 
-`exportMembersCsv` and `exportRsvpsCsv` build CSV strings from DB queries. Endpoints return CSV with Content-Disposition header. Frontend uses blob download pattern (createObjectURL + link.click).
+Filter tab groups: `role="tablist"` on container, `role="tab" aria-selected={isActive}` on buttons.
 
-### Dark Mode
+### Radix Dialog Animations
 
-Tailwind v4 `@custom-variant dark` uses `.dark` class. `ThemeContext` + `useTheme` hook manages state, persists to localStorage. Toggle button in Layout header (Sun/Moon icons). CSS variables override all theme colors in `.dark` block.
+Use `@keyframes` with `data-state` selectors, NOT CSS transitions (transitions don't fire on mount). Applies to ALL Radix primitives with `data-state`. shadcn classes: `t-modal`, `t-modal-overlay` in `index.css`.
 
-### Code Splitting
+```css
+.t-modal-overlay[data-state="open"] { animation: overlayShow 250ms cubic-bezier(0.25, 1, 0.5, 1); }
+.t-modal-overlay[data-state="closed"] { animation: overlayHide 187ms cubic-bezier(0.25, 1, 0.5, 1); }
+@keyframes overlayShow { from { opacity: 0; } to { opacity: 1; } }
+@keyframes overlayHide { from { opacity: 1; } to { opacity: 0; } }
+```
 
-All page components use `React.lazy()` with `Suspense` fallback (spinner). Each page is a separate chunk. Main bundle reduced from ~557KB to ~456KB.
+---
 
-### Swagger API Docs
+## Learnings (historical context)
 
-`swagger-jsdoc` + `swagger-ui-express` at `/api/docs`. All routes annotated with OpenAPI JSDoc comments. Tags: Auth, Clubs, Events, Memberships, RSVP, Stats, Audit, Upload.
-
-### Test Suite
-
-Jest + supertest. 64 tests in `backend/tests/`. Service unit tests (memberships, events, auth) mock prisma. Integration tests (auth) use Express app via supertest. Config in `backend/jest.config.js`. CI runs tests via GitHub Actions.
-
-### Email Notifications (Scaffold)
-
-`lib/notifications.js` provides `sendNotification`, `notifyMembershipApproved`, `notifyMembershipRejected`, `notifyNewEvent`. Uses console provider by default. `setProvider(name, provider)` allows swapping to email service (SendGrid/Resend).
-
-### Frontend Styling Consistency (Dashboard as Reference)
-
-The Dashboard page is the styling gold standard. All pages must follow these patterns:
-
-1. **No hardcoded Tailwind colors.** Never use `bg-gray-50`, `text-gray-600`, `bg-green-600`, `border-gray-300`, etc. Use semantic tokens: `bg-background`, `text-muted-foreground`, `bg-destructive`, `bg-status-green`, `bg-status-yellow`, `border-input`, `text-brand-primary`, etc. Auth page outer containers use `bg-background` (not `bg-gray-50`).
-2. **Typography patterns.** Page headings: `text-2xl font-bold` on `<h1>`. Page subtitles: `text-sm text-muted-foreground`. Item titles in lists: `text-sm font-medium`. Metadata: `text-xs text-muted-foreground`. Password strength colors: `bg-destructive`, `bg-status-yellow`, `bg-status-green` (not `bg-red-500`, etc.).
-3. **Card structure.** Use `CardHeader` + `CardTitle` + `CardContent` for all card sections. Never use bare `<h2>` tags inside cards. Card titles get icon + label pattern: `<CardTitle className="flex items-center gap-2 text-lg"><Icon className="h-5 w-5 text-brand-primary" />Title</CardTitle>`.
-4. **Status badges.** Use semantic color tokens with opacity: `bg-status-green/15 text-status-green` for active, `bg-status-yellow/15 text-status-yellow` for pending, `bg-brand-primary/10 text-brand-primary` for alumni. Never use `bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200` patterns.
-5. **RSVP buttons.** Use `bg-status-green`, `bg-status-yellow`, `bg-destructive` with `hover:*/90` and `text-white`. Never hardcode `bg-green-600`, `bg-yellow-600`, `bg-red-600`.
-6. **List patterns inside cards.** Use `divide-y` with `py-2 first:pt-0 last:pb-0` rows. Not `space-y-2` with `rounded-lg border p-3` sub-boxes.
-7. **Loading states.** Use `ListSkeleton` component for list pages, not hand-built `Array.from` skeleton grids. Use `DetailSkeleton` for detail pages.
-8. **Form controls.** Use shadcn components (`Input`, `Textarea`, `Select`, `Label`). Never write raw `<textarea>` with inline Tailwind. `Textarea` component is at `components/ui/textarea.jsx`.
-9. **Page headings.** Use `<h1>` with explicit `text-2xl font-bold`, not `CardTitle` (which renders `<h3>` with `font-semibold`). If using `CardTitle` for auth pages, add `font-bold` to className override.
-10. **Grid pattern.** Two-column grids use `grid gap-4 md:grid-cols-2` (not `gap-6 lg:grid-cols-2`).
-
-### Textarea Component
-
-`components/ui/textarea.jsx` is the shadcn Textarea component. Use it instead of raw `<textarea>` elements. Same pattern as Input: `rounded-md border border-input bg-transparent px-3 py-2 text-sm`.
-
-### Paginated List Stats Pattern
-
-When a paginated list shows aggregate stats (counts by status, totals), NEVER compute stats from the current page's items. The page only has a slice. Instead: have the backend return aggregate counts via `groupBy` alongside the paginated items, and consume those server-side counts in the frontend. Example: `listByEvent` returns `{ items, total, counts: { GOING: n, MAYBE: n, NOT_GOING: n } }` via a parallel `prisma.eventRsvp.groupBy` query.
-
-### Server-Side Search for Paginated Lists
-
-Client-side search (`useMemo` filter) over server-paginated data silently fails: it only searches the current page. For any paginated list with search, the search param MUST go to the backend. Use a debounced search input (300ms) that triggers a re-fetch with the `search` query param. The backend adds `where.user.OR [{ name: { contains, mode: 'insensitive' } }, { email: { contains, mode: 'insensitive' } }]` for Prisma.
-
-### ARIA for Filter Tab Groups
-
-Button groups acting as filter tabs need `role="tablist"` on the container and `role="tab" aria-selected={isActive}` on each button. Without these, screen readers cannot distinguish tabs from generic buttons.
-
-### RSVP List Page
-
-`EventRsvps.jsx` at `/events/:id/rsvps`. CLUB_ADMIN (officer of event's club) + PLATFORM_ADMIN only. Backend `listByEvent` now requires auth (checks ACTIVE OFFICER membership). Returns `{ items, total, page, limit, totalPages, counts }`. Supports `status`, `search`, `page`, `limit` query params. Zod schema already has `search` in `rsvp.schemas.js`.
+- **Route collision happened twice:** `/my-admin-clubs`, `/my-clubs` swallowed by `/:id` on `membershipsRoutes`. See Rules.
+- **Per-resource auth:** `requireRole()` is global; CLUB_ADMIN needs `requireClubAdmin` for own-club checks.
+- **Seed pitfalls:** Missing required fields + missing enum role users → seed failures.
+- **Deseed order:** Explicit deletion required — AuditLog `onDelete: SetNull` can orphan logs.
+- **REJECTED re-apply:** Update status to PENDING, don't create new record (`@@unique` prevents it).
