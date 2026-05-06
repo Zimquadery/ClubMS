@@ -49,14 +49,19 @@ export default function EventDetail() {
     try {
       const res = await client.get(`/events/${id}`)
       setEvent(res.data)
-      try {
-        const [rsvpRes, countRes] = await Promise.all([
-          client.get(`/events/${id}/rsvp`),
-          client.get(`/events/${id}/rsvps`, { params: { limit: 1 } }),
-        ])
-        setUserRsvp(rsvpRes.data)
-        setAttendeeCount(countRes.data.total)
-      } catch {}
+
+      client.get(`/events/${id}/rsvp`)
+        .then(rsvpRes => setUserRsvp(rsvpRes.data))
+        .catch(() => setUserRsvp(null))
+
+      const localCanManage = (res.data.userMembership?.role === 'OFFICER'
+        && res.data.userMembership?.status === 'ACTIVE') || user?.role === 'PLATFORM_ADMIN'
+
+      if (localCanManage) {
+        client.get(`/events/${id}/rsvps`, { params: { limit: 1 } })
+          .then(countRes => setAttendeeCount(countRes.data.total))
+          .catch(() => {})
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load event')
     } finally {
@@ -166,6 +171,7 @@ export default function EventDetail() {
   }
 
   const canManage = (event?.userMembership?.role === 'OFFICER' && event?.userMembership?.status === 'ACTIVE') || user?.role === 'PLATFORM_ADMIN'
+  const canRsvp = event?.userMembership?.status === 'ACTIVE' || user?.role === 'PLATFORM_ADMIN'
   const isPast = event ? new Date(event.startTime) < new Date() : false
 
   if (loading) {
@@ -246,64 +252,73 @@ export default function EventDetail() {
       </div>
 
       {!isPast && (
-        <Card className="mt-6">
-          <CardContent className="flex items-center justify-between flex-wrap gap-3 py-4">
-            <div className="flex flex-wrap gap-2">
-              <Button
-                size="sm"
-                variant={userRsvp?.status === 'GOING' ? 'default' : 'outline'}
-                className={userRsvp?.status === 'GOING' ? 'bg-status-green hover:bg-status-green/90 text-white' : ''}
-                onClick={() => handleRsvp('GOING')}
-                disabled={rsvpLoading}
-              >
-                Going
-              </Button>
-              <Button
-                size="sm"
-                variant={userRsvp?.status === 'MAYBE' ? 'default' : 'outline'}
-                className={userRsvp?.status === 'MAYBE' ? 'bg-status-yellow hover:bg-status-yellow/90 text-white' : ''}
-                onClick={() => handleRsvp('MAYBE')}
-                disabled={rsvpLoading}
-              >
-                Maybe
-              </Button>
-              <Button
-                size="sm"
-                variant={userRsvp?.status === 'NOT_GOING' ? 'default' : 'outline'}
-                className={userRsvp?.status === 'NOT_GOING' ? 'bg-destructive hover:bg-destructive/90 text-white' : ''}
-                onClick={() => handleRsvp('NOT_GOING')}
-                disabled={rsvpLoading}
-              >
-                Not Going
-              </Button>
-              {userRsvp && (
-                <Button size="sm" variant="ghost" onClick={handleRemoveRsvp} disabled={rsvpLoading}>
-                  Clear RSVP
+        canRsvp ? (
+          <Card className="mt-6">
+            <CardContent className="flex items-center justify-between flex-wrap gap-3 py-4">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant={userRsvp?.status === 'GOING' ? 'default' : 'outline'}
+                  className={userRsvp?.status === 'GOING' ? 'bg-status-green hover:bg-status-green/90 text-white' : ''}
+                  onClick={() => handleRsvp('GOING')}
+                  disabled={rsvpLoading}
+                >
+                  Going
                 </Button>
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              {attendeeCount > 0 && (
-                <span className="text-sm text-muted-foreground">{attendeeCount} attending</span>
-              )}
-              {canManage && (
-                <>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link to={`/events/${id}/rsvps`}>
-                      <Users className="h-4 w-4 mr-1" /> RSVPs
-                    </Link>
+                <Button
+                  size="sm"
+                  variant={userRsvp?.status === 'MAYBE' ? 'default' : 'outline'}
+                  className={userRsvp?.status === 'MAYBE' ? 'bg-status-yellow hover:bg-status-yellow/90 text-white' : ''}
+                  onClick={() => handleRsvp('MAYBE')}
+                  disabled={rsvpLoading}
+                >
+                  Maybe
+                </Button>
+                <Button
+                  size="sm"
+                  variant={userRsvp?.status === 'NOT_GOING' ? 'default' : 'outline'}
+                  className={userRsvp?.status === 'NOT_GOING' ? 'bg-destructive hover:bg-destructive/90 text-white' : ''}
+                  onClick={() => handleRsvp('NOT_GOING')}
+                  disabled={rsvpLoading}
+                >
+                  Not Going
+                </Button>
+                {userRsvp && (
+                  <Button size="sm" variant="ghost" onClick={handleRemoveRsvp} disabled={rsvpLoading}>
+                    Clear RSVP
                   </Button>
-                  <Button variant="outline" size="sm" onClick={handleExportRsvps}>
-                    <Download className="h-4 w-4 mr-1" /> Export
-                  </Button>
-                </>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                )}
+              </div>
+              <div className="flex items-center gap-3">
+                {canManage && attendeeCount > 0 && (
+                  <span className="text-sm text-muted-foreground">{attendeeCount} attending</span>
+                )}
+                {canManage && (
+                  <>
+                    <Button variant="outline" size="sm" asChild>
+                      <Link to={`/events/${id}/rsvps`}>
+                        <Users className="h-4 w-4 mr-1" /> RSVPs
+                      </Link>
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleExportRsvps}>
+                      <Download className="h-4 w-4 mr-1" /> Export
+                    </Button>
+                  </>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <p className="mt-4 text-sm text-muted-foreground">
+            {event?.userMembership
+              ? 'Only active members can RSVP'
+              : <>Join <Link to={`/clubs/${event.club?.id}`} className="text-brand-primary hover:underline">{event.club?.name || 'this club'}</Link> to RSVP</>
+            }
+          </p>
+        )
       )}
 
-      {isPast && attendeeCount > 0 && (
+      {isPast && canManage && attendeeCount > 0 && (
         <p className="mt-4 text-sm text-muted-foreground">
           {attendeeCount} attendee{attendeeCount !== 1 ? 's' : ''}
         </p>

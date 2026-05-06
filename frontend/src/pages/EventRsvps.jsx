@@ -92,7 +92,11 @@ export default function EventRsvps() {
       setTotalPages(res.data.totalPages || 1)
       setCounts(res.data.counts || { GOING: 0, MAYBE: 0, NOT_GOING: 0 })
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load RSVPs')
+      if (err.response?.status === 403) {
+        setError('You do not have permission to view RSVPs for this event.')
+      } else {
+        setError(err.response?.data?.message || 'Failed to load RSVPs')
+      }
     } finally {
       setLoading(false)
     }

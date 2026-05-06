@@ -3,7 +3,7 @@ const { asyncHandler } = require('../../utils/asyncHandler');
 
 const upsert = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const rsvp = await rsvpService.upsert(id, req.user.userId, req.body.status);
+  const rsvp = await rsvpService.upsert(id, req.user.userId, req.body.status, req.user.role);
   res.status(200).json(rsvp);
 });
 

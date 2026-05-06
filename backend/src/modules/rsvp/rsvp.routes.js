@@ -1,6 +1,7 @@
 const express = require('express');
 const rsvpController = require('./rsvp.controller');
 const { authMiddleware } = require('../../middleware/auth');
+const { requireRole } = require('../../middleware/rbac');
 const { validate, validateQuery } = require('../../middleware/validate');
 const { upsert: upsertSchema, listQuery } = require('./rsvp.schemas');
 
@@ -97,7 +98,7 @@ router.get('/:id/rsvp', authMiddleware, rsvpController.getUserRsvp);
  *       401:
  *         description: Unauthorized
  */
-router.get('/:id/rsvps', authMiddleware, validateQuery(listQuery), rsvpController.listByEvent);
+router.get('/:id/rsvps', authMiddleware, requireRole('CLUB_ADMIN'), validateQuery(listQuery), rsvpController.listByEvent);
 
 /**
  * @openapi
@@ -118,6 +119,6 @@ router.get('/:id/rsvps', authMiddleware, validateQuery(listQuery), rsvpControlle
  *       403:
  *         description: Forbidden - not an admin of this event's club
  */
-router.get('/:id/rsvps/export', authMiddleware, rsvpController.exportRsvps);
+router.get('/:id/rsvps/export', authMiddleware, requireRole('CLUB_ADMIN'), rsvpController.exportRsvps);
 
 module.exports = router;

@@ -1,9 +1,15 @@
 const { prisma } = require('../../lib/prisma');
 const { AppError } = require('../../utils/errors');
+const membershipsService = require('../memberships/memberships.service');
 
-async function upsert(eventId, userId, status) {
+async function upsert(eventId, userId, status, userRole) {
   const event = await prisma.event.findUnique({ where: { id: eventId } });
   if (!event) throw new AppError('Event not found', 404);
+
+  if (userRole !== 'PLATFORM_ADMIN') {
+    const active = await membershipsService.isActiveMember(userId, event.clubId);
+    if (!active) throw new AppError('Must be an active member to RSVP', 403);
+  }
 
   return prisma.eventRsvp.upsert({
     where: { eventId_userId: { eventId, userId } },
