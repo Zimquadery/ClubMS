@@ -294,6 +294,33 @@ async function main() {
 
   console.log(`Created ${rsvps.length} RSVPs`);
 
+  // ── Announcements ─────────────────────────────────────────────────
+  const announcementsData = [
+    { clubId: cc.id, authorId: officer1.id, title: 'Welcome to Coding Club!', content: 'We are excited to have everyone join us this semester. Check out our upcoming events and workshops.', pinned: true, createdAt: new Date(now - 25 * DAY) },
+    { clubId: cc.id, authorId: admin.id, title: 'Hackathon Registration Open', content: 'Registration for Hackathon 2025 is now open. Form teams of 2-4 and sign up before the deadline.', pinned: true, createdAt: new Date(now - 5 * DAY) },
+    { clubId: cc.id, authorId: officer1.id, title: 'Weekly Code Review Moved to Room 301', content: 'Starting next week, our weekly code review sessions will be held in Room 301 instead of Room 201.', pinned: false, createdAt: new Date(now - 2 * DAY) },
+
+    { clubId: bt.id, authorId: officer2.id, title: 'Season Schedule Released', content: 'The full season schedule has been posted. Check the upcoming events for game dates and locations.', pinned: true, createdAt: new Date(now - 20 * DAY) },
+    { clubId: bt.id, authorId: officer2.id, title: 'New Equipment Arriving', content: 'New basketballs and training equipment will be available starting next week.', pinned: false, createdAt: new Date(now - 8 * DAY) },
+
+    { clubId: ds.id, authorId: s8.id, title: 'Spring Play Casting Complete', content: 'Thank you to everyone who auditioned. The cast list for the spring production has been posted on the bulletin board.', pinned: true, createdAt: new Date(now - 15 * DAY) },
+    { clubId: ds.id, authorId: s8.id, title: 'Improv Night This Friday', content: 'Join us for a fun evening of improvisational comedy. All skill levels welcome!', pinned: false, createdAt: new Date(now - 3 * DAY) },
+
+    { clubId: so.id, authorId: officer3.id, title: 'State Championship Qualifiers', content: 'Congratulations to our team for qualifying for the state championship! Practice schedule will be intensified.', pinned: true, createdAt: new Date(now - 10 * DAY) },
+    { clubId: so.id, authorId: officer3.id, title: 'Study Sessions for Regionals', content: 'Mandatory study sessions every Tuesday and Thursday from 4-6 PM in the Science Building.', pinned: false, createdAt: new Date(now - 7 * DAY) },
+    { clubId: so.id, authorId: officer3.id, title: 'Lab Safety Reminder', content: 'Please review the updated lab safety guidelines before our next build session.', pinned: false, createdAt: new Date(now - 1 * DAY) },
+
+    { clubId: ce.id, authorId: s8.id, title: 'Food Festival Planning Meeting', content: 'Volunteers needed for the International Food Festival planning committee. Meeting this Wednesday at 5 PM.', pinned: true, createdAt: new Date(now - 12 * DAY) },
+
+    { clubId: vc.id, authorId: s8.id, title: 'Park Cleanup This Weekend', content: 'Remember to bring gloves and wear comfortable clothes for the Riverside Park cleanup.', pinned: true, createdAt: new Date(now - 4 * DAY) },
+    { clubId: vc.id, authorId: s8.id, title: 'Tutoring Program Expands', content: 'We are expanding our tutoring program to three more schools. Sign up if interested.', pinned: false, createdAt: new Date(now - 18 * DAY) },
+  ];
+
+  for (const data of announcementsData) {
+    await prisma.announcement.create({ data });
+  }
+  console.log(`Created ${announcementsData.length} announcements`);
+
   // ── Audit Logs ─────────────────────────────────────────────────────
   const auditLogs = [
     { action: 'club.create', actorId: admin.id, targetType: 'Club', targetId: cc.id, metadata: JSON.stringify({ name: cc.name }), ipAddress: '127.0.0.1' },

@@ -172,13 +172,30 @@ async function isClubAdmin(userId, clubId) {
 }
 
 async function getMyClubs(userId) {
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
   const memberships = await prisma.clubMembership.findMany({
     where: { userId, status: { in: ['ACTIVE', 'PENDING'] } },
-    include: { club: { select: { id: true, name: true, category: true, logoUrl: true } } },
+    include: {
+      club: {
+        select: {
+          id: true, name: true, category: true, logoUrl: true,
+          _count: {
+            select: {
+              announcements: {
+                where: { createdAt: { gte: sevenDaysAgo } },
+              },
+            },
+          },
+        },
+      },
+    },
     orderBy: { createdAt: 'desc' },
   });
   return memberships.map((m) => ({
     ...m.club,
+    announcementCount: m.club._count.announcements,
     membershipStatus: m.status,
     membershipRole: m.role,
   }));
@@ -271,4 +288,11 @@ async function exportMembersCsv(clubId) {
   return [header, ...rows].join('\n');
 }
 
-module.exports = { requestJoin, listMembers, approve, reject, setAlumni, transferAdmin, leaveClub, removeMember, isClubAdmin, getAdminClubs, getMyClubs, promoteMember, demoteMember, bulkApprove, bulkReject, exportMembersCsv };
+async function isActiveMember(userId, clubId) {
+  const membership = await prisma.clubMembership.findUnique({
+    where: { userId_clubId: { userId, clubId } },
+  });
+  return !!(membership && membership.status === 'ACTIVE');
+}
+
+module.exports = { requestJoin, listMembers, approve, reject, setAlumni, transferAdmin, leaveClub, removeMember, isClubAdmin, getAdminClubs, getMyClubs, promoteMember, demoteMember, bulkApprove, bulkReject, exportMembersCsv, isActiveMember };

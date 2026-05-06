@@ -242,6 +242,11 @@ export default function Dashboard() {
                         <Badge variant="outline" className="text-xs text-status-yellow border-status-yellow">Pending</Badge>
                       )}
                     </div>
+                    {club.announcementCount > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        {club.announcementCount}
+                      </Badge>
+                    )}
                   </div>
                 ))}
               </div>

@@ -1,7 +1,7 @@
 # Guidelines
 
-- Log learnings to AGENTS.md to prevent repeated mistakes.
-- Be brief. Work autonomously. Say done, no summary.
+- proactively log learnings to AGENTS.md to prevent repeated mistakes.
+- Be super brief. No summary. Work autonomously.
 - After finding an issue, check if similar exists elsewhere.
 
 ---
@@ -19,7 +19,7 @@
 
 1. Validate every record against Prisma schema — all required fields must be explicit.
 2. All `UserRole` enum values need at least one user.
-3. Deseed order: EventRsvp → AuditLog → Event → ClubMembership → Club → User.
+3. Deseed order: EventRsvp → Announcement → AuditLog → Event → ClubMembership → Club → User.
 4. Cover all enum statuses: PENDING (6), ACTIVE, ALUMNI (3), REJECTED (3) for memberships; GOING, MAYBE, NOT_GOING for RSVPs.
 5. Every club: 1+ OFFICER, 1+ MEMBERs, 1+ events.
 
@@ -37,6 +37,14 @@
 1. Prefer extending existing endpoints with optional params over creating new ones.
 2. Check if a backend endpoint already exists before creating new ones for hardcoded/static data.
 
+### Before rendering any page/section with member-only data
+
+1. **Enumerate all viewer states** for the page: not-logged-in, logged-in non-member, pending/rejected/alumni member, active member, officer, admin. Decide what each sees.
+2. **Every data fetch must be gated** behind the condition that allows the viewer to see it. If the backend would 403, the frontend must not make the request at all.
+3. **Every UI section must be conditionally rendered** based on viewer state — hide the entire section (card, list, etc.) for unauthorized viewers, not just disable it.
+4. **Grid layouts must adapt** when sections are hidden — use dynamic col counts or restructure so there's no empty space.
+5. **Error toasts from expected authorization failures are bugs.** If a 403 is expected for some viewers, the fetch should never happen; a toast means the frontend didn't gate correctly.
+
 ---
 
 ## Reference
@@ -47,15 +55,24 @@
 |---|---|---|---|
 | `/api/auth` | `authRoutes` | No | Any |
 | `/api/clubs` | `clubRoutes` | **`/:id` (GET/PATCH/DELETE)** | Multi-segment only |
+| `/api/clubs` | `announcementsRoutes` | `/:clubId/announcements/*` | Multi-segment only |
 | `/api/clubs` | `membershipsRoutes` | `/:clubId/*` | Multi-segment only |
 | `/api/events` | `eventsRoutes` | **`/:id` (GET/PATCH/DELETE)** | Multi-segment only |
 | `/api/events` | `rsvpRoutes` | `/:id/rsvp`, `/:id/rsvps` | Multi-segment only |
 | `/api/memberships` | `membershipsAdminRouter` | No | **Any — safe for literal paths** |
+| `/api/announcements` | `announcementsRecentRouter` | No | **Any — safe for literal paths** |
 | `/api/stats` | `statsRoutes` | No | Any |
 | `/api/audit-logs` | `auditRoutes` | No | Any |
 | `/api/upload` | `uploadRoutes` | No | Any |
 
 **Collision zones:** `/api/clubs` and `/api/events` each have TWO routers. `GET /:id` swallows any single-segment GET. Literal-path membership endpoints go on `membershipsAdminRouter` (`/api/memberships`), NOT `membershipsRoutes` (`/api/clubs`).
+
+### Before modifying Prisma schema
+
+1. **After any schema change, run `npx prisma generate` (from `backend/`) before seeding or running code that uses the new model.** `migrate dev` auto-runs generate, but `migrate reset` does NOT.
+2. Full sequence for schema changes: edit schema → `npx prisma migrate dev --name <desc>` (from `backend/`) → seed.
+3. If reset needed: `npx prisma migrate reset --force` (from `backend/`) → `npx prisma generate` → seed.
+4. All Prisma commands MUST run from `backend/` directory (where `prisma.config.mjs` lives).
 
 ### Prisma v7
 
@@ -144,5 +161,7 @@ Use `@keyframes` with `data-state` selectors, NOT CSS transitions (transitions d
 - **Route collision happened twice:** `/my-admin-clubs`, `/my-clubs` swallowed by `/:id` on `membershipsRoutes`. See Rules.
 - **Per-resource auth:** `requireRole()` is global; CLUB_ADMIN needs `requireClubAdmin` for own-club checks.
 - **Seed pitfalls:** Missing required fields + missing enum role users → seed failures.
-- **Deseed order:** Explicit deletion required — AuditLog `onDelete: SetNull` can orphan logs.
+- **Deseed order:** EventRsvp → Announcement → AuditLog → Event → ClubMembership → Club → User. Explicit deletion required — AuditLog `onDelete: SetNull` can orphan logs.
+- **Prisma generate required after schema changes:** `migrate reset` does NOT auto-run `generate`. Running seed before generate causes `TypeError: Cannot read properties of undefined (reading 'create')`. Always `npx prisma generate` from `backend/` after any schema edit.
 - **REJECTED re-apply:** Update status to PENDING, don't create new record (`@@unique` prevents it).
+- **Viewer-state blindness:** ClubDetail page rendered member-only sections (announcements, members list) for all visitors, causing 403 toasts. Root cause: never enumerated viewer states (non-member, pending, rejected, alumni, active, admin) before building the page. Every page with member-only data MUST gate both the fetch and the UI section per the "Before rendering any page/section" rule.

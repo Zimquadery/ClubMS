@@ -15,6 +15,7 @@ const { router: membershipsRoutes, adminRouter: membershipsAdminRouter } = requi
 const statsRoutes = require('./modules/stats/stats.routes');
 const uploadRoutes = require('./modules/upload/upload.routes');
 const auditRoutes = require('./modules/audit/audit.routes');
+const { router: announcementsRoutes, recentRouter: announcementsRecentRouter } = require('./modules/announcements/announcements.routes');
 const swaggerUi = require('swagger-ui-express');
 const { specs } = require('./config/swagger');
 const { prisma } = require('./lib/prisma');
@@ -50,10 +51,12 @@ app.use('/api/auth', authRoutes);
 app.use('/api/clubs', clubRoutes);
 app.use('/api/events', eventsRoutes);
 app.use('/api/events', rsvpRoutes);
+app.use('/api/clubs', announcementsRoutes);
 app.use('/api/clubs', membershipsRoutes);
 app.use('/api/memberships', membershipsAdminRouter);
 app.use('/api/stats', statsRoutes);
 app.use('/api/audit-logs', auditRoutes);
+app.use('/api/announcements', announcementsRecentRouter);
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 app.use(errorHandler);

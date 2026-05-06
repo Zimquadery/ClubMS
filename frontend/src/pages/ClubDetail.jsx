@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
 import { Users, Calendar, MapPin, ImageIcon, Clock, UserPlus, Shield, GraduationCap, Trash2 } from 'lucide-react'
 import BackLink from '@/components/BackLink'
+import ClubAnnouncements from '@/components/ClubAnnouncements'
 import { ImageUploadButton } from '@/components/ImageUploadButton'
 import { formatDate, formatTime } from '@/lib/format'
 import { toast } from 'sonner'
@@ -95,6 +96,7 @@ export default function ClubDetail() {
   const memberCount = club.memberships?.length ?? 0
   const userMembership = club.userMembership
   const canManageEvents = (userMembership?.role === 'OFFICER' && userMembership?.status === 'ACTIVE') || user?.role === 'PLATFORM_ADMIN'
+  const canViewMembers = userMembership?.status === 'ACTIVE' || user?.role === 'PLATFORM_ADMIN'
 
   const adminButtons = (
     <div className="flex gap-2">
@@ -247,7 +249,7 @@ export default function ClubDetail() {
         </div>
       </div>
 
-      <div className="grid gap-4 mt-8 md:grid-cols-3">
+      <div className={`grid gap-4 mt-8 ${canViewMembers ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
         <Card className="md:col-span-2">
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -345,30 +347,32 @@ export default function ClubDetail() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Users className="h-5 w-5 text-brand-primary" />
-              Members
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {!club.memberships || club.memberships.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No active members yet.</p>
-            ) : (
-              <div className="divide-y">
-                {club.memberships.map((membership) => (
-                  <div key={membership.id} className="flex items-center justify-between text-sm py-2 first:pt-0 last:pb-0">
-                    <span className="font-medium">{membership.user.name}</span>
-                    {membership.role === 'OFFICER' && (
-                      <Badge variant="outline" className="text-xs">Officer</Badge>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        {canViewMembers && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Users className="h-5 w-5 text-brand-primary" />
+                Members
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {!club.memberships || club.memberships.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No active members yet.</p>
+              ) : (
+                <div className="divide-y">
+                  {club.memberships.map((membership) => (
+                    <div key={membership.id} className="flex items-center justify-between text-sm py-2 first:pt-0 last:pb-0">
+                      <span className="font-medium">{membership.user.name}</span>
+                      {membership.role === 'OFFICER' && (
+                        <Badge variant="outline" className="text-xs">Officer</Badge>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
       <Dialog open={!!deleteEventTarget} onOpenChange={(open) => !open && setDeleteEventTarget(null)}>
         <DialogContent>
@@ -384,6 +388,10 @@ export default function ClubDetail() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {(userMembership?.status === 'ACTIVE' || user?.role === 'PLATFORM_ADMIN') && (
+        <ClubAnnouncements clubId={club.id} userMembership={userMembership} user={user} />
+      )}
     </div>
   )
 }

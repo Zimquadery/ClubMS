@@ -42,6 +42,7 @@ model User {
   memberships   ClubMembership[]
   rsvps         EventRsvp[]
   auditLogs     AuditLog[]
+  announcements Announcement[]
 }
 
 model Club {
@@ -55,6 +56,7 @@ model Club {
 
   memberships   ClubMembership[]
   events        Event[]
+  announcements Announcement[]
 }
 
 model ClubMembership {
@@ -113,4 +115,20 @@ model AuditLog {
   createdAt  DateTime @default(now())
 
   actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+}
+
+model Announcement {
+  id        String   @id @default(uuid())
+  clubId    String
+  authorId  String?
+  title     String   @db.VarChar(200)
+  content   String   @db.Text
+  pinned    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  club   Club  @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  author User? @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([clubId, pinned, createdAt])
 }
