@@ -23,10 +23,11 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Plus, Trash2, Users, UserCheck, ClipboardList, Pencil } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { CLUB_CATEGORIES } from '@/lib/constants'
 import { toast } from 'sonner'
 import { ListSkeleton } from '@/components/ui/skeleton'
+import { Pagination } from '@/components/Pagination'
 
 function ClubFormFields({ form, setForm, uploading, onUpload, error, idPrefix }) {
   return (
@@ -109,18 +110,62 @@ export default function ManageClubs() {
   const [editError, setEditError] = useState('')
   const [editing, setEditing] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const setURLParam = (key, value) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev)
+      if (value === '' || value === null || value === undefined) next.delete(key)
+      else next.set(key, String(value))
+      return next
+    })
+  }
+
+  const rawPage = parseInt(searchParams.get('page') || '1', 10)
+  const page = rawPage >= 1 ? rawPage : 1
+  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
 
   useEffect(() => {
-    fetchClubs()
-  }, [])
+    let active = true
+    setLoading(true)
+    setError('')
+    async function fetchData() {
+      try {
+        const res = await client.get('/clubs', { params: { page, limit: 20 } })
+        const items = res.data.items ? res.data.items : res.data
+        if (items.length === 0 && page > 1) {
+          if (active) setURLParam('page', String(page - 1))
+          return
+        }
+        if (active) {
+          setClubs(items)
+          setTotalPages(res.data.totalPages || 1)
+          setTotal(res.data.total || 0)
+        }
+      } catch (err) {
+        if (active) setError(err.response?.data?.message || 'Failed to load clubs')
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+    fetchData()
+    return () => { active = false }
+  }, [page])
 
   async function fetchClubs() {
     setLoading(true)
     setError('')
     try {
-      const res = await client.get('/clubs', { params: { limit: 100 } })
-      const data = res.data.items ? res.data.items : res.data
-      setClubs(data)
+      const res = await client.get('/clubs', { params: { page, limit: 20 } })
+      const items = res.data.items ? res.data.items : res.data
+      if (items.length === 0 && page > 1) {
+        setURLParam('page', String(page - 1))
+        return
+      }
+      setClubs(items)
+      setTotalPages(res.data.totalPages || 1)
+      setTotal(res.data.total || 0)
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load clubs')
     } finally {
@@ -214,7 +259,7 @@ export default function ManageClubs() {
           <h1 className="text-2xl font-bold">Manage Clubs</h1>
           {!loading && clubs.length > 0 && (
             <p className="text-sm text-muted-foreground">
-              {clubs.length} club{clubs.length !== 1 ? 's' : ''}
+              {total} club{total !== 1 ? 's' : ''}
             </p>
           )}
         </div>
@@ -310,6 +355,12 @@ export default function ManageClubs() {
           </CardContent>
         </Card>
       )}
+
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        onPageChange={(p) => setURLParam('page', String(p))}
+      />
 
       <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <DialogContent>

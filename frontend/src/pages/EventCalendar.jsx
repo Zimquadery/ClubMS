@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import client from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -16,55 +16,80 @@ import { Pagination } from '@/components/Pagination'
 import { EventCardSkeleton } from '@/components/ui/skeleton'
 
 export default function EventCalendar() {
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const setURLParam = (key, value) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev)
+      if (value === '' || value === null || value === undefined) next.delete(key)
+      else next.set(key, String(value))
+      return next
+    })
+  }
+
+  const updateFilter = (key, value) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev)
+      if (value === '' || value === null || value === undefined) next.delete(key)
+      else next.set(key, String(value))
+      next.set('page', '1')
+      return next
+    })
+  }
+
+  const rawPage = parseInt(searchParams.get('page') || '1', 10)
+  const page = rawPage >= 1 ? rawPage : 1
+  const filterMode = searchParams.get('filterMode') || 'all'
+  const clubId = searchParams.get('clubId') || ''
+  const timeRange = searchParams.get('timeRange') || 'upcoming'
+
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [filterMode, setFilterMode] = useState('all')
-  const [clubId, setClubId] = useState('')
-  const [timeRange, setTimeRange] = useState('upcoming')
   const [clubs, setClubs] = useState([])
-  const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
 
   useEffect(() => {
-    async function fetchClubs() {
+    let active = true
+    async function doFetch() {
       try {
         const res = await client.get('/clubs', { params: { limit: 100 } })
         const data = res.data.items ? res.data.items : res.data
-        setClubs(data)
+        if (active) setClubs(data)
       } catch {
-        // non-critical
       }
     }
-    fetchClubs()
+    doFetch()
+    return () => { active = false }
   }, [])
 
   useEffect(() => {
-    setPage(1)
-  }, [filterMode, clubId, timeRange])
-
-  useEffect(() => {
-    fetchEvents()
-  }, [filterMode, clubId, timeRange, page])
-
-  async function fetchEvents() {
+    let active = true
     setLoading(true)
     setError('')
-    try {
-      const params = new URLSearchParams()
-      if (filterMode === 'joined') params.set('joined', 'true')
-      if (clubId) params.set('clubId', clubId)
-      params.set('timeRange', timeRange)
-      params.set('page', page)
-      const res = await client.get(`/events?${params.toString()}`)
-      setEvents(res.data.items)
-      setTotalPages(res.data.totalPages)
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load events')
-    } finally {
-      setLoading(false)
+    async function doFetch() {
+      try {
+        const params = new URLSearchParams()
+        if (filterMode === 'joined') params.set('joined', 'true')
+        if (clubId) params.set('clubId', clubId)
+        params.set('timeRange', timeRange)
+        params.set('page', page)
+        const res = await client.get(`/events?${params.toString()}`)
+        if (active) {
+          setEvents(res.data.items)
+          setTotalPages(res.data.totalPages)
+        }
+      } catch (err) {
+        if (active) {
+          setError(err.response?.data?.message || 'Failed to load events')
+        }
+      } finally {
+        if (active) setLoading(false)
+      }
     }
-  }
+    doFetch()
+    return () => { active = false }
+  }, [filterMode, clubId, timeRange, page])
 
   return (
     <div>
@@ -79,7 +104,7 @@ export default function EventCalendar() {
             variant={filterMode === 'all' ? 'default' : 'ghost'}
             size="sm"
             className="rounded-none"
-            onClick={() => setFilterMode('all')}
+            onClick={() => updateFilter('filterMode', 'all')}
           >
             All Clubs
           </Button>
@@ -87,7 +112,7 @@ export default function EventCalendar() {
             variant={filterMode === 'joined' ? 'default' : 'ghost'}
             size="sm"
             className="rounded-none"
-            onClick={() => setFilterMode('joined')}
+            onClick={() => updateFilter('filterMode', 'joined')}
           >
             My Clubs
           </Button>
@@ -95,7 +120,7 @@ export default function EventCalendar() {
 
         <div className="h-5 w-px bg-border hidden sm:block" />
 
-        <Select value={timeRange} onValueChange={setTimeRange}>
+        <Select value={timeRange} onValueChange={(val) => updateFilter('timeRange', val)}>
           <SelectTrigger className="w-[160px]">
             <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
             <SelectValue />
@@ -107,7 +132,7 @@ export default function EventCalendar() {
           </SelectContent>
         </Select>
 
-        <Select value={clubId} onValueChange={(val) => setClubId(val === '__all__' ? '' : val)}>
+        <Select value={clubId} onValueChange={(val) => updateFilter('clubId', val === '__all__' ? '' : val)}>
           <SelectTrigger className="w-[220px]">
             <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
             <SelectValue placeholder="All Clubs" />
@@ -190,7 +215,7 @@ export default function EventCalendar() {
                 </Link>
               ))}
             </div>
-            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+            <Pagination page={page} totalPages={totalPages} onPageChange={(p) => setURLParam('page', p)} />
           </>
         )}
       </div>

@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Megaphone, Pin, PinOff, Pencil, Trash2, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { ListSkeleton } from '@/components/ui/skeleton'
+import { Pagination } from '@/components/Pagination'
 
 function timeAgo(dateStr) {
   const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000)
@@ -33,24 +34,34 @@ export default function ClubAnnouncements({ clubId, userMembership, user }) {
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [form, setForm] = useState({ title: '', content: '' })
   const [submitting, setSubmitting] = useState(false)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
 
   const isOfficer = (userMembership?.role === 'OFFICER' && userMembership?.status === 'ACTIVE') || user?.role === 'PLATFORM_ADMIN'
 
   useEffect(() => {
-    fetchAnnouncements()
-  }, [clubId, refreshKey])
-
-  async function fetchAnnouncements() {
+    let active = true
     setLoading(true)
-    try {
-      const res = await client.get(`/clubs/${clubId}/announcements`)
-      setAnnouncements(res.data.items || res.data)
-    } catch {
-      toast.error('Failed to load announcements')
-    } finally {
-      setLoading(false)
+    async function doFetch() {
+      try {
+        const res = await client.get(`/clubs/${clubId}/announcements`, { params: { page, limit: 5 } })
+        const items = res.data.items || res.data
+        if (!active) return
+        if (items.length === 0 && page > 1) {
+          setPage(page - 1)
+          return
+        }
+        setAnnouncements(items)
+        setTotalPages(res.data.totalPages || 1)
+      } catch {
+        if (active) toast.error('Failed to load announcements')
+      } finally {
+        if (active) setLoading(false)
+      }
     }
-  }
+    doFetch()
+    return () => { active = false }
+  }, [clubId, refreshKey, page])
 
   function refresh() {
     setRefreshKey((k) => k + 1)
@@ -74,6 +85,7 @@ export default function ClubAnnouncements({ clubId, userMembership, user }) {
       await client.post(`/clubs/${clubId}/announcements`, form)
       setShowCreateDialog(false)
       toast.success('Announcement posted')
+      setPage(1)
       refresh()
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to create announcement')
@@ -177,6 +189,11 @@ export default function ClubAnnouncements({ clubId, userMembership, user }) {
             ))}
           </div>
         )}
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+        />
       </CardContent>
 
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>

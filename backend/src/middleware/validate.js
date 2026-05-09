@@ -35,6 +35,11 @@ const PAGINATION = {
   limit: z.coerce.number().int().min(1).max(100).default(20),
 };
 
+const paginatedSchema = (defaultLimit = 20) => ({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(defaultLimit),
+});
+
 const OPTIONAL_URL = z.string().url().max(500).optional().or(z.literal(''));
 
-module.exports = { validate, validateQuery, PAGINATION, OPTIONAL_URL };
+module.exports = { validate, validateQuery, PAGINATION, OPTIONAL_URL, paginatedSchema };

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import client from '@/api/client'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -17,47 +17,72 @@ import { Pagination } from '@/components/Pagination'
 import { CardSkeleton } from '@/components/ui/skeleton'
 
 export default function ClubDirectory() {
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const setURLParam = (key, value) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev)
+      if (value === '' || value === null || value === undefined) next.delete(key)
+      else next.set(key, String(value))
+      if (next.toString() === prev.toString()) return prev
+      return next
+    })
+  }
+
+  const rawPage = parseInt(searchParams.get('page') || '1', 10)
+  const page = rawPage >= 1 ? rawPage : 1
+  const search = searchParams.get('search') || ''
+  const category = searchParams.get('category') || ''
+
+  const [searchInput, setSearchInput] = useState(search)
   const [clubs, setClubs] = useState([])
-  const [search, setSearch] = useState('')
-  const [category, setCategory] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
 
-  const debounceRef = useRef(null)
+  const prevSearchRef = useRef(search)
 
   useEffect(() => {
-    setPage(1)
-  }, [search, category])
+    setSearchInput(search)
+  }, [search])
 
   useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => {
-      fetchClubs()
-    }, 300)
+    const searchChanged = search !== prevSearchRef.current
+    prevSearchRef.current = search
+    let active = true
+
+    const doFetch = async () => {
+      setLoading(true)
+      setError('')
+      try {
+        const params = new URLSearchParams()
+        if (search) params.set('search', search)
+        if (category) params.set('category', category)
+        params.set('page', page)
+        const res = await client.get(`/clubs?${params.toString()}`)
+        if (active) {
+          setClubs(res.data.items)
+          setTotalPages(res.data.totalPages)
+        }
+      } catch (err) {
+        if (active) setError(err.response?.data?.message || 'Failed to load clubs')
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+
+    let timer
+    if (searchChanged) {
+      timer = setTimeout(doFetch, 300)
+    } else {
+      doFetch()
+    }
+
     return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current)
+      active = false
+      if (timer) clearTimeout(timer)
     }
   }, [search, category, page])
-
-  async function fetchClubs() {
-    setLoading(true)
-    setError('')
-    try {
-      const params = new URLSearchParams()
-      if (search) params.set('search', search)
-      if (category) params.set('category', category)
-      params.set('page', page)
-      const res = await client.get(`/clubs?${params.toString()}`)
-      setClubs(res.data.items)
-      setTotalPages(res.data.totalPages)
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load clubs')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   return (
     <div className="space-y-6">
@@ -71,12 +96,35 @@ export default function ClubDirectory() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search clubs by name..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => {
+              const val = e.target.value
+              setSearchInput(val)
+              setSearchParams(prev => {
+                const next = new URLSearchParams(prev)
+                if (val) next.set('search', val)
+                else next.delete('search')
+                const curPage = prev.get('page')
+                if (curPage && curPage !== '1') next.set('page', '1')
+                if (next.toString() === prev.toString()) return prev
+                return next
+              })
+            }}
             className="pl-9"
           />
         </div>
-        <Select value={category} onValueChange={(val) => setCategory(val === '__all__' ? '' : val)}>
+        <Select value={category} onValueChange={(val) => {
+          const newCat = val === '__all__' ? '' : val
+          setSearchParams(prev => {
+            const next = new URLSearchParams(prev)
+            if (newCat) next.set('category', newCat)
+            else next.delete('category')
+            const curPage = prev.get('page')
+            if (curPage && curPage !== '1') next.set('page', '1')
+            if (next.toString() === prev.toString()) return prev
+            return next
+          })
+        }}>
           <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="All Categories" />
           </SelectTrigger>
@@ -142,7 +190,7 @@ export default function ClubDirectory() {
               </Link>
             ))}
           </div>
-          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+          <Pagination page={page} totalPages={totalPages} onPageChange={(p) => setURLParam('page', p)} />
         </>
       )}
     </div>

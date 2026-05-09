@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import client from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -30,33 +31,48 @@ const ACTIONS = [
 
 export default function AuditLog() {
   const [logs, setLogs] = useState([])
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const setURLParam = (key, value) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev)
+      if (value === '' || value === null || value === undefined) next.delete(key)
+      else next.set(key, String(value))
+      return next
+    })
+  }
+
   const [loading, setLoading] = useState(true)
-  const [page, setPage] = useState(1)
+  const rawPage = parseInt(searchParams.get('page') || '1', 10)
+  const page = rawPage >= 1 ? rawPage : 1
   const [totalPages, setTotalPages] = useState(1)
-  const [action, setAction] = useState('')
+  const action = searchParams.get('action') || ''
   const [total, setTotal] = useState(0)
 
   useEffect(() => {
-    fetchLogs()
-  }, [page, action])
-
-  async function fetchLogs() {
+    let active = true
     setLoading(true)
-    try {
-      const params = new URLSearchParams()
-      params.set('page', page)
-      params.set('limit', 20)
-      if (action) params.set('action', action)
-      const res = await client.get(`/audit-logs?${params.toString()}`)
-      setLogs(res.data.items)
-      setTotalPages(res.data.totalPages)
-      setTotal(res.data.total)
-    } catch (err) {
-      toast.error('Failed to load audit logs')
-    } finally {
-      setLoading(false)
+    async function fetchData() {
+      try {
+        const params = new URLSearchParams()
+        params.set('page', page)
+        params.set('limit', 20)
+        if (action) params.set('action', action)
+        const res = await client.get(`/audit-logs?${params.toString()}`)
+        if (active) {
+          setLogs(res.data.items)
+          setTotalPages(res.data.totalPages)
+          setTotal(res.data.total)
+        }
+      } catch (err) {
+        if (active) toast.error('Failed to load audit logs')
+      } finally {
+        if (active) setLoading(false)
+      }
     }
-  }
+    fetchData()
+    return () => { active = false }
+  }, [page, action])
 
   return (
     <div className="space-y-6">
@@ -66,7 +82,7 @@ export default function AuditLog() {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
-        <Select value={action} onValueChange={(val) => { setAction(val === '__all__' ? '' : val); setPage(1) }}>
+        <Select value={action} onValueChange={(val) => { setURLParam('action', val === '__all__' ? '' : val); setURLParam('page', '1') }}>
           <SelectTrigger className="w-full sm:w-[220px]">
             <SelectValue placeholder="All Actions" />
           </SelectTrigger>
@@ -127,7 +143,7 @@ export default function AuditLog() {
               </Card>
             ))}
           </div>
-          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+          <Pagination page={page} totalPages={totalPages} onPageChange={(p) => setURLParam('page', String(p))} />
         </>
       )}
     </div>

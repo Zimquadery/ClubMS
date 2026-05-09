@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import client from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -17,6 +18,7 @@ import { formatShortDate } from '@/lib/format'
 import { toast } from 'sonner'
 import { downloadBlob } from '@/lib/download'
 import { ListSkeleton } from '@/components/ui/skeleton'
+import { Pagination } from '@/components/Pagination'
 import { useAdminClubSelector } from '@/hooks/useAdminClubSelector'
 import { AdminClubHeader } from '@/components/admin/AdminClubHeader'
 
@@ -26,28 +28,71 @@ export default function ClubMembers() {
   const [alumniMembers, setAlumniMembers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [tab, setTab] = useState('active')
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const setURLParam = (key, value) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev)
+      if (value === '' || value === null || value === undefined) next.delete(key)
+      else next.set(key, String(value))
+      return next
+    })
+  }
+
+  const rawPage = parseInt(searchParams.get('page') || '1', 10)
+  const page = rawPage >= 1 ? rawPage : 1
+  const tab = searchParams.get('tab') || 'active'
   const [transferTarget, setTransferTarget] = useState(null)
   const [transferring, setTransferring] = useState(false)
   const [removeTarget, setRemoveTarget] = useState(null)
   const [removing, setRemoving] = useState(false)
   const [alumniTarget, setAlumniTarget] = useState(null)
   const [settingAlumni, setSettingAlumni] = useState(false)
+  const [totalPages, setTotalPages] = useState(1)
 
   useEffect(() => {
-    if (clubId) fetchMembers()
-  }, [clubId])
+    if (!clubId) return
+    let active = true
+    setLoading(true)
+    setError('')
+    async function fetchData() {
+      try {
+        const status = tab === 'active' ? 'ACTIVE' : 'ALUMNI'
+        const res = await client.get(`/clubs/${clubId}/members`, { params: { status, page, limit: 20 } })
+        const items = res.data.items || res.data
+        if (items.length === 0 && page > 1) {
+          if (active) setURLParam('page', String(page - 1))
+          return
+        }
+        if (active) {
+          if (tab === 'active') setActiveMembers(items)
+          else setAlumniMembers(items)
+          setTotalPages(res.data.totalPages || 1)
+        }
+      } catch (err) {
+        if (active) setError(err.response?.data?.message || 'Failed to load members')
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+    fetchData()
+    return () => { active = false }
+  }, [clubId, page, tab])
 
   async function fetchMembers() {
     setLoading(true)
     setError('')
     try {
-      const [activeRes, alumniRes] = await Promise.all([
-        client.get(`/clubs/${clubId}/members`, { params: { status: 'ACTIVE', limit: 100 } }),
-        client.get(`/clubs/${clubId}/members`, { params: { status: 'ALUMNI', limit: 100 } }),
-      ])
-      setActiveMembers(activeRes.data.items || activeRes.data)
-      setAlumniMembers(alumniRes.data.items || alumniRes.data)
+      const status = tab === 'active' ? 'ACTIVE' : 'ALUMNI'
+      const res = await client.get(`/clubs/${clubId}/members`, { params: { status, page, limit: 20 } })
+      const items = res.data.items || res.data
+      if (items.length === 0 && page > 1) {
+        setURLParam('page', String(page - 1))
+        return
+      }
+      if (tab === 'active') setActiveMembers(items)
+      else setAlumniMembers(items)
+      setTotalPages(res.data.totalPages || 1)
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load members')
     } finally {
@@ -126,7 +171,7 @@ export default function ClubMembers() {
           variant={tab === 'active' ? 'default' : 'outline'}
           size="sm"
           className={tab === 'active' ? 'bg-brand-primary hover:bg-brand-primary/90 text-white' : ''}
-          onClick={() => setTab('active')}
+          onClick={() => setSearchParams({ tab: 'active', page: '1' })}
         >
           Active Members
         </Button>
@@ -134,7 +179,7 @@ export default function ClubMembers() {
           variant={tab === 'alumni' ? 'default' : 'outline'}
           size="sm"
           className={tab === 'alumni' ? 'bg-brand-primary hover:bg-brand-primary/90 text-white' : ''}
-          onClick={() => setTab('alumni')}
+          onClick={() => setSearchParams({ tab: 'alumni', page: '1' })}
         >
           Alumni
         </Button>
@@ -208,6 +253,12 @@ export default function ClubMembers() {
           ))}
         </div>
       )}
+
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        onPageChange={(p) => setURLParam('page', String(p))}
+      />
 
       <Dialog open={!!transferTarget} onOpenChange={(open) => !open && setTransferTarget(null)}>
         <DialogContent>

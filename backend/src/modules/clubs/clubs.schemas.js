@@ -23,4 +23,11 @@ const listQuery = z.object({
   ...PAGINATION,
 });
 
-module.exports = { create, update, listQuery };
+const getByIdQuery = z.object({
+  membersPage: z.coerce.number().int().min(1).default(1),
+  membersLimit: z.coerce.number().int().min(1).max(100).default(10),
+  eventsPage: z.coerce.number().int().min(1).default(1),
+  eventsLimit: z.coerce.number().int().min(1).max(100).default(5),
+});
+
+module.exports = { create, update, listQuery, getByIdQuery };

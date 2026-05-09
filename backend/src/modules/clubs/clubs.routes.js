@@ -4,7 +4,7 @@ const eventsController = require('../events/events.controller');
 const { authMiddleware } = require('../../middleware/auth');
 const { requireRole, requireClubAdmin } = require('../../middleware/rbac');
 const { validate, validateQuery } = require('../../middleware/validate');
-const { create: createSchema, update: updateSchema, listQuery: listQuerySchema } = require('./clubs.schemas');
+const { create: createSchema, update: updateSchema, listQuery: listQuerySchema, getByIdQuery: getByIdQuerySchema } = require('./clubs.schemas');
 const { create: eventCreateSchema } = require('../events/events.schemas');
 const { auditLog } = require('../../middleware/auditLog');
 
@@ -134,7 +134,7 @@ router.patch('/:id', authMiddleware, requireRole('PLATFORM_ADMIN'), validate(upd
  *       404:
  *         description: Club not found
  */
-router.get('/:id', authMiddleware, clubsController.getById);
+router.get('/:id', authMiddleware, validateQuery(getByIdQuerySchema), clubsController.getById);
 
 /**
  * @openapi

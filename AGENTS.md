@@ -37,6 +37,16 @@
 1. Prefer extending existing endpoints with optional params over creating new ones.
 2. Check if a backend endpoint already exists before creating new ones for hardcoded/static data.
 
+### Before using any existing component
+
+1. Read the component file to confirm its prop signature.
+2. Match prop names exactly — do not guess or assume conventions.
+
+### Before writing JSX in ternary/map expressions
+
+1. Multiple sibling elements inside `(...)` or ternary branches must be wrapped in `<>...</>`.
+2. After editing JSX, verify the nesting is valid (no adjacent unwrapped elements).
+
 ### Before rendering any page/section with member-only data
 
 1. **Enumerate all viewer states** for the page: not-logged-in, logged-in non-member, pending/rejected/alumni member, active member, officer, admin. Decide what each sees.
@@ -165,3 +175,5 @@ Use `@keyframes` with `data-state` selectors, NOT CSS transitions (transitions d
 - **Prisma generate required after schema changes:** `migrate reset` does NOT auto-run `generate`. Running seed before generate causes `TypeError: Cannot read properties of undefined (reading 'create')`. Always `npx prisma generate` from `backend/` after any schema edit.
 - **REJECTED re-apply:** Update status to PENDING, don't create new record (`@@unique` prevents it).
 - **Viewer-state blindness:** ClubDetail page rendered member-only sections (announcements, members list) for all visitors, causing 403 toasts. Root cause: never enumerated viewer states (non-member, pending, rejected, alumni, active, admin) before building the page. Every page with member-only data MUST gate both the fetch and the UI section per the "Before rendering any page/section" rule.
+- **Component prop mismatch:** Pagination component uses `page` prop; subagent passed `currentPage`. Always read the component source before using it.
+- **JSX adjacency in ternaries:** Adjacent JSX elements inside a ternary's else branch (`(a ? b : c d)`) cause a compile error. Wrap siblings in `<>...</>`.

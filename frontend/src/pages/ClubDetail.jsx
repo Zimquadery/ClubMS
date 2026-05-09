@@ -16,6 +16,7 @@ import { ImageUploadButton } from '@/components/ImageUploadButton'
 import { formatDate, formatTime } from '@/lib/format'
 import { toast } from 'sonner'
 import { DetailSkeleton } from '@/components/ui/skeleton'
+import { Pagination } from '@/components/Pagination'
 
 export default function ClubDetail() {
   const { id } = useParams()
@@ -30,23 +31,61 @@ export default function ClubDetail() {
   const [submitting, setSubmitting] = useState(false)
   const [newEvent, setNewEvent] = useState({ title: '', description: '', startTime: '', endTime: '', location: '', bannerUrl: '' })
   const [deleteEventTarget, setDeleteEventTarget] = useState(null)
-
-  useEffect(() => {
-    fetchClub()
-  }, [id])
+  const [membersPage, setMembersPage] = useState(1)
+  const [eventsPage, setEventsPage] = useState(1)
+  const [totalMembers, setTotalMembers] = useState(0)
+  const [totalEvents, setTotalEvents] = useState(0)
 
   async function fetchClub() {
     setLoading(true)
     setError('')
     try {
-      const res = await client.get(`/clubs/${id}`)
+      const res = await client.get(`/clubs/${id}`, {
+        params: {
+          membersPage,
+          membersLimit: 10,
+          eventsPage,
+          eventsLimit: 5,
+        },
+      })
       setClub(res.data)
+      setTotalMembers(res.data.totalMembers)
+      setTotalEvents(res.data.totalEvents)
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load club')
     } finally {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    let active = true
+    async function doFetch() {
+      setLoading(true)
+      setError('')
+      try {
+        const res = await client.get(`/clubs/${id}`, {
+          params: {
+            membersPage,
+            membersLimit: 10,
+            eventsPage,
+            eventsLimit: 5,
+          },
+        })
+        if (active) {
+          setClub(res.data)
+          setTotalMembers(res.data.totalMembers)
+          setTotalEvents(res.data.totalEvents)
+        }
+      } catch (err) {
+        if (active) setError(err.response?.data?.message || 'Failed to load club')
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+    doFetch()
+    return () => { active = false }
+  }, [id, membersPage, eventsPage])
 
   async function handleJoin() {
     setJoinLoading(true)
@@ -93,10 +132,15 @@ export default function ClubDetail() {
 
   if (!club) return null
 
-  const memberCount = club.memberships?.length ?? 0
+  const memberCount = club._count?.memberships ?? totalMembers
   const userMembership = club.userMembership
   const canManageEvents = (userMembership?.role === 'OFFICER' && userMembership?.status === 'ACTIVE') || user?.role === 'PLATFORM_ADMIN'
   const canViewMembers = userMembership?.status === 'ACTIVE' || user?.role === 'PLATFORM_ADMIN'
+
+  const members = club.memberships || []
+  const events = club.events || []
+  const membersTotalPages = Math.ceil(totalMembers / 10) || 1
+  const eventsTotalPages = Math.ceil(totalEvents / 5) || 1
 
   const adminButtons = (
     <div className="flex gap-2">
@@ -249,6 +293,10 @@ export default function ClubDetail() {
         </div>
       </div>
 
+      {(userMembership?.status === 'ACTIVE' || user?.role === 'PLATFORM_ADMIN') && (
+        <ClubAnnouncements clubId={club.id} userMembership={userMembership} user={user} />
+      )}
+
       <div className={`grid gap-4 mt-8 ${canViewMembers ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
         <Card className="md:col-span-2">
           <CardHeader>
@@ -307,42 +355,49 @@ export default function ClubDetail() {
             </div>
           </CardHeader>
           <CardContent>
-            {!club.events || club.events.length === 0 ? (
+            {events.length === 0 ? (
               <p className="text-sm text-muted-foreground">No upcoming events scheduled.</p>
             ) : (
-              <div className="divide-y">
-                {club.events.map((event) => (
-                  <div key={event.id} className="space-y-1 py-2 first:pt-0 last:pb-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <Link to={`/events/${event.id}`} className="font-medium text-sm hover:underline">{event.title}</Link>
-                      {canManageEvents && (
-                        <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0 text-muted-foreground hover:text-destructive" aria-label="Delete event" onClick={() => setDeleteEventTarget(event)}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {formatDate(event.startTime)}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {formatTime(event.startTime)}
-                      </span>
-                      {event.location && (
+              <>
+                <div className="divide-y">
+                  {events.map((event) => (
+                    <div key={event.id} className="space-y-1 py-2 first:pt-0 last:pb-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <Link to={`/events/${event.id}`} className="font-medium text-sm hover:underline">{event.title}</Link>
+                        {canManageEvents && (
+                          <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0 text-muted-foreground hover:text-destructive" aria-label="Delete event" onClick={() => setDeleteEventTarget(event)}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          {event.location}
+                          <Calendar className="h-3 w-3" />
+                          {formatDate(event.startTime)}
                         </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {formatTime(event.startTime)}
+                        </span>
+                        {event.location && (
+                          <span className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {event.location}
+                          </span>
+                        )}
+                      </div>
+                      {event.description && (
+                        <p className="text-xs text-muted-foreground line-clamp-2">{event.description}</p>
                       )}
                     </div>
-                    {event.description && (
-                      <p className="text-xs text-muted-foreground line-clamp-2">{event.description}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+                <Pagination
+                  page={eventsPage}
+                  totalPages={eventsTotalPages}
+                  onPageChange={setEventsPage}
+                />
+              </>
             )}
           </CardContent>
         </Card>
@@ -356,19 +411,26 @@ export default function ClubDetail() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {!club.memberships || club.memberships.length === 0 ? (
+              {members.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No active members yet.</p>
               ) : (
-                <div className="divide-y">
-                  {club.memberships.map((membership) => (
-                    <div key={membership.id} className="flex items-center justify-between text-sm py-2 first:pt-0 last:pb-0">
-                      <span className="font-medium">{membership.user.name}</span>
-                      {membership.role === 'OFFICER' && (
-                        <Badge variant="outline" className="text-xs">Officer</Badge>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                <>
+                  <div className="divide-y">
+                    {members.map((membership) => (
+                      <div key={membership.id} className="flex items-center justify-between text-sm py-2 first:pt-0 last:pb-0">
+                        <span className="font-medium">{membership.user.name}</span>
+                        {membership.role === 'OFFICER' && (
+                          <Badge variant="outline" className="text-xs">Officer</Badge>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <Pagination
+                    page={membersPage}
+                    totalPages={membersTotalPages}
+                    onPageChange={setMembersPage}
+                  />
+                </>
               )}
             </CardContent>
           </Card>
@@ -389,9 +451,6 @@ export default function ClubDetail() {
         </DialogContent>
       </Dialog>
 
-      {(userMembership?.status === 'ACTIVE' || user?.role === 'PLATFORM_ADMIN') && (
-        <ClubAnnouncements clubId={club.id} userMembership={userMembership} user={user} />
-      )}
     </div>
   )
 }

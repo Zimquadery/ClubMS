@@ -23,22 +23,37 @@ async function list({ search, category, page = 1, limit = 20 }) {
   return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
 }
 
-async function getById(id, userId) {
+async function getById(id, userId, { membersPage = 1, membersLimit = 10, eventsPage = 1, eventsLimit = 5 } = {}) {
   const club = await prisma.club.findUnique({
     where: { id },
     include: {
+      _count: {
+        select: {
+          memberships: { where: { status: 'ACTIVE' } },
+        },
+      },
       memberships: {
         where: { status: 'ACTIVE' },
         include: { user: { select: { id: true, name: true, email: true } } },
+        orderBy: { createdAt: 'asc' },
+        skip: (membersPage - 1) * membersLimit,
+        take: membersLimit,
       },
       events: {
         where: { startTime: { gte: new Date() } },
         orderBy: { startTime: 'asc' },
+        skip: (eventsPage - 1) * eventsLimit,
+        take: eventsLimit,
       },
     },
   });
 
   if (!club) throw new AppError('Club not found', 404);
+
+  const [totalMembers, totalEvents] = await Promise.all([
+    prisma.clubMembership.count({ where: { clubId: id, status: 'ACTIVE' } }),
+    prisma.event.count({ where: { clubId: id, startTime: { gte: new Date() } } }),
+  ]);
 
   if (userId) {
     const userMembership = await prisma.clubMembership.findUnique({
@@ -48,7 +63,7 @@ async function getById(id, userId) {
     club.userMembership = userMembership;
   }
 
-  return club;
+  return { ...club, totalMembers, totalEvents };
 }
 
 async function create({ name, description, category, logoUrl, adminUserId }) {

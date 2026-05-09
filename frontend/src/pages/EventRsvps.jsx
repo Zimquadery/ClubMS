@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import client from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -40,13 +40,35 @@ function relativeTime(dateStr) {
 
 export default function EventRsvps() {
   const { id } = useParams()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const setURLParam = (key, value) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev)
+      if (value === '' || value === null || value === undefined) next.delete(key)
+      else next.set(key, String(value))
+      return next
+    })
+  }
+
+  const updateFilter = (key, value) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev)
+      if (value === '' || value === null || value === undefined) next.delete(key)
+      else next.set(key, String(value))
+      next.set('page', '1')
+      return next
+    })
+  }
+
+  const rawPage = parseInt(searchParams.get('page') || '1', 10)
+  const page = rawPage >= 1 ? rawPage : 1
+  const statusFilter = searchParams.get('statusFilter') || null
 
   const [event, setEvent] = useState(null)
   const [rsvps, setRsvps] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [statusFilter, setStatusFilter] = useState(null)
-  const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [totalPages, setTotalPages] = useState(1)
@@ -54,7 +76,23 @@ export default function EventRsvps() {
   const [counts, setCounts] = useState({ GOING: 0, MAYBE: 0, NOT_GOING: 0 })
 
   useEffect(() => {
-    fetchEvent()
+    let active = true
+    async function doFetch() {
+      try {
+        const res = await client.get(`/events/${id}`)
+        if (active) setEvent(res.data)
+      } catch (err) {
+        if (active) {
+          if (err.response?.status === 403) {
+            setError('You do not have permission to view this event.')
+          } else {
+            setError(err.response?.data?.message || 'Failed to load event')
+          }
+        }
+      }
+    }
+    doFetch()
+    return () => { active = false }
   }, [id])
 
   useEffect(() => {
@@ -63,44 +101,36 @@ export default function EventRsvps() {
   }, [search])
 
   useEffect(() => {
-    fetchRsvps()
-  }, [id, statusFilter, page, debouncedSearch])
-
-  async function fetchEvent() {
-    try {
-      const res = await client.get(`/events/${id}`)
-      setEvent(res.data)
-    } catch (err) {
-      if (err.response?.status === 403) {
-        setError('You do not have permission to view this event.')
-      } else {
-        setError(err.response?.data?.message || 'Failed to load event')
-      }
-    }
-  }
-
-  async function fetchRsvps() {
+    let active = true
     setLoading(true)
     setError('')
-    try {
-      const params = { page, limit: 20 }
-      if (statusFilter) params.status = statusFilter
-      if (debouncedSearch.trim()) params.search = debouncedSearch.trim()
-      const res = await client.get(`/events/${id}/rsvps`, { params })
-      setRsvps(res.data.items || [])
-      setTotal(res.data.total || 0)
-      setTotalPages(res.data.totalPages || 1)
-      setCounts(res.data.counts || { GOING: 0, MAYBE: 0, NOT_GOING: 0 })
-    } catch (err) {
-      if (err.response?.status === 403) {
-        setError('You do not have permission to view RSVPs for this event.')
-      } else {
-        setError(err.response?.data?.message || 'Failed to load RSVPs')
+    async function doFetch() {
+      try {
+        const params = { page, limit: 20 }
+        if (statusFilter) params.status = statusFilter
+        if (debouncedSearch.trim()) params.search = debouncedSearch.trim()
+        const res = await client.get(`/events/${id}/rsvps`, { params })
+        if (active) {
+          setRsvps(res.data.items || [])
+          setTotal(res.data.total || 0)
+          setTotalPages(res.data.totalPages || 1)
+          setCounts(res.data.counts || { GOING: 0, MAYBE: 0, NOT_GOING: 0 })
+        }
+      } catch (err) {
+        if (active) {
+          if (err.response?.status === 403) {
+            setError('You do not have permission to view RSVPs for this event.')
+          } else {
+            setError(err.response?.data?.message || 'Failed to load RSVPs')
+          }
+        }
+      } finally {
+        if (active) setLoading(false)
       }
-    } finally {
-      setLoading(false)
     }
-  }
+    doFetch()
+    return () => { active = false }
+  }, [id, statusFilter, page, debouncedSearch])
 
   async function handleExport() {
     try {
@@ -123,7 +153,6 @@ export default function EventRsvps() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      {/* Top bar */}
       <div className="flex items-center justify-between">
         <BackLink to={`/events/${id}`} label="Back to Event" />
         <Button variant="outline" size="sm" onClick={handleExport}>
@@ -131,7 +160,6 @@ export default function EventRsvps() {
         </Button>
       </div>
 
-      {/* Header */}
       <div className="mt-4">
         <h1 className="text-2xl font-bold">
           {event?.title || 'Loading...'}
@@ -141,7 +169,6 @@ export default function EventRsvps() {
         </h1>
       </div>
 
-      {/* Stats strip */}
       <div className="mt-3 flex flex-wrap items-center whitespace-nowrap text-sm text-muted-foreground">
         <span className="font-semibold text-status-green">{counts.GOING}</span> going
         <span className="mx-1.5 text-muted-foreground/40 select-none">&middot;</span>
@@ -152,7 +179,6 @@ export default function EventRsvps() {
         <span className="font-semibold text-foreground">{total}</span> total
       </div>
 
-      {/* Filter tabs + Search */}
       <div className="mt-4 flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-1" role="tablist">
           {STATUS_TABS.map((tab) => (
@@ -163,7 +189,7 @@ export default function EventRsvps() {
               role="tab"
               aria-selected={statusFilter === tab.value}
               className={statusFilter === tab.value ? 'bg-brand-primary/10 text-brand-primary' : ''}
-              onClick={() => { setStatusFilter(tab.value); setPage(1) }}
+              onClick={() => updateFilter('statusFilter', tab.value)}
             >
               {tab.label}
             </Button>
@@ -181,7 +207,6 @@ export default function EventRsvps() {
         </div>
       </div>
 
-      {/* RSVP List */}
       <div className="mt-4">
         {loading ? (
           <ListSkeleton rows={5} />
@@ -218,7 +243,7 @@ export default function EventRsvps() {
                 </div>
               </CardContent>
             </Card>
-            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+            <Pagination page={page} totalPages={totalPages} onPageChange={(p) => setURLParam('page', p)} />
           </>
         )}
       </div>
