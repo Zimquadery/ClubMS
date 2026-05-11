@@ -46,7 +46,7 @@ function StatItem({ value, label, divided, attention }) {
 export default function Dashboard() {
   const { user } = useAuth()
   const isAdmin = user?.role === 'PLATFORM_ADMIN'
-  const isClubAdmin = user?.role === 'CLUB_ADMIN'
+  const isClubAdmin = user?.role === 'CLUB_ADMIN' || user?.role === 'FACULTY'
   const [myClubs, setMyClubs] = useState([])
   const [clubsLoading, setClubsLoading] = useState(true)
   const [upcomingEvents, setUpcomingEvents] = useState([])
@@ -107,7 +107,7 @@ export default function Dashboard() {
                 <StatItem value={stats.pendingMemberships} label="pending" divided attention />
               </>
             )}
-            {user?.role === 'CLUB_ADMIN' && (
+            {(user?.role === 'CLUB_ADMIN' || user?.role === 'FACULTY') && (
               <>
                 <StatItem value={stats.myClubs} label="clubs" />
                 <StatItem value={stats.totalMembers} label="members" divided />

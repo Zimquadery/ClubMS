@@ -80,4 +80,9 @@ const exportMembers = asyncHandler(async (req, res) => {
   res.status(200).send(csv);
 });
 
-module.exports = { requestJoin, listMembers, approve, reject, setAlumni, transferAdmin, leaveClub, removeMember, getAdminClubs, getMyClubs, promoteMember, demoteMember, bulkApprove, bulkReject, exportMembers };
+const updateUserRole = asyncHandler(async (req, res) => {
+  const user = await membershipsService.updateUserRole(req.params.userId, req.body.role);
+  res.status(200).json(user);
+});
+
+module.exports = { requestJoin, listMembers, approve, reject, setAlumni, transferAdmin, leaveClub, removeMember, getAdminClubs, getMyClubs, promoteMember, demoteMember, bulkApprove, bulkReject, exportMembers, updateUserRole };

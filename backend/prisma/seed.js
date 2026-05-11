@@ -15,7 +15,7 @@ async function main() {
 
   const passwordHash = await bcrypt.hash('password123', 10);
 
-  // ── Users ──────────────────────────────────────────────────────────
+  // ── Users
   const users = {};
   const userData = [
     { email: 'admin@university.edu', name: 'Platform Admin', role: 'PLATFORM_ADMIN' },
@@ -33,6 +33,9 @@ async function main() {
     { email: 'student9@university.edu', name: 'Leo Nguyen', role: 'STUDENT' },
     { email: 'student10@university.edu', name: 'Maya Johnson', role: 'STUDENT' },
     { email: 'student11@university.edu', name: 'Noah Brown', role: 'STUDENT' },
+    { email: 'faculty1@university.edu', name: 'Dr. Sarah Palmer', role: 'FACULTY' },
+    { email: 'faculty2@university.edu', name: 'Prof. James Wright', role: 'FACULTY' },
+    { email: 'faculty3@university.edu', name: 'Dr. Emily Watson', role: 'FACULTY' },
   ];
 
   for (const u of userData) {
@@ -59,8 +62,11 @@ async function main() {
   const s9 = users['student9@university.edu'];
   const s10 = users['student10@university.edu'];
   const s11 = users['student11@university.edu'];
+  const f1 = users['faculty1@university.edu'];
+  const f2 = users['faculty2@university.edu'];
+  const f3 = users['faculty3@university.edu'];
 
-  // ── Clubs ──────────────────────────────────────────────────────────
+  // ── Clubs
   const existingClubs = await prisma.club.findMany();
   if (existingClubs.length > 0) {
     console.log('Clubs already exist, skipping seeding');
@@ -91,12 +97,11 @@ async function main() {
   const ce = clubs['Cultural Exchange'];
   const vc = clubs['Volunteer Corps'];
 
-  // ── Memberships ────────────────────────────────────────────────────
+  // ── Memberships
   const mem = (userId, clubId, status, role) => ({ userId, clubId, status, role });
 
   const memberships = [
     // Coding Club — rich membership
-    mem(admin.id, cc.id, 'ACTIVE', 'OFFICER'),
     mem(officer1.id, cc.id, 'ACTIVE', 'OFFICER'),
     mem(s1.id, cc.id, 'ACTIVE', 'MEMBER'),
     mem(s2.id, cc.id, 'PENDING', 'MEMBER'),
@@ -140,6 +145,13 @@ async function main() {
     mem(s10.id, vc.id, 'ACTIVE', 'MEMBER'),
     mem(s7.id, vc.id, 'REJECTED', 'MEMBER'),
     mem(s11.id, vc.id, 'PENDING', 'MEMBER'),
+
+    // Faculty members
+    mem(f1.id, cc.id, 'ACTIVE', 'OFFICER'),   // advisor-officer of Coding Club
+    mem(f1.id, so.id, 'ACTIVE', 'MEMBER'),    // cross-club: also helps Science Olympiad
+    mem(f2.id, so.id, 'ACTIVE', 'MEMBER'),    // member of Science Olympiad
+    mem(f2.id, vc.id, 'PENDING', 'MEMBER'),   // pending join to Volunteer Corps
+    // f3 — intentionally unaffiliated (no memberships)
   ];
 
   for (const m of memberships) {
@@ -147,7 +159,7 @@ async function main() {
   }
   console.log(`Created ${memberships.length} memberships`);
 
-  // ── Events ─────────────────────────────────────────────────────────
+  // ── Events
   const now = Date.now();
 
   const eventsData = [
@@ -230,7 +242,7 @@ async function main() {
   }
   console.log(`Created ${eventsData.length} events (${eventsData.filter(e => e.startTime.getTime() < now).length} past, ${eventsData.filter(e => e.startTime.getTime() >= now).length} upcoming)`);
 
-  // ── RSVPs ──────────────────────────────────────────────────────────
+  // ── RSVPs
   const upcoming = events.filter(e => e.startTime.getTime() >= now);
   const past = events.filter(e => e.startTime.getTime() < now);
 
@@ -239,7 +251,7 @@ async function main() {
 
   const rsvpMap = [
     // Hackathon 2025 (upcoming, index 0 in upcoming) — popular event
-    { ev: 0, users: [[s1, 'GOING'], [s5, 'GOING'], [s6, 'GOING'], [s2, 'MAYBE'], [s3, 'NOT_GOING']] },
+    { ev: 0, users: [[s1, 'GOING'], [s5, 'GOING'], [s6, 'GOING'], [s2, 'MAYBE'], [s3, 'NOT_GOING'], [f1, 'GOING']] },
     // Weekly Code Review
     { ev: 1, users: [[s1, 'GOING'], [s5, 'GOING']] },
     // Tryouts
@@ -249,15 +261,15 @@ async function main() {
     // Improv Night
     { ev: 4, users: [[s11, 'GOING'], [s4, 'GOING'], [s6, 'MAYBE'], [s1, 'GOING']] },
     // Robotics Build Session
-    { ev: 5, users: [[s2, 'GOING'], [s5, 'GOING'], [s10, 'GOING']] },
-    // State Championship Prep — no RSVPs (test empty state)
-    { ev: 6, users: [] },
+    { ev: 5, users: [[s2, 'GOING'], [s5, 'GOING'], [s10, 'GOING'], [f1, 'MAYBE']] },
+    // State Championship Prep — faculty RSVP tests attendance
+    { ev: 6, users: [[f2, 'GOING']] },
     // International Food Festival
-    { ev: 7, users: [[s9, 'GOING'], [s1, 'GOING'], [s3, 'GOING'], [s7, 'MAYBE'], [s11, 'GOING']] },
+    { ev: 7, users: [[s9, 'GOING'], [s1, 'GOING'], [s3, 'GOING'], [s7, 'MAYBE'], [s11, 'GOING'], [f1, 'GOING']] },
     // Language Exchange Meetup
     { ev: 8, users: [[s7, 'GOING'], [s9, 'MAYBE']] },
     // Park Cleanup Drive
-    { ev: 9, users: [[s2, 'GOING'], [s5, 'GOING'], [s10, 'GOING'], [s11, 'MAYBE']] },
+    { ev: 9, users: [[s2, 'GOING'], [s5, 'GOING'], [s10, 'GOING'], [s11, 'MAYBE'], [f2, 'GOING']] },
     // Tutoring Volunteer Orientation — no RSVPs
     { ev: 10, users: [] },
   ];
@@ -294,7 +306,7 @@ async function main() {
 
   console.log(`Created ${rsvps.length} RSVPs`);
 
-  // ── Announcements ─────────────────────────────────────────────────
+  // ── Announcements ───────
   const announcementsData = [
     { clubId: cc.id, authorId: officer1.id, title: 'Welcome to Coding Club!', content: 'We are excited to have everyone join us this semester. Check out our upcoming events and workshops.', pinned: true, createdAt: new Date(now - 25 * DAY) },
     { clubId: cc.id, authorId: admin.id, title: 'Hackathon Registration Open', content: 'Registration for Hackathon 2025 is now open. Form teams of 2-4 and sign up before the deadline.', pinned: true, createdAt: new Date(now - 5 * DAY) },
@@ -321,7 +333,7 @@ async function main() {
   }
   console.log(`Created ${announcementsData.length} announcements`);
 
-  // ── Audit Logs ─────────────────────────────────────────────────────
+  // ── Audit Logs
   const auditLogs = [
     { action: 'club.create', actorId: admin.id, targetType: 'Club', targetId: cc.id, metadata: JSON.stringify({ name: cc.name }), ipAddress: '127.0.0.1' },
     { action: 'club.create', actorId: admin.id, targetType: 'Club', targetId: bt.id, metadata: JSON.stringify({ name: bt.name }), ipAddress: '127.0.0.1' },
@@ -333,6 +345,9 @@ async function main() {
     { action: 'event.create', actorId: s8.id, targetType: 'Event', targetId: events[10].id, metadata: JSON.stringify({ title: 'Spring Play Auditions' }), ipAddress: '127.0.0.1' },
     { action: 'membership.approve', actorId: officer3.id, targetType: 'ClubMembership', targetId: s2.id, metadata: JSON.stringify({ club: so.name, user: s2.name }), ipAddress: '127.0.0.1' },
     { action: 'membership.promote', actorId: admin.id, targetType: 'ClubMembership', targetId: s8.id, metadata: JSON.stringify({ club: ds.name, user: s8.name, newRole: 'OFFICER' }), ipAddress: '127.0.0.1' },
+    { action: 'user.role.update', actorId: admin.id, targetType: 'User', targetId: f1.id, metadata: JSON.stringify({ user: f1.name, newRole: 'FACULTY' }), ipAddress: '127.0.0.1' },
+    { action: 'user.role.update', actorId: admin.id, targetType: 'User', targetId: f2.id, metadata: JSON.stringify({ user: f2.name, newRole: 'FACULTY' }), ipAddress: '127.0.0.1' },
+    { action: 'user.role.update', actorId: admin.id, targetType: 'User', targetId: f3.id, metadata: JSON.stringify({ user: f3.name, newRole: 'FACULTY' }), ipAddress: '127.0.0.1' },
   ];
 
   for (const log of auditLogs) {

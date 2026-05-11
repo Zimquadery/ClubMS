@@ -4,6 +4,7 @@ const { AppError } = require('../utils/errors');
 const ROLE_INHERITS = {
   PLATFORM_ADMIN: ['PLATFORM_ADMIN', 'CLUB_ADMIN'],
   CLUB_ADMIN: ['CLUB_ADMIN'],
+  FACULTY: ['FACULTY', 'CLUB_ADMIN', 'STUDENT'],
   STUDENT: ['STUDENT'],
 };
 
@@ -20,7 +21,7 @@ const requireRole = (...roles) => (req, res, next) => {
 };
 
 function requireClubAdmin(req, res, next) {
-  if (req.user.role === 'PLATFORM_ADMIN') return next();
+  if (req.user.role === 'PLATFORM_ADMIN' || req.user.role === 'FACULTY') return next();
 
   const { clubId } = req.params;
   membershipsService

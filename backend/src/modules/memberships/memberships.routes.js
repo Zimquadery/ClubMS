@@ -3,7 +3,7 @@ const membershipsController = require('./memberships.controller');
 const { authMiddleware } = require('../../middleware/auth');
 const { requireRole, requireClubAdmin } = require('../../middleware/rbac');
 const { validate, validateQuery } = require('../../middleware/validate');
-const { transferAdmin: transferAdminSchema, listMembersQuery, bulkAction: bulkActionSchema } = require('./memberships.schemas');
+const { transferAdmin: transferAdminSchema, listMembersQuery, bulkAction: bulkActionSchema, updateRole: updateRoleSchema } = require('./memberships.schemas');
 const { auditLog } = require('../../middleware/auditLog');
 
 const router = express.Router();
@@ -388,5 +388,37 @@ adminRouter.get('/my-clubs', authMiddleware, membershipsController.getMyClubs);
  *         description: Forbidden
  */
 adminRouter.get('/my-admin-clubs', authMiddleware, requireRole('CLUB_ADMIN'), membershipsController.getAdminClubs);
+
+/**
+ * @openapi
+ * /memberships/users/{userId}/role:
+ *   patch:
+ *     tags: [Memberships]
+ *     summary: Change a user's role (PLATFORM_ADMIN only)
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [role]
+ *             properties:
+ *               role: { type: string, enum: [STUDENT, FACULTY, CLUB_ADMIN] }
+ *     responses:
+ *       200:
+ *         description: Role updated
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: User not found
+ */
+adminRouter.patch('/users/:userId/role', authMiddleware, requireRole('PLATFORM_ADMIN'), validate(updateRoleSchema), auditLog('USER_ROLE_UPDATE', (req) => ({ type: 'user', id: req.params.userId, metadata: { newRole: req.body.role } })), membershipsController.updateUserRole);
 
 module.exports = { router, adminRouter };

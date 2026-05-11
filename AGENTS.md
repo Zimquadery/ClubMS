@@ -1,7 +1,7 @@
 # Guidelines
 
 - proactively log learnings to AGENTS.md to prevent repeated mistakes.
-- Be super brief. No summary. Work autonomously.
+- Be super brief. No report. Work autonomously.
 - After finding an issue, check if similar exists elsewhere.
 
 ---
@@ -25,9 +25,9 @@
 
 ### Before modifying authorization
 
-1. `requireRole()` hierarchy: PLATFORM_ADMIN inherits CLUB_ADMIN (not STUDENT).
+1. `requireRole()` hierarchy: PLATFORM_ADMIN inherits CLUB_ADMIN; FACULTY inherits CLUB_ADMIN + STUDENT.
 2. CLUB_ADMIN endpoints: `requireRole('CLUB_ADMIN')` then `requireClubAdmin` for per-resource checks.
-3. `requireClubAdmin` auto-bypasses PLATFORM_ADMIN — no manual check needed.
+3. `requireClubAdmin` auto-bypasses PLATFORM_ADMIN and FACULTY — no manual check needed.
 4. Both live in `middleware/rbac.js`.
 5. `requireClubAdmin` reads `req.params.clubId` — only works with `:clubId` param. Otherwise check in service/controller.
 6. Frontend `ProtectedRoute` has NO hierarchy — list all allowed roles explicitly.
@@ -177,3 +177,6 @@ Use `@keyframes` with `data-state` selectors, NOT CSS transitions (transitions d
 - **Viewer-state blindness:** ClubDetail page rendered member-only sections (announcements, members list) for all visitors, causing 403 toasts. Root cause: never enumerated viewer states (non-member, pending, rejected, alumni, active, admin) before building the page. Every page with member-only data MUST gate both the fetch and the UI section per the "Before rendering any page/section" rule.
 - **Component prop mismatch:** Pagination component uses `page` prop; subagent passed `currentPage`. Always read the component source before using it.
 - **JSX adjacency in ternaries:** Adjacent JSX elements inside a ternary's else branch (`(a ? b : c d)`) cause a compile error. Wrap siblings in `<>...</>`.
+- **FACULTY role revert on demote/transfer:** When demoting an OFFICER or transferring admin away, check the user's current `User.role` — FACULTY users should revert to `'FACULTY'` not `'STUDENT'`. Use `tx.user.findUnique({ select: { role: true } })` inside the transaction.
+- **FACULTY inherits CLUB_ADMIN + STUDENT:** `requireRole('STUDENT')` and `requireRole('CLUB_ADMIN')` both pass for FACULTY. Use `requireRole('PLATFORM_ADMIN')` for platform-only actions (e.g., `PATCH /memberships/users/:userId/role`).
+- **Role promotion endpoint:** `PATCH /api/memberships/users/:userId/role` on `membershipsAdminRouter` — PLATFORM_ADMIN only. Cannot change PLATFORM_ADMIN role.

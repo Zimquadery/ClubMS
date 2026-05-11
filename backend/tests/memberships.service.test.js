@@ -12,14 +12,14 @@ jest.mock('../src/lib/prisma', () => ({
       findMany: jest.fn(),
       count: jest.fn(),
     },
-    user: { update: jest.fn() },
+    user: { update: jest.fn(), findUnique: jest.fn().mockResolvedValue({ role: 'CLUB_ADMIN' }) },
     $transaction: jest.fn((fn) => fn({
       clubMembership: {
         update: jest.fn(),
         count: jest.fn(),
         updateMany: jest.fn(),
       },
-      user: { update: jest.fn() },
+      user: { update: jest.fn(), findUnique: jest.fn().mockResolvedValue({ role: 'CLUB_ADMIN' }) },
     })),
   },
 }));
@@ -230,7 +230,7 @@ describe('transferAdmin', () => {
         update: jest.fn().mockResolvedValue({}),
         count: jest.fn().mockResolvedValue(0),
       },
-      user: { update: jest.fn().mockResolvedValue({}) },
+      user: { update: jest.fn().mockResolvedValue({}), findUnique: jest.fn().mockResolvedValue({ role: 'CLUB_ADMIN' }) },
     };
     prisma.$transaction.mockImplementation((fn) => fn(txMock));
 
@@ -239,6 +239,7 @@ describe('transferAdmin', () => {
     expect(result.success).toBe(true);
     expect(txMock.clubMembership.update).toHaveBeenCalledTimes(2);
     expect(txMock.user.update).toHaveBeenCalledWith({ where: { id: newAdminId }, data: { role: 'CLUB_ADMIN' } });
+    expect(txMock.user.update).toHaveBeenCalledWith({ where: { id: currentAdminId }, data: { role: 'STUDENT' } });
   });
 
   it('throws if transferring to self', async () => {
@@ -325,7 +326,7 @@ describe('demoteMember', () => {
         update: jest.fn().mockResolvedValue({ userId, clubId, role: 'MEMBER', user: { id: userId, name: 'Test', email: 'test@test.com' } }),
         count: jest.fn().mockResolvedValue(0),
       },
-      user: { update: jest.fn().mockResolvedValue({}) },
+      user: { update: jest.fn().mockResolvedValue({}), findUnique: jest.fn().mockResolvedValue({ role: 'CLUB_ADMIN' }) },
     };
     prisma.$transaction.mockImplementation((fn) => fn(txMock));
 
@@ -343,6 +344,24 @@ describe('demoteMember', () => {
     expect(result.role).toBe('MEMBER');
   });
 
+  it('demotes OFFICER to MEMBER reverting FACULTY role', async () => {
+    prisma.clubMembership.findUnique.mockResolvedValue({ userId, clubId, status: 'ACTIVE', role: 'OFFICER' });
+
+    const txMock = {
+      clubMembership: {
+        update: jest.fn().mockResolvedValue({ userId, clubId, role: 'MEMBER', user: { id: userId, name: 'Test', email: 'test@test.com' } }),
+        count: jest.fn().mockResolvedValue(0),
+      },
+      user: { update: jest.fn().mockResolvedValue({}), findUnique: jest.fn().mockResolvedValue({ role: 'FACULTY' }) },
+    };
+    prisma.$transaction.mockImplementation((fn) => fn(txMock));
+
+    const result = await svc.demoteMember(clubId, userId);
+
+    expect(txMock.user.update).toHaveBeenCalledWith({ where: { id: userId }, data: { role: 'FACULTY' } });
+    expect(result.role).toBe('MEMBER');
+  });
+
   it('demotes OFFICER to MEMBER without updating user role if other officer memberships exist', async () => {
     prisma.clubMembership.findUnique.mockResolvedValue({ userId, clubId, status: 'ACTIVE', role: 'OFFICER' });
 
@@ -351,7 +370,7 @@ describe('demoteMember', () => {
         update: jest.fn().mockResolvedValue({ userId, clubId, role: 'MEMBER', user: { id: userId, name: 'Test', email: 'test@test.com' } }),
         count: jest.fn().mockResolvedValue(1),
       },
-      user: { update: jest.fn().mockResolvedValue({}) },
+      user: { update: jest.fn().mockResolvedValue({}), findUnique: jest.fn().mockResolvedValue({ role: 'CLUB_ADMIN' }) },
     };
     prisma.$transaction.mockImplementation((fn) => fn(txMock));
 

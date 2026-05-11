@@ -7,6 +7,9 @@ async function main() {
   const deletedRsvps = await prisma.eventRsvp.deleteMany();
   console.log(`Deleted ${deletedRsvps.count} RSVPs`);
 
+  const deletedAnnouncements = await prisma.announcement.deleteMany();
+  console.log(`Deleted ${deletedAnnouncements.count} announcements`);
+
   const deletedAuditLogs = await prisma.auditLog.deleteMany();
   console.log(`Deleted ${deletedAuditLogs.count} audit logs`);
 

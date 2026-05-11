@@ -9,6 +9,7 @@ datasource db {
 enum UserRole {
   PLATFORM_ADMIN
   CLUB_ADMIN
+  FACULTY
   STUDENT
 }
 

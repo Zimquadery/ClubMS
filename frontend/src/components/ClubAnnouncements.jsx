@@ -37,7 +37,7 @@ export default function ClubAnnouncements({ clubId, userMembership, user }) {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
 
-  const isOfficer = (userMembership?.role === 'OFFICER' && userMembership?.status === 'ACTIVE') || user?.role === 'PLATFORM_ADMIN'
+  const isOfficer = (userMembership?.role === 'OFFICER' && userMembership?.status === 'ACTIVE') || user?.role === 'PLATFORM_ADMIN' || user?.role === 'FACULTY'
 
   useEffect(() => {
     let active = true

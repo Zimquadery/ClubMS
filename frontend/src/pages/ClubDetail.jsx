@@ -134,8 +134,8 @@ export default function ClubDetail() {
 
   const memberCount = club._count?.memberships ?? totalMembers
   const userMembership = club.userMembership
-  const canManageEvents = (userMembership?.role === 'OFFICER' && userMembership?.status === 'ACTIVE') || user?.role === 'PLATFORM_ADMIN'
-  const canViewMembers = userMembership?.status === 'ACTIVE' || user?.role === 'PLATFORM_ADMIN'
+  const canManageEvents = (userMembership?.role === 'OFFICER' && userMembership?.status === 'ACTIVE') || user?.role === 'PLATFORM_ADMIN' || user?.role === 'FACULTY'
+  const canViewMembers = userMembership?.status === 'ACTIVE' || user?.role === 'PLATFORM_ADMIN' || user?.role === 'FACULTY'
 
   const members = club.memberships || []
   const events = club.events || []
@@ -200,9 +200,9 @@ export default function ClubDetail() {
             <Shield className="h-3 w-3 mr-1" />
             {userMembership.role === 'OFFICER' ? 'Officer' : 'Member'}
           </Badge>
-          {userMembership.role === 'OFFICER' || user?.role === 'PLATFORM_ADMIN' ? (
+          {userMembership.role === 'OFFICER' || user?.role === 'PLATFORM_ADMIN' || user?.role === 'FACULTY' ? (
             adminButtons
-          ) : user?.role === 'STUDENT' ? (
+          ) : user?.role === 'STUDENT' || user?.role === 'FACULTY' ? (
             <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" disabled={leaveLoading} onClick={handleLeave}>
               {leaveLoading ? 'Leaving...' : 'Leave Club'}
             </Button>
@@ -228,7 +228,7 @@ export default function ClubDetail() {
     }
 
     if (userMembership?.status === 'REJECTED') {
-      if (user?.role === 'STUDENT') {
+      if (user?.role === 'STUDENT' || user?.role === 'FACULTY') {
         return (
           <Button
             className="bg-brand-primary hover:bg-brand-primary/90 text-white"
@@ -243,7 +243,7 @@ export default function ClubDetail() {
       return null
     }
 
-    if (user?.role === 'STUDENT') {
+    if (user?.role === 'STUDENT' || user?.role === 'FACULTY') {
       return (
         <Button
           className="bg-brand-primary hover:bg-brand-primary/90 text-white"
@@ -293,7 +293,7 @@ export default function ClubDetail() {
         </div>
       </div>
 
-      {(userMembership?.status === 'ACTIVE' || user?.role === 'PLATFORM_ADMIN') && (
+      {(userMembership?.status === 'ACTIVE' || user?.role === 'PLATFORM_ADMIN' || user?.role === 'FACULTY') && (
         <ClubAnnouncements clubId={club.id} userMembership={userMembership} user={user} />
       )}
 

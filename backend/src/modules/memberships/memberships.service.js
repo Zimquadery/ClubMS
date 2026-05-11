@@ -100,35 +100,39 @@ async function transferAdmin(clubId, currentAdminId, newAdminId) {
     throw new AppError('Target user is not an active member of this club', 400);
   }
 
-  const result = await prisma.$transaction(async (tx) => {
-    const remainingOfficerCount = await tx.clubMembership.count({
-      where: {
-        userId: currentAdminId,
-        clubId: { not: clubId },
-        role: 'OFFICER',
-        status: 'ACTIVE',
-      },
+    const result = await prisma.$transaction(async (tx) => {
+      const [remainingOfficerCount, currentUser] = await Promise.all([
+        tx.clubMembership.count({
+          where: {
+            userId: currentAdminId,
+            clubId: { not: clubId },
+            role: 'OFFICER',
+            status: 'ACTIVE',
+          },
+        }),
+        tx.user.findUnique({ where: { id: currentAdminId }, select: { role: true } }),
+      ]);
+
+      const ops = [
+        tx.clubMembership.update({
+          where: { userId_clubId: { userId: currentAdminId, clubId } },
+          data: { role: 'MEMBER' },
+        }),
+        tx.clubMembership.update({
+          where: { userId_clubId: { userId: newAdminId, clubId } },
+          data: { role: 'OFFICER' },
+        }),
+        tx.user.update({ where: { id: newAdminId }, data: { role: 'CLUB_ADMIN' } }),
+      ];
+
+      if (remainingOfficerCount === 0) {
+        const revertRole = currentUser?.role === 'FACULTY' ? 'FACULTY' : 'STUDENT';
+        ops.push(tx.user.update({ where: { id: currentAdminId }, data: { role: revertRole } }));
+      }
+
+      await Promise.all(ops);
+      return { success: true };
     });
-
-    const ops = [
-      tx.clubMembership.update({
-        where: { userId_clubId: { userId: currentAdminId, clubId } },
-        data: { role: 'MEMBER' },
-      }),
-      tx.clubMembership.update({
-        where: { userId_clubId: { userId: newAdminId, clubId } },
-        data: { role: 'OFFICER' },
-      }),
-      tx.user.update({ where: { id: newAdminId }, data: { role: 'CLUB_ADMIN' } }),
-    ];
-
-    if (remainingOfficerCount === 0) {
-      ops.push(tx.user.update({ where: { id: currentAdminId }, data: { role: 'STUDENT' } }));
-    }
-
-    await Promise.all(ops);
-    return { success: true };
-  });
 
   return result;
 }
@@ -238,16 +242,20 @@ async function demoteMember(clubId, userId) {
   if (membership.role !== 'OFFICER') throw new AppError('Member is not an officer', 400);
 
   const result = await prisma.$transaction(async (tx) => {
-    const remainingOfficerCount = await tx.clubMembership.count({
-      where: { userId, clubId: { not: clubId }, role: 'OFFICER', status: 'ACTIVE' },
-    });
+    const [remainingOfficerCount, targetUser] = await Promise.all([
+      tx.clubMembership.count({
+        where: { userId, clubId: { not: clubId }, role: 'OFFICER', status: 'ACTIVE' },
+      }),
+      tx.user.findUnique({ where: { id: userId }, select: { role: true } }),
+    ]);
     const updated = await tx.clubMembership.update({
       where: { userId_clubId: { userId, clubId } },
       data: { role: 'MEMBER' },
       include: { user: { select: USER_SELECT } },
     });
     if (remainingOfficerCount === 0) {
-      await tx.user.update({ where: { id: userId }, data: { role: 'STUDENT' } });
+      const revertRole = targetUser?.role === 'FACULTY' ? 'FACULTY' : 'STUDENT';
+      await tx.user.update({ where: { id: userId }, data: { role: revertRole } });
     }
     return updated;
   });
@@ -295,4 +303,15 @@ async function isActiveMember(userId, clubId) {
   return !!(membership && membership.status === 'ACTIVE');
 }
 
-module.exports = { requestJoin, listMembers, approve, reject, setAlumni, transferAdmin, leaveClub, removeMember, isClubAdmin, getAdminClubs, getMyClubs, promoteMember, demoteMember, bulkApprove, bulkReject, exportMembersCsv, isActiveMember };
+async function updateUserRole(userId, newRole) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new AppError('User not found', 404);
+  if (user.role === 'PLATFORM_ADMIN') throw new AppError('Cannot change PLATFORM_ADMIN role', 400);
+  return prisma.user.update({
+    where: { id: userId },
+    data: { role: newRole },
+    select: { id: true, name: true, email: true, role: true },
+  });
+}
+
+module.exports = { requestJoin, listMembers, approve, reject, setAlumni, transferAdmin, leaveClub, removeMember, isClubAdmin, getAdminClubs, getMyClubs, promoteMember, demoteMember, bulkApprove, bulkReject, exportMembersCsv, isActiveMember, updateUserRole };

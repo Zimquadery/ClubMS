@@ -45,7 +45,7 @@ function App() {
               <ProtectedRoute><EventDetail /></ProtectedRoute>
             } />
             <Route path="events/:id/rsvps" element={
-              <ProtectedRoute roles={['CLUB_ADMIN', 'PLATFORM_ADMIN']}><EventRsvps /></ProtectedRoute>
+              <ProtectedRoute roles={['CLUB_ADMIN', 'PLATFORM_ADMIN', 'FACULTY']}><EventRsvps /></ProtectedRoute>
             } />
             <Route path="profile" element={
               <ProtectedRoute><Profile /></ProtectedRoute>
@@ -54,10 +54,10 @@ function App() {
               <ProtectedRoute roles={['PLATFORM_ADMIN']}><ManageClubs /></ProtectedRoute>
             } />
             <Route path="admin/clubs/:id/requests" element={
-              <ProtectedRoute roles={['CLUB_ADMIN', 'PLATFORM_ADMIN']}><PendingRequests /></ProtectedRoute>
+              <ProtectedRoute roles={['CLUB_ADMIN', 'PLATFORM_ADMIN', 'FACULTY']}><PendingRequests /></ProtectedRoute>
             } />
             <Route path="admin/clubs/:id/members" element={
-              <ProtectedRoute roles={['CLUB_ADMIN', 'PLATFORM_ADMIN']}><ClubMembers /></ProtectedRoute>
+              <ProtectedRoute roles={['CLUB_ADMIN', 'PLATFORM_ADMIN', 'FACULTY']}><ClubMembers /></ProtectedRoute>
             } />
             <Route path="admin/audit-logs" element={
               <ProtectedRoute roles={['PLATFORM_ADMIN']}><AuditLog /></ProtectedRoute>

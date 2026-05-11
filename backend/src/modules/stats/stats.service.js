@@ -15,7 +15,7 @@ async function getDashboardStats(userId, userRole) {
     return { totalClubs, totalUsers, totalEvents, pendingMemberships, upcomingEvents };
   }
 
-  if (userRole === 'CLUB_ADMIN') {
+  if (userRole === 'CLUB_ADMIN' || userRole === 'FACULTY') {
     const adminMemberships = await prisma.clubMembership.findMany({
       where: { userId, role: 'OFFICER', status: 'ACTIVE' },
       select: { clubId: true },

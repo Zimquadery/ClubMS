@@ -170,8 +170,8 @@ export default function EventDetail() {
     }
   }
 
-  const canManage = (event?.userMembership?.role === 'OFFICER' && event?.userMembership?.status === 'ACTIVE') || user?.role === 'PLATFORM_ADMIN'
-  const canRsvp = event?.userMembership?.status === 'ACTIVE' || user?.role === 'PLATFORM_ADMIN'
+  const canManage = (event?.userMembership?.role === 'OFFICER' && event?.userMembership?.status === 'ACTIVE') || user?.role === 'PLATFORM_ADMIN' || user?.role === 'FACULTY'
+  const canRsvp = event?.userMembership?.status === 'ACTIVE' || user?.role === 'PLATFORM_ADMIN' || user?.role === 'FACULTY'
   const isPast = event ? new Date(event.startTime) < new Date() : false
 
   if (loading) {

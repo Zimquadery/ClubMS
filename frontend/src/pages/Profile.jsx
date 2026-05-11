@@ -35,6 +35,7 @@ function getInitials(name) {
 const roleLabels = {
   PLATFORM_ADMIN: 'Platform Admin',
   CLUB_ADMIN: 'Club Admin',
+  FACULTY: 'Faculty',
   STUDENT: 'Student',
 }
 
