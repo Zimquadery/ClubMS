@@ -28,8 +28,12 @@ client.interceptors.response.use(
     }
 
     if (error.response?.status === 401) {
+      const url = error.config?.url || '';
+      const isAuthEndpoint = url.startsWith('/auth/login') || url.startsWith('/auth/register');
       localStorage.removeItem('token');
-      window.location.href = '/login';
+      if (!isAuthEndpoint) {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

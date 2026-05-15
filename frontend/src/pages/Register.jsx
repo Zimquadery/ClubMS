@@ -46,7 +46,11 @@ export default function Register() {
       await register(email, password, name)
       navigate('/dashboard')
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed')
+      setError(
+        err.response?.status === 429
+          ? 'Too many attempts. Please wait a moment and try again.'
+          : err.response?.data?.message || 'Registration failed'
+      )
     } finally {
       setLoading(false)
     }

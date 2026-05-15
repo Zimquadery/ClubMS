@@ -21,7 +21,11 @@ export default function Login() {
       await login(email, password)
       navigate('/dashboard')
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid email or password')
+      setError(
+        err.response?.status === 429
+          ? 'Too many attempts. Please wait a moment and try again.'
+          : err.response?.data?.message || 'Invalid email or password'
+      )
     } finally {
       setLoading(false)
     }

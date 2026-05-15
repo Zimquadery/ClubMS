@@ -30,8 +30,8 @@ app.use(cors({
 app.use(express.json({ limit: '10kb' }));
 app.use(pinoHttp({ logger }));
 
-const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: { error: 'Too many requests, please try again later' } });
-const generalLimiter = rateLimit({ windowMs: 60 * 1000, max: 100, message: { error: 'Too many requests, please try again later' } });
+const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: { message: 'Too many requests, please try again later' } });
+const generalLimiter = rateLimit({ windowMs: 60 * 1000, max: 100, message: { message: 'Too many requests, please try again later' } });
 
 app.use('/api/auth', authLimiter);
 app.use('/api', generalLimiter);
