@@ -159,9 +159,6 @@ The palette is a Slate-neutral foundation with one configurable brand accent. St
 - **Status Green** (#22c55e): Success, active membership, "going" RSVP.
 - **Status Yellow** (#eab308): Pending states, warnings, "fair" password strength.
 
-### Dark Mode
-In dark mode, backgrounds shift to **Deep Night** (#0f172a) and **Raised Surface** (#1e293b). Text inverts to **Faint Slate** (#f8fafc). Muted text becomes **Dim Stone** (#94a3b8). Borders become **Dusk Border** (#334155). The brand color stays the same.
-
 ## 3. Typography
 
 **Display Font:** None. System stack throughout.
@@ -259,7 +256,6 @@ Cards and containers always carry a light ambient shadow. The default Card shado
 - **Do** keep body text at 14px (0.875rem) and above. 12px is the absolute floor for badges and metadata only.
 - **Do** use the 12px radius (`rounded-xl`) for cards and 6px (`rounded-md`) for inputs and buttons. This two-tier system is the corner vocabulary.
 - **Do** use system font stack. No custom font loading. Performance and native feel over brand typography.
-- **Do** test dark mode for every new component. All colors must work against deep night (#0f172a) and raised surface (#1e293b).
 
 ### Don't:
 - **Don't** use emojis, illustrations, or confetti animations. Per PRODUCT.md: "This is a university tool, not a social app."

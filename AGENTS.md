@@ -114,7 +114,6 @@
 - **Email:** `lib/notifications.js` — console provider default, `setProvider()` to swap.
 - **Upload:** `multer` in `config/upload.js` → `backend/uploads/`, 5MB, images only. `POST /api/upload` returns `{ url }`.
 - **CSV:** `exportMembersCsv`/`exportRsvpsCsv` → blob download.
-- **Dark mode:** Tailwind v4 `.dark` class. `ThemeContext` + `useTheme`, persisted to localStorage.
 - **Code splitting:** `React.lazy()` + `Suspense` for all pages.
 - **Axios:** `api/client.js` — 15s timeout, 1 retry on timeout, 401 → hard reload `/login`.
 
