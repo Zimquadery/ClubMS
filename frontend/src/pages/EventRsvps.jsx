@@ -169,14 +169,24 @@ export default function EventRsvps() {
         </h1>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center whitespace-nowrap text-sm text-muted-foreground">
-        <span className="font-semibold text-status-green">{counts.GOING}</span> going
-        <span className="mx-1.5 text-muted-foreground/40 select-none">&middot;</span>
-        <span className="font-semibold text-status-yellow">{counts.MAYBE}</span> maybe
-        <span className="mx-1.5 text-muted-foreground/40 select-none">&middot;</span>
-        <span className="font-semibold text-destructive">{counts.NOT_GOING}</span> not going
-        <span className="mx-1.5 text-muted-foreground/40 select-none">&middot;</span>
-        <span className="font-semibold text-foreground">{total}</span> total
+      <div className="mt-2 ml-2">
+        <div className="flex items-center flex-wrap">
+          <span className="whitespace-nowrap text-sm text-muted-foreground">
+            <strong className="font-semibold text-status-green">{counts.GOING}</strong>{' '}going
+          </span>
+          <span className="mx-1.5 text-muted-foreground/40 select-none" aria-hidden="true">·</span>
+          <span className="whitespace-nowrap text-sm text-muted-foreground">
+            <strong className="font-semibold text-status-yellow">{counts.MAYBE}</strong>{' '}maybe
+          </span>
+          <span className="mx-1.5 text-muted-foreground/40 select-none" aria-hidden="true">·</span>
+          <span className="whitespace-nowrap text-sm text-muted-foreground">
+            <strong className="font-semibold text-destructive">{counts.NOT_GOING}</strong>{' '}not going
+          </span>
+          <span className="mx-1.5 text-muted-foreground/40 select-none" aria-hidden="true">·</span>
+          <span className="whitespace-nowrap text-sm text-muted-foreground">
+            <strong className="font-semibold text-foreground">{total}</strong>{' '}total
+          </span>
+        </div>
       </div>
 
       <div className="mt-4 flex items-center justify-between flex-wrap gap-2">
@@ -219,12 +229,12 @@ export default function EventRsvps() {
         ) : (
           <>
             <Card>
-              <CardContent>
+              <CardContent className="p-0">
                 <div className="divide-y">
                   {rsvps.map((rsvp) => (
                     <div
                       key={rsvp.id}
-                      className="flex items-center justify-between py-2 first:pt-0 last:pb-0"
+                      className="flex items-center justify-between px-4 py-3 first:pt-4 last:pb-4"
                     >
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium truncate">{rsvp.user?.name || 'Unknown'}</div>

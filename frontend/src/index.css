@@ -1,7 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&display=swap');
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
-@theme inline {
+@theme {
   --color-background: #ffffff;
   --color-foreground: #0f172a;
   --color-card: #ffffff;
@@ -37,6 +38,34 @@
   --brand-primary: #1E40AF;
 }
 
+.dark {
+  --color-background: #0b0c0f;
+  --color-foreground: #e8eaed;
+  --color-card: #141518;
+  --color-card-foreground: #e8eaed;
+  --color-popover: #18191d;
+  --color-popover-foreground: #e8eaed;
+  --color-primary: #e8eaed;
+  --color-primary-foreground: #0b0c0f;
+  --color-secondary: #1e1f24;
+  --color-secondary-foreground: #e8eaed;
+  --color-muted: #1e1f24;
+  --color-muted-foreground: #8b8d95;
+  --color-accent: #242529;
+  --color-accent-foreground: #e8eaed;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #f8fafc;
+  --color-border: #28292e;
+  --color-input: #28292e;
+  --color-ring: #4a4b52;
+}
+
+.dark .shadow-sm,
+.dark .shadow,
+.dark .shadow-md {
+  box-shadow: none;
+}
+
 @layer base {
   * {
     border-color: var(--color-border);
@@ -44,6 +73,10 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+  }
+  input[type="checkbox"] {
+    accent-color: var(--color-brand-primary);
+    background-color: var(--color-background);
   }
 }
 

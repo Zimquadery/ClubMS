@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
+import { useTheme } from '@/context/ThemeContext'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -11,10 +12,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { LayoutDashboard, Users, Calendar, LogOut, Shield, Menu, X, UserCircle, ClipboardList } from 'lucide-react'
+import { LayoutDashboard, Users, Calendar, LogOut, Shield, Menu, X, UserCircle, ClipboardList, Sun, Moon, Monitor } from 'lucide-react'
 
 export function Layout() {
   const { user, logout } = useAuth()
+  const { theme, setTheme } = useTheme()
   const navigate = useNavigate()
   const universityName = import.meta.env.VITE_UNIVERSITY_NAME || 'ClubMS'
   const logoUrl = import.meta.env.VITE_LOGO_URL
@@ -24,6 +26,13 @@ export function Layout() {
     logout()
     navigate('/login')
   }
+
+  const cycleTheme = () => {
+    const next = theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light'
+    setTheme(next)
+  }
+
+  const ThemeIcon = theme === 'dark' ? Moon : theme === 'light' ? Sun : Monitor
 
   const initials = user?.name
     ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
@@ -86,6 +95,15 @@ export function Layout() {
             )}
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={cycleTheme}
+              aria-label={`Switch theme, currently ${theme}`}
+            >
+              <ThemeIcon className="h-4 w-4" />
+            </Button>
             {user && (
               <>
                 <Button

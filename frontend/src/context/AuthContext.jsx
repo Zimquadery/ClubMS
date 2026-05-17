@@ -18,13 +18,16 @@ export function AuthProvider({ children }) {
 
     meAbortRef.current = new AbortController();
     client.get('/auth/me', { signal: meAbortRef.current.signal })
-      .then((response) => setUser(response.data))
+      .then((response) => {
+        setUser(response.data);
+        setLoading(false);
+      })
       .catch((err) => {
         if (axios.isCancel(err)) return;
         localStorage.removeItem('token');
         setUser(null);
-      })
-      .finally(() => setLoading(false));
+        setLoading(false);
+      });
 
     return () => { meAbortRef.current?.abort(); };
   }, []);

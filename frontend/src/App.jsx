@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'sonner'
+import { useTheme } from '@/context/ThemeContext'
 import { Layout } from '@/components/Layout'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 
@@ -20,9 +21,11 @@ const NotFound = lazy(() => import('@/pages/NotFound'))
 const AuditLog = lazy(() => import('@/pages/admin/AuditLog'))
 
 function App() {
+  const { resolvedTheme } = useTheme()
+
   return (
     <>
-      <Toaster position="top-right" richColors />
+      <Toaster position="top-right" richColors theme={resolvedTheme} />
       <Suspense fallback={<div className="flex items-center justify-center min-h-[50vh]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary" /></div>}>
         <Routes>
           <Route path="/login" element={<Login />} />
