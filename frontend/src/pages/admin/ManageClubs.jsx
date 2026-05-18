@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import client from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,11 +23,12 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Plus, Trash2, Users, UserCheck, ClipboardList, Pencil } from 'lucide-react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { CLUB_CATEGORIES } from '@/lib/constants'
 import { toast } from 'sonner'
 import { ListSkeleton } from '@/components/ui/skeleton'
 import { Pagination } from '@/components/Pagination'
+import usePaginatedFetch from '@/hooks/usePaginatedFetch'
 
 function ClubFormFields({ form, setForm, uploading, onUpload, error, idPrefix }) {
   return (
@@ -96,9 +97,22 @@ function ClubFormFields({ form, setForm, uploading, onUpload, error, idPrefix })
 }
 
 export default function ManageClubs() {
-  const [clubs, setClubs] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const {
+    items: clubs, loading, error, page, totalPages, total,
+    refetch: fetchClubs,
+    setURLParam,
+  } = usePaginatedFetch({
+    fetchFn: async ({ page }) => {
+      const res = await client.get('/clubs', { params: { page, limit: 20 } })
+      return {
+        items: res.data.items ? res.data.items : res.data,
+        totalPages: res.data.totalPages || 1,
+        total: res.data.total || 0,
+      }
+    },
+    deps: [],
+  })
+
   const [dialogOpen, setDialogOpen] = useState(false)
   const [form, setForm] = useState({ name: '', description: '', category: '', logoUrl: '' })
   const [formError, setFormError] = useState('')
@@ -110,68 +124,6 @@ export default function ManageClubs() {
   const [editError, setEditError] = useState('')
   const [editing, setEditing] = useState(false)
   const [uploading, setUploading] = useState(false)
-  const [searchParams, setSearchParams] = useSearchParams()
-
-  const setURLParam = (key, value) => {
-    setSearchParams(prev => {
-      const next = new URLSearchParams(prev)
-      if (value === '' || value === null || value === undefined) next.delete(key)
-      else next.set(key, String(value))
-      return next
-    })
-  }
-
-  const rawPage = parseInt(searchParams.get('page') || '1', 10)
-  const page = rawPage >= 1 ? rawPage : 1
-  const [totalPages, setTotalPages] = useState(1)
-  const [total, setTotal] = useState(0)
-
-  useEffect(() => {
-    let active = true
-    setLoading(true)
-    setError('')
-    async function fetchData() {
-      try {
-        const res = await client.get('/clubs', { params: { page, limit: 20 } })
-        const items = res.data.items ? res.data.items : res.data
-        if (items.length === 0 && page > 1) {
-          if (active) setURLParam('page', String(page - 1))
-          return
-        }
-        if (active) {
-          setClubs(items)
-          setTotalPages(res.data.totalPages || 1)
-          setTotal(res.data.total || 0)
-        }
-      } catch (err) {
-        if (active) setError(err.response?.data?.message || 'Failed to load clubs')
-      } finally {
-        if (active) setLoading(false)
-      }
-    }
-    fetchData()
-    return () => { active = false }
-  }, [page])
-
-  async function fetchClubs() {
-    setLoading(true)
-    setError('')
-    try {
-      const res = await client.get('/clubs', { params: { page, limit: 20 } })
-      const items = res.data.items ? res.data.items : res.data
-      if (items.length === 0 && page > 1) {
-        setURLParam('page', String(page - 1))
-        return
-      }
-      setClubs(items)
-      setTotalPages(res.data.totalPages || 1)
-      setTotal(res.data.total || 0)
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load clubs')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   async function handleCreate(e) {
     e.preventDefault()

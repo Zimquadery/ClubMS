@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useState } from 'react'
 import client from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -19,77 +18,30 @@ import { ListSkeleton } from '@/components/ui/skeleton'
 import { Pagination } from '@/components/Pagination'
 import { useAdminClubSelector } from '@/hooks/useAdminClubSelector'
 import { AdminClubHeader } from '@/components/admin/AdminClubHeader'
+import usePaginatedFetch from '@/hooks/usePaginatedFetch'
 
 export default function PendingRequests() {
   const { clubId, adminClubs, currentClub, adminError, navigateToClub } = useAdminClubSelector((val) => `/admin/clubs/${val}/requests`)
-  const [requests, setRequests] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+
+  const {
+    items: requests, setItems: setRequests,
+    loading, error, page, totalPages,
+    refetch: fetchRequests,
+    setURLParam,
+  } = usePaginatedFetch({
+    fetchFn: async ({ page }) => {
+      const res = await client.get(`/clubs/${clubId}/members`, { params: { status: 'PENDING', page, limit: 20 } })
+      return { items: res.data.items || res.data, totalPages: res.data.totalPages || 1 }
+    },
+    deps: [clubId],
+    enabled: !!clubId,
+  })
+
   const [actionLoading, setActionLoading] = useState({})
   const [rejectTarget, setRejectTarget] = useState(null)
   const [rejecting, setRejecting] = useState(false)
   const [selected, setSelected] = useState(new Set())
   const [bulkLoading, setBulkLoading] = useState(false)
-  const [searchParams, setSearchParams] = useSearchParams()
-
-  const setURLParam = (key, value) => {
-    setSearchParams(prev => {
-      const next = new URLSearchParams(prev)
-      if (value === '' || value === null || value === undefined) next.delete(key)
-      else next.set(key, String(value))
-      return next
-    })
-  }
-
-  const rawPage = parseInt(searchParams.get('page') || '1', 10)
-  const page = rawPage >= 1 ? rawPage : 1
-  const [totalPages, setTotalPages] = useState(1)
-
-  useEffect(() => {
-    if (!clubId) return
-    let active = true
-    setLoading(true)
-    setError('')
-    async function fetchData() {
-      try {
-        const res = await client.get(`/clubs/${clubId}/members`, { params: { status: 'PENDING', page, limit: 20 } })
-        const items = res.data.items || res.data
-        if (items.length === 0 && page > 1) {
-          if (active) setURLParam('page', String(page - 1))
-          return
-        }
-        if (active) {
-          setRequests(items)
-          setTotalPages(res.data.totalPages || 1)
-        }
-      } catch (err) {
-        if (active) setError(err.response?.data?.message || 'Failed to load requests')
-      } finally {
-        if (active) setLoading(false)
-      }
-    }
-    fetchData()
-    return () => { active = false }
-  }, [clubId, page])
-
-  async function fetchRequests() {
-    setLoading(true)
-    setError('')
-    try {
-      const res = await client.get(`/clubs/${clubId}/members`, { params: { status: 'PENDING', page, limit: 20 } })
-      const items = res.data.items || res.data
-      if (items.length === 0 && page > 1) {
-        setURLParam('page', String(page - 1))
-        return
-      }
-      setRequests(items)
-      setTotalPages(res.data.totalPages || 1)
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load requests')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   async function handleAction(userId, action) {
     setActionLoading((prev) => ({ ...prev, [userId]: true }))
