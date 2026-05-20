@@ -1,5 +1,6 @@
 const eventsService = require('./events.service');
 const { asyncHandler } = require('../../utils/asyncHandler');
+const { isPrivilegedRole } = require('../../middleware/rbac');
 
 const list = asyncHandler(async (req, res) => {
   const { clubId, joined, timeRange, page, limit } = req.query;
@@ -22,15 +23,13 @@ const create = asyncHandler(async (req, res) => {
 
 const updateEvent = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const isPlatformAdmin = req.user.role === 'PLATFORM_ADMIN';
-  const event = await eventsService.update(id, req.user.userId, req.body, isPlatformAdmin);
+  const event = await eventsService.update(id, req.user.userId, req.body, isPrivilegedRole(req.user.role));
   res.status(200).json(event);
 });
 
 const deleteEvent = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const isPlatformAdmin = req.user.role === 'PLATFORM_ADMIN';
-  const result = await eventsService.remove(id, req.user.userId, isPlatformAdmin);
+  const result = await eventsService.remove(id, req.user.userId, isPrivilegedRole(req.user.role));
   res.status(200).json(result);
 });
 

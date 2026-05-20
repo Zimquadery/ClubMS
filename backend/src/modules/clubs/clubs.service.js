@@ -1,6 +1,7 @@
 const { prisma } = require('../../lib/prisma');
 const { AppError } = require('../../utils/errors');
 const { CLUB_CATEGORIES } = require('./clubs.constants');
+const { isPrivilegedRole } = require('../../middleware/rbac');
 
 async function list({ search, category, page = 1, limit = 20 }) {
   const where = {};
@@ -23,7 +24,17 @@ async function list({ search, category, page = 1, limit = 20 }) {
   return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
 }
 
-async function getById(id, userId, { membersPage = 1, membersLimit = 10, eventsPage = 1, eventsLimit = 5 } = {}) {
+async function getById(id, userId, { membersPage = 1, membersLimit = 10, eventsPage = 1, eventsLimit = 5, userRole } = {}) {
+  let userMembership = null;
+  if (userId) {
+    userMembership = await prisma.clubMembership.findUnique({
+      where: { userId_clubId: { userId, clubId: id } },
+      select: { status: true, role: true },
+    });
+  }
+
+  const includeEmail = userMembership?.role === 'OFFICER' || isPrivilegedRole(userRole);
+
   const club = await prisma.club.findUnique({
     where: { id },
     include: {
@@ -34,7 +45,7 @@ async function getById(id, userId, { membersPage = 1, membersLimit = 10, eventsP
       },
       memberships: {
         where: { status: 'ACTIVE' },
-        include: { user: { select: { id: true, name: true, email: true } } },
+        include: { user: { select: { id: true, name: true, ...(includeEmail && { email: true }) } } },
         orderBy: { createdAt: 'asc' },
         skip: (membersPage - 1) * membersLimit,
         take: membersLimit,
@@ -55,13 +66,7 @@ async function getById(id, userId, { membersPage = 1, membersLimit = 10, eventsP
     prisma.event.count({ where: { clubId: id, startTime: { gte: new Date() } } }),
   ]);
 
-  if (userId) {
-    const userMembership = await prisma.clubMembership.findUnique({
-      where: { userId_clubId: { userId, clubId: id } },
-      select: { status: true, role: true },
-    });
-    club.userMembership = userMembership;
-  }
+  club.userMembership = userMembership;
 
   return { ...club, totalMembers, totalEvents };
 }

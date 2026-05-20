@@ -2,6 +2,7 @@ const { prisma } = require('../../lib/prisma');
 const { AppError } = require('../../utils/errors');
 const auditService = require('../audit/audit.service');
 const { isActiveMember } = require('../memberships/memberships.service');
+const { isPrivilegedRole } = require('../../middleware/rbac');
 
 async function create(clubId, userId, data) {
   const club = await prisma.club.findUnique({ where: { id: clubId } });
@@ -22,7 +23,7 @@ async function list(clubId, userId, userRole, { page = 1, limit = 20 } = {}) {
   const club = await prisma.club.findUnique({ where: { id: clubId } });
   if (!club) throw new AppError('Club not found', 404);
 
-  if (userRole !== 'PLATFORM_ADMIN' && !await isActiveMember(userId, clubId)) {
+  if (!isPrivilegedRole(userRole) && !await isActiveMember(userId, clubId)) {
     throw new AppError('You are not an active member of this club', 403);
   }
 
@@ -47,7 +48,7 @@ async function getById(clubId, announcementId, userId, userRole) {
   const club = await prisma.club.findUnique({ where: { id: clubId } });
   if (!club) throw new AppError('Club not found', 404);
 
-  if (userRole !== 'PLATFORM_ADMIN' && !await isActiveMember(userId, clubId)) {
+  if (!isPrivilegedRole(userRole) && !await isActiveMember(userId, clubId)) {
     throw new AppError('You are not an active member of this club', 403);
   }
 
@@ -66,12 +67,16 @@ async function getById(clubId, announcementId, userId, userRole) {
   return announcement;
 }
 
-async function update(clubId, announcementId, userId, data) {
+async function update(clubId, announcementId, userId, userRole, data) {
   const announcement = await prisma.announcement.findUnique({
     where: { id: announcementId },
   });
   if (!announcement || announcement.clubId !== clubId) {
     throw new AppError('Announcement not found', 404);
+  }
+
+  if (!isPrivilegedRole(userRole) && announcement.authorId !== userId) {
+    throw new AppError('You can only edit your own announcements', 403);
   }
 
   return prisma.announcement.update({
@@ -81,12 +86,16 @@ async function update(clubId, announcementId, userId, data) {
   });
 }
 
-async function remove(clubId, announcementId, userId) {
+async function remove(clubId, announcementId, userId, userRole) {
   const announcement = await prisma.announcement.findUnique({
     where: { id: announcementId },
   });
   if (!announcement || announcement.clubId !== clubId) {
     throw new AppError('Announcement not found', 404);
+  }
+
+  if (!isPrivilegedRole(userRole) && announcement.authorId !== userId) {
+    throw new AppError('You can only delete your own announcements', 403);
   }
 
   await prisma.announcement.delete({ where: { id: announcementId } });
@@ -144,7 +153,18 @@ async function togglePin(clubId, announcementId, userId, ipAddress) {
   return result;
 }
 
-async function getRecent(userId, limit = 5) {
+async function getRecent(userId, userRole, limit = 5) {
+  if (isPrivilegedRole(userRole)) {
+    return prisma.announcement.findMany({
+      include: {
+        club: { select: { id: true, name: true } },
+        author: { select: { id: true, name: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+  }
+
   const memberships = await prisma.clubMembership.findMany({
     where: { userId, status: 'ACTIVE' },
     select: { clubId: true },

@@ -29,7 +29,7 @@ const setAlumni = asyncHandler(async (req, res) => {
 });
 
 const transferAdmin = asyncHandler(async (req, res) => {
-  const result = await membershipsService.transferAdmin(req.params.clubId, req.user.userId, req.body.newAdminId);
+  const result = await membershipsService.transferAdmin(req.params.clubId, req.user.userId, req.body.newAdminId, req.user.role);
   res.status(200).json(result);
 });
 

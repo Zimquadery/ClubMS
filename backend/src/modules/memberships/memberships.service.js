@@ -1,6 +1,10 @@
 const { prisma } = require('../../lib/prisma');
 const { AppError } = require('../../utils/errors');
 
+function isPrivilegedRole(role) {
+  return role === 'PLATFORM_ADMIN' || role === 'FACULTY';
+}
+
 const USER_SELECT = { id: true, name: true, email: true };
 
 async function updateMembershipStatus(clubId, userId, expectedStatus, newStatus) {
@@ -76,20 +80,61 @@ async function reject(clubId, userId) {
 }
 
 async function setAlumni(clubId, userId) {
-  return updateMembershipStatus(clubId, userId, 'ACTIVE', 'ALUMNI');
+  const membership = await prisma.clubMembership.findUnique({
+    where: { userId_clubId: { userId, clubId } },
+  });
+
+  if (!membership) throw new AppError('Membership not found', 404);
+  if (membership.status !== 'ACTIVE') {
+    throw new AppError('Membership is not in ACTIVE status', 400);
+  }
+
+  if (membership.role === 'OFFICER') {
+    const officerCount = await prisma.clubMembership.count({
+      where: { clubId, role: 'OFFICER', status: 'ACTIVE' },
+    });
+    if (officerCount <= 1) {
+      throw new AppError('Cannot set alumni on the last officer. Transfer admin rights first.', 400);
+    }
+  }
+
+  const result = await prisma.$transaction(async (tx) => {
+    const updated = await tx.clubMembership.update({
+      where: { userId_clubId: { userId, clubId } },
+      data: { status: 'ALUMNI' },
+      include: { user: { select: USER_SELECT } },
+    });
+
+    if (membership.role === 'OFFICER') {
+      const remainingOfficerCount = await tx.clubMembership.count({
+        where: { userId, clubId: { not: clubId }, role: 'OFFICER', status: 'ACTIVE' },
+      });
+      if (remainingOfficerCount === 0) {
+        const currentUser = await tx.user.findUnique({ where: { id: userId }, select: { role: true } });
+        const revertRole = currentUser?.role === 'FACULTY' ? 'FACULTY' : 'STUDENT';
+        await tx.user.update({ where: { id: userId }, data: { role: revertRole } });
+      }
+    }
+
+    return updated;
+  });
+
+  return result;
 }
 
-async function transferAdmin(clubId, currentAdminId, newAdminId) {
+async function transferAdmin(clubId, currentAdminId, newAdminId, callerRole) {
   if (currentAdminId === newAdminId) {
     throw new AppError('Cannot transfer admin to yourself', 400);
   }
 
-  const currentMembership = await prisma.clubMembership.findUnique({
-    where: { userId_clubId: { userId: currentAdminId, clubId } },
-  });
+  if (!isPrivilegedRole(callerRole)) {
+    const currentMembership = await prisma.clubMembership.findUnique({
+      where: { userId_clubId: { userId: currentAdminId, clubId } },
+    });
 
-  if (!currentMembership || currentMembership.role !== 'OFFICER' || currentMembership.status !== 'ACTIVE') {
-    throw new AppError('You are not an admin of this club', 403);
+    if (!currentMembership || currentMembership.role !== 'OFFICER' || currentMembership.status !== 'ACTIVE') {
+      throw new AppError('You are not an admin of this club', 403);
+    }
   }
 
   const newMembership = await prisma.clubMembership.findUnique({
@@ -240,6 +285,13 @@ async function demoteMember(clubId, userId) {
   });
   if (!membership) throw new AppError('Membership not found', 404);
   if (membership.role !== 'OFFICER') throw new AppError('Member is not an officer', 400);
+
+  const officerCount = await prisma.clubMembership.count({
+    where: { clubId, role: 'OFFICER', status: 'ACTIVE' },
+  });
+  if (officerCount <= 1) {
+    throw new AppError('Cannot demote the last officer of this club', 400);
+  }
 
   const result = await prisma.$transaction(async (tx) => {
     const [remainingOfficerCount, targetUser] = await Promise.all([

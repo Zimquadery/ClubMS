@@ -138,18 +138,62 @@ describe('setAlumni', () => {
   const clubId = 'club-1';
   const userId = 'user-1';
 
-  it('updates ACTIVE to ALUMNI', async () => {
-    prisma.clubMembership.findUnique.mockResolvedValue({ userId, clubId, status: 'ACTIVE' });
-    prisma.clubMembership.update.mockResolvedValue({ userId, clubId, status: 'ALUMNI' });
+  it('updates ACTIVE MEMBER to ALUMNI', async () => {
+    prisma.clubMembership.findUnique.mockResolvedValue({ userId, clubId, status: 'ACTIVE', role: 'MEMBER' });
+    const txUpdate = jest.fn().mockResolvedValue({ userId, clubId, status: 'ALUMNI', user: { id: userId, name: 'Test', email: 'test@test.com' } });
+    prisma.$transaction.mockImplementation((fn) => fn({
+      clubMembership: { update: txUpdate, count: jest.fn() },
+      user: { update: jest.fn(), findUnique: jest.fn().mockResolvedValue({ role: 'CLUB_ADMIN' }) },
+    }));
 
     const result = await svc.setAlumni(clubId, userId);
 
-    expect(prisma.clubMembership.update).toHaveBeenCalledWith({
+    expect(txUpdate).toHaveBeenCalledWith({
       where: { userId_clubId: { userId, clubId } },
       data: { status: 'ALUMNI' },
       include: { user: { select: { id: true, name: true, email: true } } },
     });
     expect(result.status).toBe('ALUMNI');
+  });
+
+  it('throws 404 if membership not found', async () => {
+    prisma.clubMembership.findUnique.mockResolvedValue(null);
+
+    await expect(svc.setAlumni(clubId, userId)).rejects.toThrow('Membership not found');
+    await expect(svc.setAlumni(clubId, userId)).rejects.toMatchObject({ statusCode: 404 });
+  });
+
+  it('throws 400 if not ACTIVE', async () => {
+    prisma.clubMembership.findUnique.mockResolvedValue({ userId, clubId, status: 'PENDING', role: 'MEMBER' });
+
+    await expect(svc.setAlumni(clubId, userId)).rejects.toThrow('Membership is not in ACTIVE status');
+    await expect(svc.setAlumni(clubId, userId)).rejects.toMatchObject({ statusCode: 400 });
+  });
+
+  it('throws 400 if last OFFICER in club', async () => {
+    prisma.clubMembership.findUnique.mockResolvedValue({ userId, clubId, status: 'ACTIVE', role: 'OFFICER' });
+    prisma.clubMembership.count.mockResolvedValue(1);
+
+    await expect(svc.setAlumni(clubId, userId)).rejects.toThrow('Cannot set alumni on the last officer');
+    await expect(svc.setAlumni(clubId, userId)).rejects.toMatchObject({ statusCode: 400 });
+  });
+
+  it('allows setAlumni on OFFICER when other officers exist', async () => {
+    prisma.clubMembership.findUnique.mockResolvedValue({ userId, clubId, status: 'ACTIVE', role: 'OFFICER' });
+    prisma.clubMembership.count.mockResolvedValue(2);
+    const txUpdate = jest.fn().mockResolvedValue({ userId, clubId, status: 'ALUMNI', user: { id: userId, name: 'Test', email: 'test@test.com' } });
+    const txCount = jest.fn().mockResolvedValue(0);
+    const txUserFind = jest.fn().mockResolvedValue({ role: 'CLUB_ADMIN' });
+    const txUserUpdate = jest.fn().mockResolvedValue({});
+    prisma.$transaction.mockImplementation((fn) => fn({
+      clubMembership: { update: txUpdate, count: txCount },
+      user: { update: txUserUpdate, findUnique: txUserFind },
+    }));
+
+    const result = await svc.setAlumni(clubId, userId);
+
+    expect(result.status).toBe('ALUMNI');
+    expect(txUserUpdate).toHaveBeenCalledWith({ where: { id: userId }, data: { role: 'STUDENT' } });
   });
 });
 
@@ -234,7 +278,7 @@ describe('transferAdmin', () => {
     };
     prisma.$transaction.mockImplementation((fn) => fn(txMock));
 
-    const result = await svc.transferAdmin(clubId, currentAdminId, newAdminId);
+    const result = await svc.transferAdmin(clubId, currentAdminId, newAdminId, 'CLUB_ADMIN');
 
     expect(result.success).toBe(true);
     expect(txMock.clubMembership.update).toHaveBeenCalledTimes(2);
@@ -243,15 +287,15 @@ describe('transferAdmin', () => {
   });
 
   it('throws if transferring to self', async () => {
-    await expect(svc.transferAdmin(clubId, currentAdminId, currentAdminId)).rejects.toThrow('Cannot transfer admin to yourself');
-    await expect(svc.transferAdmin(clubId, currentAdminId, currentAdminId)).rejects.toMatchObject({ statusCode: 400 });
+    await expect(svc.transferAdmin(clubId, currentAdminId, currentAdminId, 'CLUB_ADMIN')).rejects.toThrow('Cannot transfer admin to yourself');
+    await expect(svc.transferAdmin(clubId, currentAdminId, currentAdminId, 'CLUB_ADMIN')).rejects.toMatchObject({ statusCode: 400 });
   });
 
   it('throws if caller is not an active officer', async () => {
     prisma.clubMembership.findUnique.mockResolvedValueOnce({ userId: currentAdminId, clubId, role: 'MEMBER', status: 'ACTIVE' });
 
-    await expect(svc.transferAdmin(clubId, currentAdminId, newAdminId)).rejects.toThrow('You are not an admin of this club');
-    await expect(svc.transferAdmin(clubId, currentAdminId, newAdminId)).rejects.toMatchObject({ statusCode: 403 });
+    await expect(svc.transferAdmin(clubId, currentAdminId, newAdminId, 'CLUB_ADMIN')).rejects.toThrow('You are not an admin of this club');
+    await expect(svc.transferAdmin(clubId, currentAdminId, newAdminId, 'CLUB_ADMIN')).rejects.toMatchObject({ statusCode: 403 });
   });
 
   it('throws if target is not an active member', async () => {
@@ -261,8 +305,45 @@ describe('transferAdmin', () => {
       .mockResolvedValueOnce({ userId: currentAdminId, clubId, role: 'OFFICER', status: 'ACTIVE' })
       .mockResolvedValueOnce({ userId: newAdminId, clubId, role: 'MEMBER', status: 'PENDING' });
 
-    await expect(svc.transferAdmin(clubId, currentAdminId, newAdminId)).rejects.toThrow('Target user is not an active member');
-    await expect(svc.transferAdmin(clubId, currentAdminId, newAdminId)).rejects.toMatchObject({ statusCode: 400 });
+    await expect(svc.transferAdmin(clubId, currentAdminId, newAdminId, 'CLUB_ADMIN')).rejects.toThrow('Target user is not an active member');
+    await expect(svc.transferAdmin(clubId, currentAdminId, newAdminId, 'CLUB_ADMIN')).rejects.toMatchObject({ statusCode: 400 });
+  });
+
+  it('skips ownership check for PLATFORM_ADMIN', async () => {
+    prisma.clubMembership.findUnique
+      .mockResolvedValueOnce({ userId: newAdminId, clubId, role: 'MEMBER', status: 'ACTIVE' });
+
+    const txMock = {
+      clubMembership: {
+        update: jest.fn().mockResolvedValue({}),
+        count: jest.fn().mockResolvedValue(0),
+      },
+      user: { update: jest.fn().mockResolvedValue({}), findUnique: jest.fn().mockResolvedValue({ role: 'PLATFORM_ADMIN' }) },
+    };
+    prisma.$transaction.mockImplementation((fn) => fn(txMock));
+
+    const result = await svc.transferAdmin(clubId, currentAdminId, newAdminId, 'PLATFORM_ADMIN');
+
+    expect(result.success).toBe(true);
+    expect(prisma.clubMembership.findUnique).toHaveBeenCalledTimes(1);
+  });
+
+  it('skips ownership check for FACULTY', async () => {
+    prisma.clubMembership.findUnique
+      .mockResolvedValueOnce({ userId: newAdminId, clubId, role: 'MEMBER', status: 'ACTIVE' });
+
+    const txMock = {
+      clubMembership: {
+        update: jest.fn().mockResolvedValue({}),
+        count: jest.fn().mockResolvedValue(0),
+      },
+      user: { update: jest.fn().mockResolvedValue({}), findUnique: jest.fn().mockResolvedValue({ role: 'FACULTY' }) },
+    };
+    prisma.$transaction.mockImplementation((fn) => fn(txMock));
+
+    const result = await svc.transferAdmin(clubId, currentAdminId, newAdminId, 'FACULTY');
+
+    expect(result.success).toBe(true);
   });
 });
 
@@ -320,6 +401,7 @@ describe('demoteMember', () => {
 
   it('demotes OFFICER to MEMBER and updates user role if no other officer memberships', async () => {
     prisma.clubMembership.findUnique.mockResolvedValue({ userId, clubId, status: 'ACTIVE', role: 'OFFICER' });
+    prisma.clubMembership.count.mockResolvedValue(2);
 
     const txMock = {
       clubMembership: {
@@ -346,6 +428,7 @@ describe('demoteMember', () => {
 
   it('demotes OFFICER to MEMBER reverting FACULTY role', async () => {
     prisma.clubMembership.findUnique.mockResolvedValue({ userId, clubId, status: 'ACTIVE', role: 'OFFICER' });
+    prisma.clubMembership.count.mockResolvedValue(2);
 
     const txMock = {
       clubMembership: {
@@ -364,6 +447,7 @@ describe('demoteMember', () => {
 
   it('demotes OFFICER to MEMBER without updating user role if other officer memberships exist', async () => {
     prisma.clubMembership.findUnique.mockResolvedValue({ userId, clubId, status: 'ACTIVE', role: 'OFFICER' });
+    prisma.clubMembership.count.mockResolvedValue(2);
 
     const txMock = {
       clubMembership: {
@@ -378,6 +462,14 @@ describe('demoteMember', () => {
 
     expect(txMock.user.update).not.toHaveBeenCalled();
     expect(result.role).toBe('MEMBER');
+  });
+
+  it('throws if last OFFICER in club', async () => {
+    prisma.clubMembership.findUnique.mockResolvedValue({ userId, clubId, status: 'ACTIVE', role: 'OFFICER' });
+    prisma.clubMembership.count.mockResolvedValue(1);
+
+    await expect(svc.demoteMember(clubId, userId)).rejects.toThrow('Cannot demote the last officer of this club');
+    await expect(svc.demoteMember(clubId, userId)).rejects.toMatchObject({ statusCode: 400 });
   });
 
   it('throws if membership not found', async () => {

@@ -1,12 +1,13 @@
 const { prisma } = require('../../lib/prisma');
 const { AppError } = require('../../utils/errors');
 const membershipsService = require('../memberships/memberships.service');
+const { isPrivilegedRole } = require('../../middleware/rbac');
 
 async function upsert(eventId, userId, status, userRole) {
   const event = await prisma.event.findUnique({ where: { id: eventId } });
   if (!event) throw new AppError('Event not found', 404);
 
-  if (userRole !== 'PLATFORM_ADMIN') {
+  if (!isPrivilegedRole(userRole)) {
     const active = await membershipsService.isActiveMember(userId, event.clubId);
     if (!active) throw new AppError('Must be an active member to RSVP', 403);
   }
@@ -33,7 +34,7 @@ async function listByEvent(eventId, { status, page = 1, limit = 50, userId, user
   const event = await prisma.event.findUnique({ where: { id: eventId }, select: { clubId: true } });
   if (!event) throw new AppError('Event not found', 404);
 
-  if (userRole !== 'PLATFORM_ADMIN') {
+  if (!isPrivilegedRole(userRole)) {
     const membership = await prisma.clubMembership.findUnique({
       where: { userId_clubId: { userId, clubId: event.clubId } },
     });
@@ -90,7 +91,7 @@ async function exportRsvpsCsv(eventId, userId, userRole) {
   const event = await prisma.event.findUnique({ where: { id: eventId } });
   if (!event) throw new AppError('Event not found', 404);
 
-  if (userRole !== 'PLATFORM_ADMIN') {
+  if (!isPrivilegedRole(userRole)) {
     const membership = await prisma.clubMembership.findUnique({
       where: { userId_clubId: { userId, clubId: event.clubId } },
     });

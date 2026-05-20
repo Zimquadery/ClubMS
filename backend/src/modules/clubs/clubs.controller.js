@@ -10,9 +10,10 @@ const list = asyncHandler(async (req, res) => {
 
 const getById = asyncHandler(async (req, res) => {
   const userId = req.user?.userId;
+  const userRole = req.user?.role;
   const { membersPage, membersLimit, eventsPage, eventsLimit } = req.query;
   const club = await clubsService.getById(req.params.id, userId, {
-    membersPage, membersLimit, eventsPage, eventsLimit
+    membersPage, membersLimit, eventsPage, eventsLimit, userRole
   });
   res.status(200).json(club);
 });

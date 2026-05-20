@@ -23,13 +23,13 @@ const getById = asyncHandler(async (req, res) => {
 
 const update = asyncHandler(async (req, res) => {
   const { clubId, announcementId } = req.params;
-  const announcement = await announcementsService.update(clubId, announcementId, req.user.userId, req.body);
+  const announcement = await announcementsService.update(clubId, announcementId, req.user.userId, req.user.role, req.body);
   res.status(200).json(announcement);
 });
 
 const remove = asyncHandler(async (req, res) => {
   const { clubId, announcementId } = req.params;
-  const result = await announcementsService.remove(clubId, announcementId, req.user.userId);
+  const result = await announcementsService.remove(clubId, announcementId, req.user.userId, req.user.role);
   res.status(200).json(result);
 });
 
@@ -41,7 +41,7 @@ const togglePin = asyncHandler(async (req, res) => {
 
 const getRecent = asyncHandler(async (req, res) => {
   const { limit } = req.query;
-  const result = await announcementsService.getRecent(req.user.userId, limit);
+  const result = await announcementsService.getRecent(req.user.userId, req.user.role, limit);
   res.status(200).json(result);
 });
 

@@ -153,10 +153,10 @@ describe('update', () => {
   const userId = 'user-1';
 
   it('updates announcement fields', async () => {
-    prisma.announcement.findUnique.mockResolvedValue({ id: announcementId, clubId });
+    prisma.announcement.findUnique.mockResolvedValue({ id: announcementId, clubId, authorId: userId });
     prisma.announcement.update.mockResolvedValue({ id: announcementId, clubId, title: 'Updated', author: { id: userId, name: 'User' } });
 
-    const result = await svc.update(clubId, announcementId, userId, { title: 'Updated' });
+    const result = await svc.update(clubId, announcementId, userId, 'CLUB_ADMIN', { title: 'Updated' });
 
     expect(prisma.announcement.update).toHaveBeenCalledWith({
       where: { id: announcementId },
@@ -168,8 +168,24 @@ describe('update', () => {
   it('throws 404 if announcement not found', async () => {
     prisma.announcement.findUnique.mockResolvedValue(null);
 
-    await expect(svc.update(clubId, announcementId, userId, { title: 'New' })).rejects.toThrow('Announcement not found');
-    await expect(svc.update(clubId, announcementId, userId, { title: 'New' })).rejects.toMatchObject({ statusCode: 404 });
+    await expect(svc.update(clubId, announcementId, userId, 'CLUB_ADMIN', { title: 'New' })).rejects.toThrow('Announcement not found');
+    await expect(svc.update(clubId, announcementId, userId, 'CLUB_ADMIN', { title: 'New' })).rejects.toMatchObject({ statusCode: 404 });
+  });
+
+  it('throws 403 if non-author non-privileged user tries to edit', async () => {
+    prisma.announcement.findUnique.mockResolvedValue({ id: announcementId, clubId, authorId: 'other-user' });
+
+    await expect(svc.update(clubId, announcementId, userId, 'STUDENT', { title: 'New' })).rejects.toThrow('You can only edit your own announcements');
+    await expect(svc.update(clubId, announcementId, userId, 'STUDENT', { title: 'New' })).rejects.toMatchObject({ statusCode: 403 });
+  });
+
+  it('allows non-author PLATFORM_ADMIN to edit', async () => {
+    prisma.announcement.findUnique.mockResolvedValue({ id: announcementId, clubId, authorId: 'other-user' });
+    prisma.announcement.update.mockResolvedValue({ id: announcementId, clubId, title: 'Updated', author: { id: 'other-user', name: 'Other' } });
+
+    const result = await svc.update(clubId, announcementId, userId, 'PLATFORM_ADMIN', { title: 'Updated' });
+
+    expect(prisma.announcement.update).toHaveBeenCalled();
   });
 });
 
@@ -179,10 +195,10 @@ describe('remove', () => {
   const userId = 'user-1';
 
   it('deletes announcement', async () => {
-    prisma.announcement.findUnique.mockResolvedValue({ id: announcementId, clubId });
+    prisma.announcement.findUnique.mockResolvedValue({ id: announcementId, clubId, authorId: userId });
     prisma.announcement.delete.mockResolvedValue({ id: announcementId });
 
-    const result = await svc.remove(clubId, announcementId, userId);
+    const result = await svc.remove(clubId, announcementId, userId, 'CLUB_ADMIN');
 
     expect(prisma.announcement.delete).toHaveBeenCalledWith({ where: { id: announcementId } });
     expect(result.success).toBe(true);
@@ -191,8 +207,15 @@ describe('remove', () => {
   it('throws 404 if announcement not found', async () => {
     prisma.announcement.findUnique.mockResolvedValue(null);
 
-    await expect(svc.remove(clubId, announcementId, userId)).rejects.toThrow('Announcement not found');
-    await expect(svc.remove(clubId, announcementId, userId)).rejects.toMatchObject({ statusCode: 404 });
+    await expect(svc.remove(clubId, announcementId, userId, 'CLUB_ADMIN')).rejects.toThrow('Announcement not found');
+    await expect(svc.remove(clubId, announcementId, userId, 'CLUB_ADMIN')).rejects.toMatchObject({ statusCode: 404 });
+  });
+
+  it('throws 403 if non-author non-privileged user tries to delete', async () => {
+    prisma.announcement.findUnique.mockResolvedValue({ id: announcementId, clubId, authorId: 'other-user' });
+
+    await expect(svc.remove(clubId, announcementId, userId, 'STUDENT')).rejects.toThrow('You can only delete your own announcements');
+    await expect(svc.remove(clubId, announcementId, userId, 'STUDENT')).rejects.toMatchObject({ statusCode: 403 });
   });
 });
 
@@ -257,7 +280,7 @@ describe('getRecent', () => {
     const announcements = [{ id: 'a1', title: 'Ann 1', club: { id: 'c1', name: 'Club 1' } }];
     prisma.announcement.findMany.mockResolvedValue(announcements);
 
-    const result = await svc.getRecent(userId, 5);
+    const result = await svc.getRecent(userId, 'STUDENT', 5);
 
     expect(result).toEqual(announcements);
     expect(prisma.announcement.findMany).toHaveBeenCalledWith(
@@ -268,9 +291,22 @@ describe('getRecent', () => {
   it('returns empty array when user has no clubs', async () => {
     prisma.clubMembership.findMany.mockResolvedValue([]);
 
-    const result = await svc.getRecent(userId, 5);
+    const result = await svc.getRecent(userId, 'STUDENT', 5);
 
     expect(result).toEqual([]);
     expect(prisma.announcement.findMany).not.toHaveBeenCalled();
+  });
+
+  it('returns all recent announcements for FACULTY regardless of membership', async () => {
+    const announcements = [{ id: 'a1', title: 'Ann 1', club: { id: 'c1', name: 'Club 1' } }];
+    prisma.announcement.findMany.mockResolvedValue(announcements);
+
+    const result = await svc.getRecent(userId, 'FACULTY', 5);
+
+    expect(result).toEqual(announcements);
+    expect(prisma.announcement.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ orderBy: { createdAt: 'desc' }, take: 5 })
+    );
+    expect(prisma.clubMembership.findMany).not.toHaveBeenCalled();
   });
 });
