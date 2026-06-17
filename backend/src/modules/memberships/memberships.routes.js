@@ -356,7 +356,7 @@ router.delete('/:clubId/members/:userId', authMiddleware, requireRole('CLUB_ADMI
  *       404:
  *         description: Membership not found
  */
-router.post('/:clubId/transfer', authMiddleware, requireRole('CLUB_ADMIN'), requireClubAdmin, validate(transferAdminSchema), auditLog('MEMBERSHIP_TRANSFER_ADMIN', (req) => ({ type: 'membership', metadata: { clubId: req.params.clubId } })), membershipsController.transferAdmin);
+router.post('/:clubId/transfer', authMiddleware, requireRole('CLUB_ADMIN'), requireClubAdmin, validate(transferAdminSchema), auditLog('MEMBERSHIP_TRANSFER_ADMIN', (req) => ({ type: 'membership', id: req.body.newAdminId, metadata: { clubId: req.params.clubId, newAdminId: req.body.newAdminId } })), membershipsController.transferAdmin);
 
 /**
  * @openapi

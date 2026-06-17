@@ -39,7 +39,7 @@ const leaveClub = asyncHandler(async (req, res) => {
 });
 
 const removeMember = asyncHandler(async (req, res) => {
-  const result = await membershipsService.removeMember(req.params.clubId, req.params.userId);
+  const result = await membershipsService.removeMember(req.params.clubId, req.params.userId, req.user.userId);
   res.status(200).json(result);
 });
 
@@ -59,7 +59,7 @@ const promoteMember = asyncHandler(async (req, res) => {
 });
 
 const demoteMember = asyncHandler(async (req, res) => {
-  const membership = await membershipsService.demoteMember(req.params.clubId, req.params.userId);
+  const membership = await membershipsService.demoteMember(req.params.clubId, req.params.userId, req.user.userId);
   res.status(200).json(membership);
 });
 

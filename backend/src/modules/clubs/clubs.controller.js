@@ -20,6 +20,7 @@ const getById = asyncHandler(async (req, res) => {
 
 const create = asyncHandler(async (req, res) => {
   const club = await clubsService.create(req.body);
+  req.createdClubId = club.id;
   res.status(201).json(club);
 });
 

@@ -129,7 +129,9 @@
 
 - **promote:** MEMBER → OFFICER (transactional: ClubMembership + User role → CLUB_ADMIN).
 - **demote:** OFFICER → MEMBER (checks remaining officer count).
-- Routes: `PATCH /:clubId/members/:userId/promote|demote`. Requires CLUB_ADMIN + `requireClubAdmin`.
+- **remove:** Deletes membership (blocks OFFICER — transfer first).
+- **Self-action guard:** `demote`/`remove` take `callerId` (3rd arg), reject `userId === callerId`. Always pass `req.user.userId` — omitting silently no-ops.
+- Routes: `PATCH /:clubId/members/:userId/promote|demote`, `DELETE /:clubId/members/:userId`. Requires CLUB_ADMIN + `requireClubAdmin`.
 - **Bulk:** `bulkApprove`/`bulkReject` accept `{ userIds: string[] }`, use `updateMany` in transaction. Max 100. Frontend: checkboxes + sticky bar.
 
 ### RSVP
@@ -180,3 +182,4 @@ Use `@keyframes` with `data-state` selectors, NOT CSS transitions (transitions d
 - **FACULTY inherits CLUB_ADMIN + STUDENT:** `requireRole('STUDENT')` and `requireRole('CLUB_ADMIN')` both pass for FACULTY. Use `requireRole('PLATFORM_ADMIN')` for platform-only actions (e.g., `PATCH /memberships/users/:userId/role`).
 - **Role promotion endpoint:** `PATCH /api/memberships/users/:userId/role` on `membershipsAdminRouter` — PLATFORM_ADMIN only. Cannot change PLATFORM_ADMIN role.
 - **Tailwind v4 `@theme inline` prevents dark mode:** `@theme inline` hardcodes color values directly into utility classes (e.g., `.bg-background{background-color:#fff}`) instead of using `var(--color-*)` references. CSS variable overrides via `.dark {}` have no effect because the utilities never read them. Use `@theme` (without `inline`) when you need runtime theme switching via CSS custom properties.
+- **Self-action guard silent no-op:** `demoteMember`/`removeMember` take `callerId` as 3rd service arg (controller passes `req.user.userId`). If a future caller omits it, `userId === undefined` → guard passes silently. Plain JS doesn't enforce arity. Same pattern as `transferAdmin`'s `currentAdminId === newAdminId` check.

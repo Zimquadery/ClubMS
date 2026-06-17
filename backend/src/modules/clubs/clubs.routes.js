@@ -78,7 +78,7 @@ router.get('/', authMiddleware, validateQuery(listQuerySchema), clubsController.
  *       403:
  *         description: Forbidden
  */
-router.post('/', authMiddleware, requireRole('PLATFORM_ADMIN'), validate(createSchema), auditLog('CLUB_CREATE', (req) => ({ type: 'club', metadata: { name: req.body.name } })), clubsController.create);
+router.post('/', authMiddleware, requireRole('PLATFORM_ADMIN'), validate(createSchema), auditLog('CLUB_CREATE', (req) => ({ type: 'club', id: req.createdClubId, metadata: { name: req.body.name } })), clubsController.create);
 
 /**
  * @openapi
@@ -170,7 +170,7 @@ router.get('/:id', authMiddleware, validateQuery(getByIdQuerySchema), clubsContr
  *       403:
  *         description: Forbidden
  */
-router.post('/:clubId/events', authMiddleware, requireRole('CLUB_ADMIN'), requireClubAdmin, validate(eventCreateSchema), auditLog('EVENT_CREATE', (req) => ({ type: 'event', metadata: { clubId: req.params.clubId, title: req.body.title } })), eventsController.create);
+router.post('/:clubId/events', authMiddleware, requireRole('CLUB_ADMIN'), requireClubAdmin, validate(eventCreateSchema), auditLog('EVENT_CREATE', (req) => ({ type: 'event', id: req.createdEventId, metadata: { clubId: req.params.clubId, title: req.body.title } })), eventsController.create);
 
 /**
  * @openapi

@@ -18,6 +18,7 @@ const getById = asyncHandler(async (req, res) => {
 const create = asyncHandler(async (req, res) => {
   const { clubId } = req.params;
   const event = await eventsService.create(clubId, req.body);
+  req.createdEventId = event.id;
   res.status(201).json(event);
 });
 

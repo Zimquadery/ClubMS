@@ -199,7 +199,9 @@ async function leaveClub(clubId, userId) {
   return { success: true };
 }
 
-async function removeMember(clubId, userId) {
+async function removeMember(clubId, userId, callerId) {
+  if (userId === callerId) throw new AppError('You cannot remove yourself', 400);
+
   const membership = await prisma.clubMembership.findUnique({
     where: { userId_clubId: { userId, clubId } },
   });
@@ -279,7 +281,9 @@ async function promoteMember(clubId, userId) {
   return result;
 }
 
-async function demoteMember(clubId, userId) {
+async function demoteMember(clubId, userId, callerId) {
+  if (userId === callerId) throw new AppError('You cannot demote yourself', 400);
+
   const membership = await prisma.clubMembership.findUnique({
     where: { userId_clubId: { userId, clubId } },
   });

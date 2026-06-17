@@ -21,6 +21,7 @@ const { specs } = require('./config/swagger');
 const { prisma } = require('./lib/prisma');
 
 const app = express();
+app.set('trust proxy', 1);
 
 app.use(helmet());
 app.use(cors({
@@ -57,6 +58,7 @@ app.use('/api/memberships', membershipsAdminRouter);
 app.use('/api/stats', statsRoutes);
 app.use('/api/audit-logs', auditRoutes);
 app.use('/api/announcements', announcementsRecentRouter);
+app.use('/api/upload', uploadRoutes);
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 app.use(errorHandler);

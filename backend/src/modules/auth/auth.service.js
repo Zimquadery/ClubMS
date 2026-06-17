@@ -8,6 +8,7 @@ const SALT_ROUNDS = 10;
 const JWT_EXPIRY = '24h';
 
 async function register(email, password, name) {
+  email = email.toLowerCase().trim();
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
     throw new AppError('Email already registered', 409);
@@ -24,6 +25,7 @@ async function register(email, password, name) {
 }
 
 async function login(email, password) {
+  email = email.toLowerCase().trim();
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) {
     throw new AppError('Invalid credentials', 401);
@@ -67,6 +69,7 @@ async function getMe(userId) {
 
 async function updateProfile(userId, { name, email }) {
   if (email) {
+    email = email.toLowerCase().trim();
     const existing = await prisma.user.findFirst({ where: { email, id: { not: userId } } });
     if (existing) {
       throw new AppError('Email already in use', 409);
