@@ -146,7 +146,7 @@ async function transferAdmin(clubId, currentAdminId, newAdminId, callerRole) {
   }
 
     const result = await prisma.$transaction(async (tx) => {
-      const [remainingOfficerCount, currentUser] = await Promise.all([
+      const [remainingOfficerCount, currentUser, newUser] = await Promise.all([
         tx.clubMembership.count({
           where: {
             userId: currentAdminId,
@@ -156,6 +156,7 @@ async function transferAdmin(clubId, currentAdminId, newAdminId, callerRole) {
           },
         }),
         tx.user.findUnique({ where: { id: currentAdminId }, select: { role: true } }),
+        tx.user.findUnique({ where: { id: newAdminId }, select: { role: true } }),
       ]);
 
       const ops = [
@@ -167,8 +168,11 @@ async function transferAdmin(clubId, currentAdminId, newAdminId, callerRole) {
           where: { userId_clubId: { userId: newAdminId, clubId } },
           data: { role: 'OFFICER' },
         }),
-        tx.user.update({ where: { id: newAdminId }, data: { role: 'CLUB_ADMIN' } }),
       ];
+
+      if (newUser?.role === 'STUDENT') {
+        ops.push(tx.user.update({ where: { id: newAdminId }, data: { role: 'CLUB_ADMIN' } }));
+      }
 
       if (remainingOfficerCount === 0) {
         const revertRole = currentUser?.role === 'FACULTY' ? 'FACULTY' : 'STUDENT';
@@ -275,8 +279,11 @@ async function promoteMember(clubId, userId) {
       data: { role: 'OFFICER' },
       include: { user: { select: USER_SELECT } },
     });
-    await tx.user.update({ where: { id: userId }, data: { role: 'CLUB_ADMIN' } });
-    return updated;
+    const targetUser = await tx.user.findUnique({ where: { id: userId }, select: { role: true } });
+    if (targetUser?.role === 'STUDENT') {
+      await tx.user.update({ where: { id: userId }, data: { role: 'CLUB_ADMIN' } });
+    }
+    return { ...updated, priorUserRole: targetUser?.role ?? null };
   });
   return result;
 }

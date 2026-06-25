@@ -16,6 +16,9 @@ export default function useEventDetail(id, user) {
   const [userRsvp, setUserRsvp] = useState(null);
   const [rsvpLoading, setRsvpLoading] = useState(false);
   const [attendeeCount, setAttendeeCount] = useState(0);
+  const [coHostDialog, setCoHostDialog] = useState(false);
+  const [adminClubs, setAdminClubs] = useState([]);
+  const [coHostSubmitting, setCoHostSubmitting] = useState(false);
 
   async function fetchEvent() {
     setLoading(true);
@@ -152,6 +155,61 @@ export default function useEventDetail(id, user) {
   const canRsvp = event?.userMembership?.status === 'ACTIVE' || user?.role === 'PLATFORM_ADMIN' || user?.role === 'FACULTY';
   const isPast = event ? new Date(event.startTime) < new Date() : false;
 
+  const coHosts = (event?.hosts || []).filter((h) => !h.isPrimary);
+  const primaryClubId = event?.primaryClubId || event?.hosts?.find((h) => h.isPrimary)?.clubId;
+  const isPrimaryOfficer = event?.userMembership?.role === 'OFFICER'
+    && event?.userMembership?.status === 'ACTIVE'
+    && !!primaryClubId
+    && event?.userMembership?.clubId === primaryClubId;
+  const canDelete = isPrimaryOfficer || user?.role === 'PLATFORM_ADMIN' || user?.role === 'FACULTY';
+
+  useEffect(() => {
+    if (!canManage) {
+      setAdminClubs([]);
+      return;
+    }
+    let active = true;
+    async function fetchAdminClubs() {
+      try {
+        const res = await client.get('/memberships/my-admin-clubs');
+        if (active) {
+          const hostIds = (event?.hosts || []).map((h) => h.clubId);
+          setAdminClubs(res.data.filter((c) => !hostIds.includes(c.id)));
+        }
+      } catch {
+        // best-effort
+      }
+    }
+    fetchAdminClubs();
+    return () => { active = false };
+  }, [canManage, event?.hosts]);
+
+  async function handleAddCoHost(clubId) {
+    setCoHostSubmitting(true);
+    try {
+      await client.post(`/events/${id}/cohosts`, { clubId });
+      toast.success('Co-host added');
+      await fetchEvent();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to add co-host');
+    } finally {
+      setCoHostSubmitting(false);
+    }
+  }
+
+  async function handleRemoveCoHost(clubId) {
+    setCoHostSubmitting(true);
+    try {
+      await client.delete(`/events/${id}/cohosts/${clubId}`);
+      toast.success('Co-host removed');
+      await fetchEvent();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to remove co-host');
+    } finally {
+      setCoHostSubmitting(false);
+    }
+  }
+
   return {
     event, loading, error,
     editDialog, setEditDialog, deleteDialog, setDeleteDialog,
@@ -159,7 +217,9 @@ export default function useEventDetail(id, user) {
     userRsvp, rsvpLoading, attendeeCount,
     fetchEvent, handleRsvp, handleRemoveRsvp, handleExportRsvps,
     openEdit, handleEdit, handleDelete,
-    canManage, canRsvp, isPast,
+    canManage, canDelete, canRsvp, isPast,
+    coHosts, coHostDialog, setCoHostDialog,
+    adminClubs, coHostSubmitting, handleAddCoHost, handleRemoveCoHost,
     id,
   };
 }

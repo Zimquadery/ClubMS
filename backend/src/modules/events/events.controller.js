@@ -1,4 +1,5 @@
 const eventsService = require('./events.service');
+const eventHostsService = require('../eventHosts/eventHosts.service');
 const { asyncHandler } = require('../../utils/asyncHandler');
 const { isPrivilegedRole } = require('../../middleware/rbac');
 
@@ -17,7 +18,7 @@ const getById = asyncHandler(async (req, res) => {
 
 const create = asyncHandler(async (req, res) => {
   const { clubId } = req.params;
-  const event = await eventsService.create(clubId, req.body);
+  const event = await eventsService.create(clubId, { ...req.body, creatorUserId: req.user.userId });
   req.createdEventId = event.id;
   res.status(201).json(event);
 });
@@ -34,4 +35,24 @@ const deleteEvent = asyncHandler(async (req, res) => {
   res.status(200).json(result);
 });
 
-module.exports = { list, getById, create, updateEvent, deleteEvent };
+const addCoHost = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { clubId } = req.body;
+  if (!isPrivilegedRole(req.user.role)) {
+    await eventHostsService.assertHostOfficer(req.user.userId, id);
+  }
+  const host = await eventHostsService.addCoHost(id, clubId, req.user.userId);
+  req.coHostClubId = clubId;
+  res.status(201).json(host);
+});
+
+const removeCoHost = asyncHandler(async (req, res) => {
+  const { id, clubId } = req.params;
+  if (!isPrivilegedRole(req.user.role)) {
+    await eventHostsService.assertHostOfficer(req.user.userId, id);
+  }
+  const result = await eventHostsService.removeCoHost(id, clubId);
+  res.status(200).json(result);
+});
+
+module.exports = { list, getById, create, updateEvent, deleteEvent, addCoHost, removeCoHost };

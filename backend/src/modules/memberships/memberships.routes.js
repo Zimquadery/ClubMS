@@ -189,7 +189,7 @@ router.get('/:clubId/members/export', authMiddleware, requireRole('CLUB_ADMIN'),
  *       404:
  *         description: Member not found
  */
-router.patch('/:clubId/members/:userId/promote', authMiddleware, requireRole('CLUB_ADMIN'), requireClubAdmin, auditLog('MEMBERSHIP_PROMOTE', (req) => ({ type: 'membership', id: req.params.userId, metadata: { clubId: req.params.clubId } })), membershipsController.promoteMember);
+router.patch('/:clubId/members/:userId/promote', authMiddleware, requireRole('CLUB_ADMIN'), requireClubAdmin, auditLog('MEMBERSHIP_PROMOTE', (req) => ({ type: 'membership', id: req.params.userId, metadata: { clubId: req.params.clubId, priorUserRole: req.auditPriorRole } })), membershipsController.promoteMember);
 
 /**
  * @openapi

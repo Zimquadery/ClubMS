@@ -1,6 +1,6 @@
 const { prisma } = require('../../lib/prisma');
 const { AppError } = require('../../utils/errors');
-const membershipsService = require('../memberships/memberships.service');
+const eventHosts = require('../eventHosts/eventHosts.service');
 const { isPrivilegedRole } = require('../../middleware/rbac');
 
 async function upsert(eventId, userId, status, userRole) {
@@ -8,8 +8,8 @@ async function upsert(eventId, userId, status, userRole) {
   if (!event) throw new AppError('Event not found', 404);
 
   if (!isPrivilegedRole(userRole)) {
-    const active = await membershipsService.isActiveMember(userId, event.clubId);
-    if (!active) throw new AppError('Must be an active member to RSVP', 403);
+    const active = await eventHosts.isActiveMemberOfAnyHost(userId, eventId);
+    if (!active) throw new AppError('Must be an active member of a host club to RSVP', 403);
   }
 
   return prisma.eventRsvp.upsert({
@@ -30,18 +30,18 @@ async function remove(eventId, userId) {
   return { success: true };
 }
 
+async function assertCanViewRsvps(eventId, userId, userRole) {
+  if (isPrivilegedRole(userRole)) return;
+  if (!(await eventHosts.isHostOfficer(userId, eventId))) {
+    throw new AppError('Not authorized to view RSVPs for this event', 403);
+  }
+}
+
 async function listByEvent(eventId, { status, page = 1, limit = 50, userId, userRole, search } = {}) {
-  const event = await prisma.event.findUnique({ where: { id: eventId }, select: { clubId: true } });
+  const event = await prisma.event.findUnique({ where: { id: eventId }, select: { id: true } });
   if (!event) throw new AppError('Event not found', 404);
 
-  if (!isPrivilegedRole(userRole)) {
-    const membership = await prisma.clubMembership.findUnique({
-      where: { userId_clubId: { userId, clubId: event.clubId } },
-    });
-    if (!membership || membership.role !== 'OFFICER' || membership.status !== 'ACTIVE') {
-      throw new AppError('Not authorized to view RSVPs for this event', 403);
-    }
-  }
+  await assertCanViewRsvps(eventId, userId, userRole);
 
   const where = { eventId };
   if (status) where.status = status;
@@ -91,14 +91,7 @@ async function exportRsvpsCsv(eventId, userId, userRole) {
   const event = await prisma.event.findUnique({ where: { id: eventId } });
   if (!event) throw new AppError('Event not found', 404);
 
-  if (!isPrivilegedRole(userRole)) {
-    const membership = await prisma.clubMembership.findUnique({
-      where: { userId_clubId: { userId, clubId: event.clubId } },
-    });
-    if (!membership || membership.role !== 'OFFICER' || membership.status !== 'ACTIVE') {
-      throw new AppError('Not authorized to export RSVPs for this event', 403);
-    }
-  }
+  await assertCanViewRsvps(eventId, userId, userRole);
 
   const rsvps = await prisma.eventRsvp.findMany({
     where: { eventId },

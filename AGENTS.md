@@ -1,7 +1,8 @@
 # Guidelines
 
 - proactively log learnings to AGENTS.md to prevent repeated mistakes.
-- Be super brief. No report. Work autonomously.
+- Be super brief. Work autonomously until success.
+- Follow YAGNI and DRY principles.
 - After finding an issue, check if similar exists elsewhere.
 
 ---
@@ -19,7 +20,7 @@
 
 1. Validate every record against Prisma schema — all required fields must be explicit.
 2. All `UserRole` enum values need at least one user.
-3. Deseed order: EventRsvp → Announcement → AuditLog → Event → ClubMembership → Club → User.
+3. Deseed order: EventRsvp → Announcement → AuditLog → EventHost → Event → ClubMembership → Club → User.
 4. Cover all enum statuses: PENDING (6), ACTIVE, ALUMNI (3), REJECTED (3) for memberships; GOING, MAYBE, NOT_GOING for RSVPs.
 5. Every club: 1+ OFFICER, 1+ MEMBERs, 1+ events.
 
@@ -67,7 +68,7 @@
 | `/api/clubs` | `clubRoutes` | **`/:id` (GET/PATCH/DELETE)** | Multi-segment only |
 | `/api/clubs` | `announcementsRoutes` | `/:clubId/announcements/*` | Multi-segment only |
 | `/api/clubs` | `membershipsRoutes` | `/:clubId/*` | Multi-segment only |
-| `/api/events` | `eventsRoutes` | **`/:id` (GET/PATCH/DELETE)** | Multi-segment only |
+| `/api/events` | `eventsRoutes` | **`/:id` (GET/PATCH/DELETE)**, `/:id/cohosts`, `/:id/cohosts/:clubId` | Multi-segment only |
 | `/api/events` | `rsvpRoutes` | `/:id/rsvp`, `/:id/rsvps` | Multi-segment only |
 | `/api/memberships` | `membershipsAdminRouter` | No | **Any — safe for literal paths** |
 | `/api/announcements` | `announcementsRecentRouter` | No | **Any — safe for literal paths** |
@@ -138,6 +139,27 @@
 
 `EventRsvp` with `@@unique([eventId, userId])`. Upsert: `prisma.eventRsvp.upsert({ where: { eventId_userId: { eventId, userId } } })`. Multi-segment routes to avoid collision. `EventRsvps.jsx` at `/events/:id/rsvps` — CLUB_ADMIN + PLATFORM_ADMIN only. Backend `listByEvent` requires auth, returns `{ items, total, counts }`.
 
+### Event Hosts (primary + co-host collaboration)
+
+Events no longer have a `clubId` column. Instead an `EventHost` join table (`@@unique([eventId, clubId])`, `isPrimary Boolean`, `addedById String?`) is the single source of truth for hosting.
+
+- **Primary host:** exactly one `EventHost` per event with `isPrimary: true`. Always exists (seed/migration backfill guarantees it). Cannot be removed via API.
+- **Co-hosts:** zero or more `EventHost` rows with `isPrimary: false`.
+- **Shared helpers live in `modules/eventHosts/eventHosts.service.js`:** `isHostOfficer`, `isPrimaryHostOfficer`, `isActiveMemberOfAnyHost`, `assertHostOfficer`, `getPrimaryClubId`, `getHostClubIds`, `addCoHost`, `removeCoHost`, `isPrimaryHostClub`. Import this — do NOT re-derive `event.clubId` (it doesn't exist).
+- **Permission matrix:**
+  | Action | Allowed |
+  |---|---|
+  | Edit event | Officer of ANY host club |
+  | Delete event | Officer of PRIMARY host club only |
+  | Add/remove co-host | Officer of ANY host club (primary cannot be removed) |
+  | RSVP | Active member of ANY host club |
+  | View/export RSVPs | Officer of ANY host club |
+- **API responses** (`getById`/`list`) attach computed `club` (primary), `clubId` (primary), `primaryClubId` for backward compat with frontend reads like `event.club.name`. The actual host list is in `hosts: [{ clubId, isPrimary, club }]`.
+- **Club deletion guard:** `clubs.service.deleteClub` checks `isPrimaryHostClub` and throws 409 if the club is primary of any event. Co-host clubs can be deleted (their EventHost rows cascade, event survives on remaining hosts).
+- **Routes:** `POST /api/events/:id/cohosts` (body `{ clubId }`), `DELETE /api/events/:id/cohosts/:clubId` — multi-segment, safe on the `/api/events` collision zone. Audit actions: `EVENT_COHOST_ADD`, `EVENT_COHOST_REMOVE`.
+- **Frontend co-host picker source:** existing `GET /api/memberships/my-admin-clubs` (returns clubs where current user is OFFICER+ACTIVE). Do NOT create a new endpoint. Hook `useAdminClubSelector` already wraps it.
+- **`clubs.service.getById` no longer uses `Club.events` relation** (removed from schema). It now queries events via `prisma.event.findMany({ where: { hosts: { some: { clubId } } } })` and maps each to a synthetic `{ ...event, club, clubId }` for frontend compatibility.
+
 ### Frontend Styling (Dashboard = gold standard)
 
 1. **No hardcoded Tailwind colors.** Use semantic tokens: `bg-background`, `text-muted-foreground`, `bg-destructive`, `bg-status-green`, `bg-status-yellow`, `border-input`, `text-brand-primary`.
@@ -172,7 +194,7 @@ Use `@keyframes` with `data-state` selectors, NOT CSS transitions (transitions d
 - **Route collision happened twice:** `/my-admin-clubs`, `/my-clubs` swallowed by `/:id` on `membershipsRoutes`. See Rules.
 - **Per-resource auth:** `requireRole()` is global; CLUB_ADMIN needs `requireClubAdmin` for own-club checks.
 - **Seed pitfalls:** Missing required fields + missing enum role users → seed failures.
-- **Deseed order:** EventRsvp → Announcement → AuditLog → Event → ClubMembership → Club → User. Explicit deletion required — AuditLog `onDelete: SetNull` can orphan logs.
+- **Deseed order:** EventRsvp → Announcement → AuditLog → EventHost → Event → ClubMembership → Club → User. Explicit deletion required — AuditLog `onDelete: SetNull` can orphan logs; EventHost cascades on Event/Club but explicit deletion keeps counts accurate and survives schema changes.
 - **Prisma generate required after schema changes:** `migrate reset` does NOT auto-run `generate`. Running seed before generate causes `TypeError: Cannot read properties of undefined (reading 'create')`. Always `npx prisma generate` from `backend/` after any schema edit.
 - **REJECTED re-apply:** Update status to PENDING, don't create new record (`@@unique` prevents it).
 - **Viewer-state blindness:** ClubDetail page rendered member-only sections (announcements, members list) for all visitors, causing 403 toasts. Root cause: never enumerated viewer states (non-member, pending, rejected, alumni, active, admin) before building the page. Every page with member-only data MUST gate both the fetch and the UI section per the "Before rendering any page/section" rule.
@@ -183,3 +205,11 @@ Use `@keyframes` with `data-state` selectors, NOT CSS transitions (transitions d
 - **Role promotion endpoint:** `PATCH /api/memberships/users/:userId/role` on `membershipsAdminRouter` — PLATFORM_ADMIN only. Cannot change PLATFORM_ADMIN role.
 - **Tailwind v4 `@theme inline` prevents dark mode:** `@theme inline` hardcodes color values directly into utility classes (e.g., `.bg-background{background-color:#fff}`) instead of using `var(--color-*)` references. CSS variable overrides via `.dark {}` have no effect because the utilities never read them. Use `@theme` (without `inline`) when you need runtime theme switching via CSS custom properties.
 - **Self-action guard silent no-op:** `demoteMember`/`removeMember` take `callerId` as 3rd service arg (controller passes `req.user.userId`). If a future caller omits it, `userId === undefined` → guard passes silently. Plain JS doesn't enforce arity. Same pattern as `transferAdmin`'s `currentAdminId === newAdminId` check.
+- **Prisma `migrate dev --create-only` requires interactive shell:** On non-interactive terminals it errors before writing the migration file. Hand-write the `migration.sql` (timestamped folder) following the init-migration format conventions, then `prisma migrate deploy` to apply.
+- **Migration backfill ordering:** When dropping a column that needs to seed a new join table first, write the `INSERT INTO ... SELECT ... FROM` BEFORE the `ALTER TABLE DROP COLUMN`. Idempotency via `WHERE NOT EXISTS` (or `ON CONFLICT DO NOTHING` once the unique index exists) makes re-runs safe.
+- **`gen_random_uuid()` available in Postgres 13+:** Use `REPLACE(gen_random_uuid()::text, '-', '')` for backfilling TEXT-id rows. Avoids needing `pgcrypto` extension.
+- **`requireRole('CLUB_ADMIN')` middleware vs service-layer `assertHostOfficer`:** The middleware only checks the user's global role (passes for any CLUB_ADMIN). Service-layer checks (`isHostOfficer`, `isPrimaryHostOfficer`) enforce per-resource ownership. Both run in sequence: middleware first (cheap global gate), service second (precise resource check).
+- **React TDZ with derived `const` in deps:** A `useEffect` whose deps array references a `const canManageEvents` declared further down the function body throws a temporal-dead-zone ReferenceError at render time. Move derived const declarations ABOVE any effect that depends on them.
+- **Seed `mem()` helper bypasses `promoteMember`:** The seed's `mem(userId, clubId, status, role)` inserts a `ClubMembership` row directly — it does NOT flip the `User.role` global field. Any user seeded with an OFFICER membership MUST also have `role: 'CLUB_ADMIN'` in the `userData` array, or every `requireRole('CLUB_ADMIN')` route (announcement pin/create/delete, event manage, member approve, etc.) will 403 despite the UI showing them as officer. Symptom surfaced as "pin toggle not working" for student8. Compare officer1/2/3 (correctly CLUB_ADMIN) vs student8 (was STUDENT).
+- **Seed is re-run-safe but NOT self-healing:** `prisma.user.upsert({ update: {} })` (seed.js line ~44) means existing users are never updated on re-run, and the seed bails early if clubs already exist (line ~71). So a seed.js edit alone does NOT fix an existing dev DB — you must also patch the live row (e.g. `npx prisma db execute --file <sql>` with `UPDATE "User" SET role = ... WHERE email = ...`). Note: `prisma db execute` takes `--file`/`--stdin` and reads config from `prisma.config.mjs` (no `--schema` flag). It executes DDL/DML but does NOT return SELECT results — verify via a one-shot node script using `require('./src/lib/prisma')` (Prisma v7 needs the pg adapter; bare `new PrismaClient()` fails).
+- **Hook-returned binding referenced inside the same hook's own options → TDZ crash:** `const { items, searchParams } = usePaginatedFetch({ deps: [clubId, searchParams.get('tab')] })` throws `ReferenceError: Cannot access 'searchParams' before initialization` on EVERY render. The options object is the argument — evaluated before the call returns, so the destructured `const` is still in the temporal dead zone. Arrow-function bodies (e.g. `fetchFn`) are safe (lazy closure); only eagerly-evaluated fields (`deps`, `enabled`) crash. Fix: get the value from an independent earlier hook call (e.g. call `useSearchParams()` directly at the top, compute the primitive, then pass it in). Symptom: page goes blank, browser back doesn't recover, only a full refresh fixes OTHER pages, and the broken page stays blank on refresh too — because there's no error boundary. The app now has `RouteErrorBoundary` wrapping `<Outlet/>` in `Layout.jsx`; any future render error degrades to a recoverable fallback instead of unmounting the whole tree.

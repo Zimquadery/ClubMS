@@ -130,6 +130,27 @@ export default function ClubDetail() {
                           <ImageUploadButton onUploadComplete={(url) => vm.setNewEvent({ ...vm.newEvent, bannerUrl: url })} />
                         </div>
                       </div>
+                      {vm.adminClubs.length > 0 && (
+                        <div className="space-y-2">
+                          <Label>Co-host clubs (optional)</Label>
+                          <p className="text-xs text-muted-foreground">Invite other clubs you officer to collaborate on this event.</p>
+                          <div className="flex flex-wrap gap-2">
+                            {vm.adminClubs.map((club) => {
+                              const selected = vm.newEvent.coHostClubIds.includes(club.id)
+                              return (
+                                <button
+                                  type="button"
+                                  key={club.id}
+                                  onClick={() => vm.toggleCoHost(club.id)}
+                                  className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${selected ? 'bg-brand-primary text-white border-brand-primary' : 'bg-background hover:bg-accent'}`}
+                                >
+                                  {club.name}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
                       <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => vm.setShowCreateDialog(false)} disabled={vm.submitting}>Cancel</Button>
                         <Button type="submit" className="bg-brand-primary hover:bg-brand-primary/90 text-white" disabled={vm.submitting}>{vm.submitting ? 'Creating...' : 'Create'}</Button>

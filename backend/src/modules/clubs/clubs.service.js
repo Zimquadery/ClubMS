@@ -50,23 +50,35 @@ async function getById(id, userId, { membersPage = 1, membersLimit = 10, eventsP
         skip: (membersPage - 1) * membersLimit,
         take: membersLimit,
       },
-      events: {
-        where: { startTime: { gte: new Date() } },
-        orderBy: { startTime: 'asc' },
-        skip: (eventsPage - 1) * eventsLimit,
-        take: eventsLimit,
-      },
     },
   });
 
   if (!club) throw new AppError('Club not found', 404);
 
-  const [totalMembers, totalEvents] = await Promise.all([
+  const upcomingWhere = { hosts: { some: { clubId: id } }, startTime: { gte: new Date() } };
+  const [totalMembers, totalEvents, events] = await Promise.all([
     prisma.clubMembership.count({ where: { clubId: id, status: 'ACTIVE' } }),
-    prisma.event.count({ where: { clubId: id, startTime: { gte: new Date() } } }),
+    prisma.event.count({ where: upcomingWhere }),
+    prisma.event.findMany({
+      where: upcomingWhere,
+      orderBy: { startTime: 'asc' },
+      skip: (eventsPage - 1) * eventsLimit,
+      take: eventsLimit,
+      include: {
+        hosts: {
+          include: { club: { select: { id: true, name: true, logoUrl: true } } },
+          orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+        },
+      },
+    }),
   ]);
 
   club.userMembership = userMembership;
+  club.events = events.map((event) => {
+    const primary = event.hosts.find((h) => h.isPrimary) || event.hosts[0];
+    const { hosts, ...rest } = event;
+    return { ...rest, club: primary?.club || null, clubId: primary?.clubId || null };
+  });
 
   return { ...club, totalMembers, totalEvents };
 }
@@ -98,7 +110,10 @@ async function create({ name, description, category, logoUrl, adminUserId }) {
       await tx.clubMembership.create({
         data: { userId: adminUserId, clubId: club.id, status: 'ACTIVE', role: 'OFFICER' },
       });
-      await tx.user.update({ where: { id: adminUserId }, data: { role: 'CLUB_ADMIN' } });
+      const adminUser = await tx.user.findUnique({ where: { id: adminUserId }, select: { role: true } });
+      if (adminUser?.role === 'STUDENT') {
+        await tx.user.update({ where: { id: adminUserId }, data: { role: 'CLUB_ADMIN' } });
+      }
     }
 
     return club;
@@ -134,6 +149,15 @@ async function update(id, { name, description, category, logoUrl }) {
 async function deleteClub(id) {
   const club = await prisma.club.findUnique({ where: { id } });
   if (!club) throw new AppError('Club not found', 404);
+
+  const primaryEvent = await prisma.eventHost.findFirst({
+    where: { clubId: id, isPrimary: true },
+    select: { eventId: true },
+  });
+  if (primaryEvent) {
+    throw new AppError('Cannot delete a club that is the primary host of an event. Transfer primary or delete those events first.', 409);
+  }
+
   await prisma.club.delete({ where: { id } });
   return { success: true };
 }

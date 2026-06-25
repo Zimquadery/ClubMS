@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { RouteErrorBoundary } from '@/components/ErrorBoundary'
 import { LayoutDashboard, Users, Calendar, LogOut, Shield, Menu, X, UserCircle, ClipboardList, Sun, Moon, Monitor } from 'lucide-react'
 
 export function Layout() {
@@ -155,7 +156,9 @@ export function Layout() {
         )}
       </header>
       <main id="main-content" className="flex-1 container mx-auto px-4 py-6">
-        <Outlet />
+        <RouteErrorBoundary>
+          <Outlet />
+        </RouteErrorBoundary>
       </main>
     </div>
   )

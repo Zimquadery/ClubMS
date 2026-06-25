@@ -3,7 +3,7 @@ const eventsController = require('./events.controller');
 const { authMiddleware } = require('../../middleware/auth');
 const { requireRole } = require('../../middleware/rbac');
 const { validate, validateQuery } = require('../../middleware/validate');
-const { create: createSchema, update: updateSchema, listQuery: listQuerySchema } = require('./events.schemas');
+const { create: createSchema, update: updateSchema, listQuery: listQuerySchema, addCoHost: addCoHostSchema } = require('./events.schemas');
 const { auditLog } = require('../../middleware/auditLog');
 
 const router = express.Router();
@@ -115,5 +115,70 @@ router.patch('/:id', authMiddleware, requireRole('CLUB_ADMIN'), validate(updateS
  *         description: Event not found
  */
 router.delete('/:id', authMiddleware, requireRole('CLUB_ADMIN'), auditLog('EVENT_DELETE', (req) => ({ type: 'event', id: req.params.id })), eventsController.deleteEvent);
+
+/**
+ * @openapi
+ * /events/{id}/cohosts:
+ *   post:
+ *     tags: [Events]
+ *     summary: Add a co-host club to an event
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [clubId]
+ *             properties:
+ *               clubId: { type: string, format: uuid }
+ *     responses:
+ *       201:
+ *         description: Co-host added
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - not an officer of a host club
+ *       404:
+ *         description: Event or club not found
+ *       409:
+ *         description: Club already a host
+ */
+router.post('/:id/cohosts', authMiddleware, requireRole('CLUB_ADMIN'), validate(addCoHostSchema), auditLog('EVENT_COHOST_ADD', (req) => ({ type: 'event', id: req.params.id, metadata: { coHostClubId: req.coHostClubId || req.body.clubId } })), eventsController.addCoHost);
+
+/**
+ * @openapi
+ * /events/{id}/cohosts/{clubId}:
+ *   delete:
+ *     tags: [Events]
+ *     summary: Remove a co-host club from an event (cannot remove primary)
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *       - in: path
+ *         name: clubId
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Co-host removed
+ *       400:
+ *         description: Cannot remove primary host
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - not an officer of a host club
+ *       404:
+ *         description: Event or co-host not found
+ */
+router.delete('/:id/cohosts/:clubId', authMiddleware, requireRole('CLUB_ADMIN'), auditLog('EVENT_COHOST_REMOVE', (req) => ({ type: 'event', id: req.params.id, metadata: { coHostClubId: req.params.clubId } })), eventsController.removeCoHost);
 
 module.exports = router;

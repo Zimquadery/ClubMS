@@ -28,7 +28,7 @@ async function getDashboardStats(userId, userRole) {
 
     const [totalMembers, upcomingEvents, pendingRequests] = await Promise.all([
       prisma.clubMembership.count({ where: { clubId: { in: clubIds }, status: 'ACTIVE' } }),
-      prisma.event.count({ where: { clubId: { in: clubIds }, startTime: { gte: now } } }),
+      prisma.event.count({ where: { hosts: { some: { clubId: { in: clubIds } } }, startTime: { gte: now } } }),
       prisma.clubMembership.count({ where: { clubId: { in: clubIds }, status: 'PENDING' } }),
     ]);
 
@@ -40,7 +40,7 @@ async function getDashboardStats(userId, userRole) {
     prisma.event.count({
       where: {
         startTime: { gte: now },
-        club: { memberships: { some: { userId, status: 'ACTIVE' } } },
+        hosts: { some: { club: { memberships: { some: { userId, status: 'ACTIVE' } } } } },
       },
     }),
   ]);

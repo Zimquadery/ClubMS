@@ -54,7 +54,9 @@ const getAdminClubs = asyncHandler(async (req, res) => {
 });
 
 const promoteMember = asyncHandler(async (req, res) => {
-  const membership = await membershipsService.promoteMember(req.params.clubId, req.params.userId);
+  const result = await membershipsService.promoteMember(req.params.clubId, req.params.userId);
+  req.auditPriorRole = result.priorUserRole;
+  const { priorUserRole, ...membership } = result;
   res.status(200).json(membership);
 });
 

@@ -1,5 +1,13 @@
 const { prisma } = require('../../lib/prisma');
 const { AppError } = require('../../utils/errors');
+const eventHosts = require('../eventHosts/eventHosts.service');
+
+const HOST_INCLUDE = {
+  hosts: {
+    include: { club: { select: eventHosts.HOST_CLUB_SELECT } },
+    orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+  },
+};
 
 function validateDateRange(start, end) {
   if (isNaN(start.getTime()) || isNaN(end.getTime())) {
@@ -11,24 +19,35 @@ function validateDateRange(start, end) {
   }
 }
 
-async function getEventWithOwnership(eventId, userId, skipOwnershipCheck) {
+function attachPrimaryClub(event) {
+  if (!event || !event.hosts) return event;
+  const primaryHost = event.hosts.find((h) => h.isPrimary) || event.hosts[0];
+  const primaryClub = primaryHost?.club || null;
+  const primaryClubId = primaryHost?.clubId || null;
+  return { ...event, club: primaryClub, clubId: primaryClubId, primaryClubId };
+}
+
+async function getEventForOwnerCheck(eventId) {
   const event = await prisma.event.findUnique({
     where: { id: eventId },
-    include: { club: true },
+    include: HOST_INCLUDE,
   });
-
   if (!event) throw new AppError('Event not found', 404);
-
-  if (!skipOwnershipCheck) {
-    const membership = await prisma.clubMembership.findUnique({
-      where: { userId_clubId: { userId, clubId: event.clubId } },
-    });
-    if (!membership || membership.role !== 'OFFICER' || membership.status !== 'ACTIVE') {
-      throw new AppError('Not an admin of this club', 403);
-    }
-  }
-
   return event;
+}
+
+async function assertCanManage(eventId, userId, skipOwnershipCheck) {
+  if (skipOwnershipCheck) return;
+  if (!(await eventHosts.isHostOfficer(userId, eventId))) {
+    throw new AppError('Not an admin of a host club for this event', 403);
+  }
+}
+
+async function assertCanDelete(eventId, userId, skipOwnershipCheck) {
+  if (skipOwnershipCheck) return;
+  if (!(await eventHosts.isPrimaryHostOfficer(userId, eventId))) {
+    throw new AppError('Only an officer of the primary host club can delete this event', 403);
+  }
 }
 
 async function list({ clubId, joined, timeRange = 'upcoming', userId, page = 1, limit = 20 }) {
@@ -41,10 +60,12 @@ async function list({ clubId, joined, timeRange = 'upcoming', userId, page = 1, 
     where.startTime = { lt: now };
   }
 
-  if (clubId) where.clubId = clubId;
+  if (clubId) where.hosts = { some: { clubId } };
 
   if (joined) {
-    where.club = { memberships: { some: { userId, status: 'ACTIVE' } } };
+    where.hosts = {
+      some: { club: { memberships: { some: { userId, status: 'ACTIVE' } } } },
+    };
   }
 
   const skip = (page - 1) * limit;
@@ -54,7 +75,7 @@ async function list({ clubId, joined, timeRange = 'upcoming', userId, page = 1, 
   const [items, total] = await Promise.all([
     prisma.event.findMany({
       where,
-      include: { club: { select: { id: true, name: true, logoUrl: true } } },
+      include: HOST_INCLUDE,
       orderBy,
       skip,
       take: limit,
@@ -62,30 +83,44 @@ async function list({ clubId, joined, timeRange = 'upcoming', userId, page = 1, 
     prisma.event.count({ where }),
   ]);
 
-  return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
+  return {
+    items: items.map(attachPrimaryClub),
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  };
 }
 
 async function getById(eventId, userId) {
   const event = await prisma.event.findUnique({
     where: { id: eventId },
-    include: { club: { select: { id: true, name: true, logoUrl: true, category: true } } },
+    include: HOST_INCLUDE,
   });
 
   if (!event) throw new AppError('Event not found', 404);
 
   if (userId) {
-    const membership = await prisma.clubMembership.findUnique({
-      where: { userId_clubId: { userId, clubId: event.clubId } },
-      select: { status: true, role: true },
-    });
-    event.userMembership = membership;
+    const clubIds = event.hosts.map((h) => h.clubId);
+    const primaryClubId = event.hosts.find((h) => h.isPrimary)?.clubId;
+    const memberships = clubIds.length > 0
+      ? await prisma.clubMembership.findMany({
+          where: { userId, clubId: { in: clubIds }, status: 'ACTIVE' },
+          select: { status: true, role: true, clubId: true },
+        })
+      : [];
+    event.userMembership = memberships.find((m) => m.role === 'OFFICER' && m.clubId === primaryClubId)
+      || memberships.find((m) => m.role === 'OFFICER')
+      || memberships.find((m) => m.clubId === primaryClubId)
+      || memberships[0]
+      || null;
   }
 
-  return event;
+  return attachPrimaryClub(event);
 }
 
-async function create(clubId, { title, description, startTime, endTime, location, bannerUrl }) {
-  const club = await prisma.club.findUnique({ where: { id: clubId } });
+async function create(primaryClubId, { title, description, startTime, endTime, location, bannerUrl, coHostClubIds, creatorUserId }) {
+  const club = await prisma.club.findUnique({ where: { id: primaryClubId } });
   if (!club) throw new AppError('Club not found', 404);
 
   if (!title || !startTime || !endTime) {
@@ -97,22 +132,53 @@ async function create(clubId, { title, description, startTime, endTime, location
 
   validateDateRange(start, end);
 
-  return prisma.event.create({
-    data: {
-      clubId,
-      title,
-      description: description || null,
-      startTime: start,
-      endTime: end,
-      location: location || null,
-      bannerUrl: bannerUrl || null,
-    },
-    include: { club: { select: { id: true, name: true, logoUrl: true } } },
+  const uniqueCoHosts = Array.from(new Set(coHostClubIds || [])).filter((id) => id !== primaryClubId);
+  if (uniqueCoHosts.length > 0) {
+    const valid = await prisma.club.count({ where: { id: { in: uniqueCoHosts } } });
+    if (valid !== uniqueCoHosts.length) {
+      throw new AppError('One or more co-host clubs not found', 400);
+    }
+  }
+
+  const created = await prisma.$transaction(async (tx) => {
+    const event = await tx.event.create({
+      data: {
+        title,
+        description: description || null,
+        startTime: start,
+        endTime: end,
+        location: location || null,
+        bannerUrl: bannerUrl || null,
+      },
+    });
+
+    await tx.eventHost.create({
+      data: { eventId: event.id, clubId: primaryClubId, isPrimary: true, addedById: creatorUserId },
+    });
+
+    if (uniqueCoHosts.length > 0) {
+      await tx.eventHost.createMany({
+        data: uniqueCoHosts.map((clubId) => ({
+          eventId: event.id,
+          clubId,
+          isPrimary: false,
+          addedById: creatorUserId,
+        })),
+      });
+    }
+
+    return tx.event.findUnique({
+      where: { id: event.id },
+      include: HOST_INCLUDE,
+    });
   });
+
+  return attachPrimaryClub(created);
 }
 
 async function update(eventId, userId, { title, description, startTime, endTime, location, bannerUrl }, skipOwnershipCheck = false) {
-  const event = await getEventWithOwnership(eventId, userId, skipOwnershipCheck);
+  await getEventForOwnerCheck(eventId);
+  await assertCanManage(eventId, userId, skipOwnershipCheck);
 
   const data = {};
   if (title !== undefined) data.title = title;
@@ -120,9 +186,11 @@ async function update(eventId, userId, { title, description, startTime, endTime,
   if (location !== undefined) data.location = location || null;
   if (bannerUrl !== undefined) data.bannerUrl = bannerUrl || null;
 
+  const existing = await prisma.event.findUnique({ where: { id: eventId } });
+
   if (startTime !== undefined || endTime !== undefined) {
-    const start = new Date(startTime ?? event.startTime);
-    const end = new Date(endTime ?? event.endTime);
+    const start = new Date(startTime ?? existing.startTime);
+    const end = new Date(endTime ?? existing.endTime);
 
     validateDateRange(start, end);
 
@@ -132,15 +200,18 @@ async function update(eventId, userId, { title, description, startTime, endTime,
 
   if (Object.keys(data).length === 0) throw new AppError('No fields to update', 400);
 
-  return prisma.event.update({
+  const updated = await prisma.event.update({
     where: { id: eventId },
     data,
-    include: { club: { select: { id: true, name: true, logoUrl: true } } },
+    include: HOST_INCLUDE,
   });
+
+  return attachPrimaryClub(updated);
 }
 
 async function remove(eventId, userId, skipOwnershipCheck = false) {
-  await getEventWithOwnership(eventId, userId, skipOwnershipCheck);
+  await getEventForOwnerCheck(eventId);
+  await assertCanDelete(eventId, userId, skipOwnershipCheck);
 
   await prisma.event.delete({ where: { id: eventId } });
   return { success: true };

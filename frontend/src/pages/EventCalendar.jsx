@@ -188,7 +188,12 @@ export default function EventCalendar() {
                         )}
                       </div>
                       <div className="pt-6">
-                        <span className="text-xs text-muted-foreground">{event.club?.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {event.club?.name}
+                          {event.hosts && event.hosts.length > 1 && (
+                            <span className="ml-1 text-brand-primary">+{event.hosts.length - 1}</span>
+                          )}
+                        </span>
                         <h3 className="text-sm font-medium mt-0.5 group-hover:underline">{event.title}</h3>
                       </div>
                       <div className="mt-2.5 space-y-1">

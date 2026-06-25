@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import client from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -24,6 +25,8 @@ import usePaginatedFetch from '@/hooks/usePaginatedFetch'
 
 export default function ClubMembers() {
   const { clubId, adminClubs, currentClub, adminError, navigateToClub } = useAdminClubSelector((val) => `/admin/clubs/${val}/members`)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tab = searchParams.get('tab') || 'active'
   const [activeMembers, setActiveMembers] = useState([])
   const [alumniMembers, setAlumniMembers] = useState([])
 
@@ -31,19 +34,16 @@ export default function ClubMembers() {
     items: fetchedMembers,
     loading, error, page, totalPages,
     refetch: fetchMembers,
-    setURLParam, searchParams, setSearchParams,
+    setURLParam,
   } = usePaginatedFetch({
     fetchFn: async ({ page }) => {
-      const tab = searchParams.get('tab') || 'active'
       const status = tab === 'active' ? 'ACTIVE' : 'ALUMNI'
       const res = await client.get(`/clubs/${clubId}/members`, { params: { status, page, limit: 20 } })
       return { items: res.data.items || res.data, totalPages: res.data.totalPages || 1 }
     },
-    deps: [clubId, searchParams.get('tab')],
+    deps: [clubId, tab],
     enabled: !!clubId,
   })
-
-  const tab = searchParams.get('tab') || 'active'
 
   useEffect(() => {
     if (tab === 'active') setActiveMembers(fetchedMembers)

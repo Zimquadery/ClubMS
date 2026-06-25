@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
 import { Users, Download } from 'lucide-react';
 
-export function RsvpCard({ id, userRsvp, rsvpLoading, attendeeCount, canManage, isPast, canRsvp, onRsvp, onRemoveRsvp, onExport, userMembership, clubId, clubName }) {
+export function RsvpCard({ id, userRsvp, rsvpLoading, attendeeCount, canManage, isPast, canRsvp, onRsvp, onRemoveRsvp, onExport, userMembership, clubId, clubName, hostsCount }) {
   if (!isPast) {
     if (canRsvp) {
       return (
@@ -68,7 +68,9 @@ export function RsvpCard({ id, userRsvp, rsvpLoading, attendeeCount, canManage, 
       <p className="mt-4 text-sm text-muted-foreground">
         {userMembership
           ? 'Only active members can RSVP'
-          : <>Join <Link to={`/clubs/${clubId}`} className="text-brand-primary hover:underline">{clubName || 'this club'}</Link> to RSVP</>
+          : (hostsCount && hostsCount > 1)
+            ? 'Join a host club to RSVP'
+            : <>Join <Link to={`/clubs/${clubId}`} className="text-brand-primary hover:underline">{clubName || 'this club'}</Link> to RSVP</>
         }
       </p>
     );

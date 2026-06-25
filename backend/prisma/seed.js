@@ -29,7 +29,7 @@ async function main() {
     { email: 'student5@university.edu', name: 'Hassan Ali', role: 'STUDENT' },
     { email: 'student6@university.edu', name: 'Iris Tanaka', role: 'STUDENT' },
     { email: 'student7@university.edu', name: 'Jake Wilson', role: 'STUDENT' },
-    { email: 'student8@university.edu', name: 'Kira Petrov', role: 'STUDENT' },
+    { email: 'student8@university.edu', name: 'Kira Petrov', role: 'CLUB_ADMIN' },
     { email: 'student9@university.edu', name: 'Leo Nguyen', role: 'STUDENT' },
     { email: 'student10@university.edu', name: 'Maya Johnson', role: 'STUDENT' },
     { email: 'student11@university.edu', name: 'Noah Brown', role: 'STUDENT' },
@@ -237,10 +237,34 @@ async function main() {
 
   const events = [];
   for (const data of eventsData) {
-    const ev = await prisma.event.create({ data });
-    events.push(ev);
+    const { clubId, ...rest } = data;
+    const ev = await prisma.event.create({ data: rest });
+    await prisma.eventHost.create({
+      data: { eventId: ev.id, clubId, isPrimary: true, addedById: officer1.id },
+    });
+    events.push({ ...ev, clubId });
   }
   console.log(`Created ${eventsData.length} events (${eventsData.filter(e => e.startTime.getTime() < now).length} past, ${eventsData.filter(e => e.startTime.getTime() >= now).length} upcoming)`);
+
+  // One collaborative event: Coding Club + Basketball Team co-hosting
+  const collabEvent = await prisma.event.create({
+    data: {
+      title: 'Sports & Code: Hack & Play Tournament',
+      description: 'A collaborative event: coding challenges in the morning, basketball tournament in the afternoon.',
+      startTime: new Date(now + 14 * DAY),
+      endTime: new Date(now + 14 * DAY + 8 * HOUR),
+      location: 'Main Gym + Computer Lab B',
+      bannerUrl: '/uploads/banner-hackathon2025.jpg',
+    },
+  });
+  await prisma.eventHost.create({
+    data: { eventId: collabEvent.id, clubId: cc.id, isPrimary: true, addedById: officer1.id },
+  });
+  await prisma.eventHost.create({
+    data: { eventId: collabEvent.id, clubId: bt.id, isPrimary: false, addedById: officer2.id },
+  });
+  events.push(collabEvent);
+  console.log('Created 1 multi-host (collaborative) event');
 
   // ── RSVPs
   const upcoming = events.filter(e => e.startTime.getTime() >= now);

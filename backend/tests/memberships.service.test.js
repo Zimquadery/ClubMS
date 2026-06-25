@@ -274,7 +274,12 @@ describe('transferAdmin', () => {
         update: jest.fn().mockResolvedValue({}),
         count: jest.fn().mockResolvedValue(0),
       },
-      user: { update: jest.fn().mockResolvedValue({}), findUnique: jest.fn().mockResolvedValue({ role: 'CLUB_ADMIN' }) },
+      user: {
+        update: jest.fn().mockResolvedValue({}),
+        findUnique: jest.fn()
+          .mockResolvedValueOnce({ role: 'CLUB_ADMIN' })
+          .mockResolvedValueOnce({ role: 'STUDENT' }),
+      },
     };
     prisma.$transaction.mockImplementation((fn) => fn(txMock));
 
@@ -283,6 +288,32 @@ describe('transferAdmin', () => {
     expect(result.success).toBe(true);
     expect(txMock.clubMembership.update).toHaveBeenCalledTimes(2);
     expect(txMock.user.update).toHaveBeenCalledWith({ where: { id: newAdminId }, data: { role: 'CLUB_ADMIN' } });
+    expect(txMock.user.update).toHaveBeenCalledWith({ where: { id: currentAdminId }, data: { role: 'STUDENT' } });
+  });
+
+  it('does not downgrade an incoming FACULTY admin', async () => {
+    prisma.clubMembership.findUnique
+      .mockResolvedValueOnce({ userId: currentAdminId, clubId, role: 'OFFICER', status: 'ACTIVE' })
+      .mockResolvedValueOnce({ userId: newAdminId, clubId, role: 'MEMBER', status: 'ACTIVE' });
+
+    const txMock = {
+      clubMembership: {
+        update: jest.fn().mockResolvedValue({}),
+        count: jest.fn().mockResolvedValue(0),
+      },
+      user: {
+        update: jest.fn().mockResolvedValue({}),
+        findUnique: jest.fn()
+          .mockResolvedValueOnce({ role: 'CLUB_ADMIN' })
+          .mockResolvedValueOnce({ role: 'FACULTY' }),
+      },
+    };
+    prisma.$transaction.mockImplementation((fn) => fn(txMock));
+
+    const result = await svc.transferAdmin(clubId, currentAdminId, newAdminId, 'CLUB_ADMIN');
+
+    expect(result.success).toBe(true);
+    expect(txMock.user.update).not.toHaveBeenCalledWith({ where: { id: newAdminId }, data: { role: 'CLUB_ADMIN' } });
     expect(txMock.user.update).toHaveBeenCalledWith({ where: { id: currentAdminId }, data: { role: 'STUDENT' } });
   });
 
@@ -358,7 +389,7 @@ describe('promoteMember', () => {
       clubMembership: {
         update: jest.fn().mockResolvedValue({ userId, clubId, role: 'OFFICER', user: { id: userId, name: 'Test', email: 'test@test.com' } }),
       },
-      user: { update: jest.fn().mockResolvedValue({}) },
+      user: { update: jest.fn().mockResolvedValue({}), findUnique: jest.fn().mockResolvedValue({ role: 'STUDENT' }) },
     };
     prisma.$transaction.mockImplementation((fn) => fn(txMock));
 
@@ -371,6 +402,61 @@ describe('promoteMember', () => {
     });
     expect(txMock.user.update).toHaveBeenCalledWith({ where: { id: userId }, data: { role: 'CLUB_ADMIN' } });
     expect(result.role).toBe('OFFICER');
+    expect(result.priorUserRole).toBe('STUDENT');
+  });
+
+  it('does not downgrade a FACULTY target when promoting', async () => {
+    prisma.clubMembership.findUnique.mockResolvedValue({ userId, clubId, status: 'ACTIVE', role: 'MEMBER' });
+
+    const txMock = {
+      clubMembership: {
+        update: jest.fn().mockResolvedValue({ userId, clubId, role: 'OFFICER', user: { id: userId, name: 'Test', email: 'test@test.com' } }),
+      },
+      user: { update: jest.fn().mockResolvedValue({}), findUnique: jest.fn().mockResolvedValue({ role: 'FACULTY' }) },
+    };
+    prisma.$transaction.mockImplementation((fn) => fn(txMock));
+
+    const result = await svc.promoteMember(clubId, userId);
+
+    expect(txMock.user.update).not.toHaveBeenCalled();
+    expect(result.role).toBe('OFFICER');
+    expect(result.priorUserRole).toBe('FACULTY');
+  });
+
+  it('does not downgrade a PLATFORM_ADMIN target when promoting', async () => {
+    prisma.clubMembership.findUnique.mockResolvedValue({ userId, clubId, status: 'ACTIVE', role: 'MEMBER' });
+
+    const txMock = {
+      clubMembership: {
+        update: jest.fn().mockResolvedValue({ userId, clubId, role: 'OFFICER', user: { id: userId, name: 'Test', email: 'test@test.com' } }),
+      },
+      user: { update: jest.fn().mockResolvedValue({}), findUnique: jest.fn().mockResolvedValue({ role: 'PLATFORM_ADMIN' }) },
+    };
+    prisma.$transaction.mockImplementation((fn) => fn(txMock));
+
+    const result = await svc.promoteMember(clubId, userId);
+
+    expect(txMock.user.update).not.toHaveBeenCalled();
+    expect(result.role).toBe('OFFICER');
+    expect(result.priorUserRole).toBe('PLATFORM_ADMIN');
+  });
+
+  it('does not re-write role when target is already CLUB_ADMIN', async () => {
+    prisma.clubMembership.findUnique.mockResolvedValue({ userId, clubId, status: 'ACTIVE', role: 'MEMBER' });
+
+    const txMock = {
+      clubMembership: {
+        update: jest.fn().mockResolvedValue({ userId, clubId, role: 'OFFICER', user: { id: userId, name: 'Test', email: 'test@test.com' } }),
+      },
+      user: { update: jest.fn().mockResolvedValue({}), findUnique: jest.fn().mockResolvedValue({ role: 'CLUB_ADMIN' }) },
+    };
+    prisma.$transaction.mockImplementation((fn) => fn(txMock));
+
+    const result = await svc.promoteMember(clubId, userId);
+
+    expect(txMock.user.update).not.toHaveBeenCalled();
+    expect(result.role).toBe('OFFICER');
+    expect(result.priorUserRole).toBe('CLUB_ADMIN');
   });
 
   it('throws if membership not found', async () => {

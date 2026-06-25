@@ -8,6 +8,7 @@ const create = z.object({
   endTime: z.string().min(1, 'End time is required'),
   location: z.string().max(200).optional(),
   bannerUrl: OPTIONAL_URL,
+  coHostClubIds: z.array(z.string().uuid()).max(10).optional(),
 });
 
 const update = z.object({
@@ -26,4 +27,8 @@ const listQuery = z.object({
   ...PAGINATION,
 });
 
-module.exports = { create, update, listQuery };
+const addCoHost = z.object({
+  clubId: z.string().uuid('Invalid clubId'),
+});
+
+module.exports = { create, update, listQuery, addCoHost };
