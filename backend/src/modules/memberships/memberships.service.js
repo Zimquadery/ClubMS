@@ -127,11 +127,14 @@ async function transferAdmin(clubId, currentAdminId, newAdminId, callerRole) {
     throw new AppError('Cannot transfer admin to yourself', 400);
   }
 
-  if (!isPrivilegedRole(callerRole)) {
-    const currentMembership = await prisma.clubMembership.findUnique({
-      where: { userId_clubId: { userId: currentAdminId, clubId } },
-    });
+  // Always look up the caller's membership — privileged callers (PLATFORM_ADMIN,
+  // FACULTY) may legitimately not have one (e.g. appointing an officer for an
+  // unmanaged club). The transaction below tolerates the absent row.
+  const currentMembership = await prisma.clubMembership.findUnique({
+    where: { userId_clubId: { userId: currentAdminId, clubId } },
+  });
 
+  if (!isPrivilegedRole(callerRole)) {
     if (!currentMembership || currentMembership.role !== 'OFFICER' || currentMembership.status !== 'ACTIVE') {
       throw new AppError('You are not an admin of this club', 403);
     }
@@ -159,22 +162,29 @@ async function transferAdmin(clubId, currentAdminId, newAdminId, callerRole) {
         tx.user.findUnique({ where: { id: newAdminId }, select: { role: true } }),
       ]);
 
-      const ops = [
-        tx.clubMembership.update({
+      const ops = [];
+
+      // Only demote the caller's membership if they actually held one (privileged
+      // caller may have none — they're appointing, not transferring).
+      if (currentMembership) {
+        ops.push(tx.clubMembership.update({
           where: { userId_clubId: { userId: currentAdminId, clubId } },
           data: { role: 'MEMBER' },
-        }),
-        tx.clubMembership.update({
-          where: { userId_clubId: { userId: newAdminId, clubId } },
-          data: { role: 'OFFICER' },
-        }),
-      ];
+        }));
+      }
+
+      ops.push(tx.clubMembership.update({
+        where: { userId_clubId: { userId: newAdminId, clubId } },
+        data: { role: 'OFFICER' },
+      }));
 
       if (newUser?.role === 'STUDENT') {
         ops.push(tx.user.update({ where: { id: newAdminId }, data: { role: 'CLUB_ADMIN' } }));
       }
 
-      if (remainingOfficerCount === 0) {
+      // Only revert the caller's User.role if they actually held an officer role here
+      // AND have no other officer memberships.
+      if (currentMembership && remainingOfficerCount === 0) {
         const revertRole = currentUser?.role === 'FACULTY' ? 'FACULTY' : 'STUDENT';
         ops.push(tx.user.update({ where: { id: currentAdminId }, data: { role: revertRole } }));
       }
