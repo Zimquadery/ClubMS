@@ -1,6 +1,5 @@
 const membershipsService = require('./memberships.service');
 const { asyncHandler } = require('../../utils/asyncHandler');
-const { AppError } = require('../../utils/errors');
 
 const requestJoin = asyncHandler(async (req, res) => {
   const membership = await membershipsService.requestJoin(req.params.clubId, req.user.userId);

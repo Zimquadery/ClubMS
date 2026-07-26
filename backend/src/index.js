@@ -1,5 +1,4 @@
 const express = require('express');
-const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -19,6 +18,7 @@ const { router: announcementsRoutes, recentRouter: announcementsRecentRouter } =
 const swaggerUi = require('swagger-ui-express');
 const { specs } = require('./config/swagger');
 const { prisma } = require('./lib/prisma');
+const { UPLOAD_DIR, uploadsStaticHeaders } = require('./config/upload');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -46,7 +46,7 @@ app.get('/api/health', async (_req, res) => {
   }
 });
 
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/uploads', uploadsStaticHeaders, express.static(UPLOAD_DIR));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/clubs', clubRoutes);

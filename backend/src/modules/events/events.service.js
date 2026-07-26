@@ -60,9 +60,14 @@ async function list({ clubId, joined, timeRange = 'upcoming', userId, page = 1, 
     where.startTime = { lt: now };
   }
 
-  if (clubId) where.hosts = { some: { clubId } };
-
-  if (joined) {
+  if (clubId && joined) {
+    where.AND = [
+      { hosts: { some: { clubId } } },
+      { hosts: { some: { club: { memberships: { some: { userId, status: 'ACTIVE' } } } } } },
+    ];
+  } else if (clubId) {
+    where.hosts = { some: { clubId } };
+  } else if (joined) {
     where.hosts = {
       some: { club: { memberships: { some: { userId, status: 'ACTIVE' } } } },
     };

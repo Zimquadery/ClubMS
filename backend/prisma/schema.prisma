@@ -74,6 +74,7 @@ model ClubMembership {
   club      Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
 
   @@unique([userId, clubId])
+  @@index([clubId, status, role])
 }
 
 model Event {
@@ -84,11 +85,13 @@ model Event {
   endTime     DateTime
   location    String?
   bannerUrl   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   hosts       EventHost[]
   rsvps       EventRsvp[]
+
+  @@index([startTime])
 }
 
 model EventHost {
@@ -132,6 +135,9 @@ model AuditLog {
   createdAt  DateTime @default(now())
 
   actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([actorId, createdAt])
 }
 
 model Announcement {

@@ -1,7 +1,11 @@
 const express = require('express');
-const { upload } = require('../../config/upload');
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const { upload, UPLOAD_DIR } = require('../../config/upload');
 const { authMiddleware } = require('../../middleware/auth');
 const { asyncHandler } = require('../../utils/asyncHandler');
+const { getImageExt } = require('../../utils/imageExt');
 
 const router = express.Router();
 
@@ -30,7 +34,7 @@ const router = express.Router();
  *               properties:
  *                 url: { type: string }
  *       400:
- *         description: No file uploaded
+ *         description: No file uploaded or invalid image content
  *       401:
  *         description: Unauthorized
  */
@@ -38,8 +42,18 @@ router.post('/', authMiddleware, upload.single('file'), asyncHandler(async (req,
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
   }
-  const url = `/uploads/${req.file.filename}`;
-  res.status(201).json({ url });
+
+  // Validate actual content; the on-disk extension comes from the detected
+  // type, never from the client-supplied filename (defeats x.png.html, spoofed
+  // mimetypes, .svg, and polyglots).
+  const ext = getImageExt(req.file.buffer);
+  if (!ext) {
+    return res.status(400).json({ error: 'Invalid image file' });
+  }
+
+  const filename = `${crypto.randomUUID()}${ext}`;
+  await fs.promises.writeFile(path.join(UPLOAD_DIR, filename), req.file.buffer);
+  res.status(201).json({ url: `/uploads/${filename}` });
 }));
 
 module.exports = router;

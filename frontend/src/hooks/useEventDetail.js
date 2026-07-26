@@ -32,7 +32,7 @@ export default function useEventDetail(id, user) {
         .catch(() => setUserRsvp(null));
 
       const localCanManage = (res.data.userMembership?.role === 'OFFICER'
-        && res.data.userMembership?.status === 'ACTIVE') || user?.role === 'PLATFORM_ADMIN';
+        && res.data.userMembership?.status === 'ACTIVE') || user?.role === 'PLATFORM_ADMIN' || user?.role === 'FACULTY';
 
       if (localCanManage) {
         client.get(`/events/${id}/rsvps`, { params: { limit: 1 } })

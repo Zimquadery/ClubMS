@@ -40,6 +40,23 @@ const paginatedSchema = (defaultLimit = 20) => ({
   limit: z.coerce.number().int().min(1).max(100).default(defaultLimit),
 });
 
-const OPTIONAL_URL = z.string().url().max(500).optional().or(z.literal(''));
+// Accepts a strict http(s) URL or a same-origin uploaded-image path. The upload
+// endpoint returns relative /uploads/... paths, so plain z.string().url() would
+// reject legitimate uploaded logos/banners. Protocol-relative (//host/...) and
+// non-/uploads/ same-origin paths are rejected.
+function isUrlOrUploadPath(value) {
+  if (/^\/uploads\/[^\s]+$/.test(value)) return true;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+const OPTIONAL_URL = z.string().max(500)
+  .refine(isUrlOrUploadPath, { message: 'Must be a valid http(s) URL or an uploaded image path' })
+  .optional()
+  .or(z.literal(''));
 
 module.exports = { validate, validateQuery, PAGINATION, OPTIONAL_URL, paginatedSchema };

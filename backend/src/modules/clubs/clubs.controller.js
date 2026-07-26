@@ -1,6 +1,5 @@
 const clubsService = require('./clubs.service');
 const { asyncHandler } = require('../../utils/asyncHandler');
-const { AppError } = require('../../utils/errors');
 
 const list = asyncHandler(async (req, res) => {
   const { search, category, page, limit } = req.query;

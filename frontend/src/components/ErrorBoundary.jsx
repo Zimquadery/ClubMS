@@ -50,5 +50,3 @@ export function RouteErrorBoundary({ children }) {
   const location = useLocation()
   return <ErrorBoundary key={location.pathname}>{children}</ErrorBoundary>
 }
-
-export default ErrorBoundary
