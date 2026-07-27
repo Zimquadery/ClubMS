@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { RouteErrorBoundary } from '@/components/ErrorBoundary'
-import { LayoutDashboard, Users, Calendar, LogOut, Shield, Menu, X, UserCircle, ClipboardList, Sun, Moon, Monitor } from 'lucide-react'
+import { LayoutDashboard, Users, Calendar, LogOut, Shield, Menu, X, UserCircle, ClipboardList, Sun, Moon, Monitor, MapPin } from 'lucide-react'
 
 export function Layout() {
   const { user, logout } = useAuth()
@@ -61,6 +61,10 @@ export function Layout() {
           <NavLink to="/admin/clubs" className={linkClass} onClick={() => setMobileMenuOpen(false)}>
             <Shield className="h-4 w-4" />
             Manage Clubs
+          </NavLink>
+          <NavLink to="/admin/venues" className={linkClass} onClick={() => setMobileMenuOpen(false)}>
+            <MapPin className="h-4 w-4" />
+            Manage Venues
           </NavLink>
           <NavLink to="/admin/audit-logs" className={linkClass} onClick={() => setMobileMenuOpen(false)}>
             <ClipboardList className="h-4 w-4" />

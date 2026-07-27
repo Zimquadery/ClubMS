@@ -66,6 +66,15 @@ async function makeActiveMember({ userId, clubId, role = 'MEMBER' }) {
   });
 }
 
+async function makeVenue(overrides = {}) {
+  const suffix = crypto.randomBytes(4).toString('hex');
+  return prisma.venue.create({
+    data: {
+      name: overrides.name || `Venue ${suffix}`,
+    },
+  });
+}
+
 async function makeEvent({ primaryClubId, coHostClubIds = [], overrides = {}, creatorUserId = null }) {
   const created = await prisma.event.create({
     data: {
@@ -73,7 +82,8 @@ async function makeEvent({ primaryClubId, coHostClubIds = [], overrides = {}, cr
       description: overrides.description !== undefined ? overrides.description : 'desc',
       startTime: overrides.startTime || new Date(Date.now() + 86_400_000),
       endTime: overrides.endTime || new Date(Date.now() + 2 * 86_400_000),
-      location: overrides.location !== undefined ? overrides.location : 'Room A',
+      venue: overrides.venue !== undefined ? overrides.venue : 'Room A',
+      venueId: overrides.venueId !== undefined ? overrides.venueId : null,
       bannerUrl: overrides.bannerUrl !== undefined ? overrides.bannerUrl : null,
     },
   });
@@ -150,6 +160,7 @@ module.exports = {
   makeOfficer,
   makeActiveMember,
   makeEvent,
+  makeVenue,
   makeAnnouncement,
   makeRsvp,
   tokenFor,

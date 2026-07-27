@@ -8,6 +8,7 @@ const TABLES = [
   '"Event"',
   '"ClubMembership"',
   '"Club"',
+  '"Venue"',
   '"User"',
 ];
 

@@ -41,12 +41,14 @@ export default function EventCalendar() {
   const page = rawPage >= 1 ? rawPage : 1
   const filterMode = searchParams.get('filterMode') || 'all'
   const clubId = searchParams.get('clubId') || ''
+  const venueId = searchParams.get('venueId') || ''
   const timeRange = searchParams.get('timeRange') || 'upcoming'
 
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [clubs, setClubs] = useState([])
+  const [venues, setVenues] = useState([])
   const [totalPages, setTotalPages] = useState(1)
 
   useEffect(() => {
@@ -65,6 +67,20 @@ export default function EventCalendar() {
 
   useEffect(() => {
     let active = true
+    async function doFetch() {
+      try {
+        const res = await client.get('/venues', { params: { limit: 100 } })
+        const data = res.data.items ? res.data.items : res.data
+        if (active) setVenues(data)
+      } catch {
+      }
+    }
+    doFetch()
+    return () => { active = false }
+  }, [])
+
+  useEffect(() => {
+    let active = true
     setLoading(true)
     setError('')
     async function doFetch() {
@@ -72,6 +88,7 @@ export default function EventCalendar() {
         const params = new URLSearchParams()
         if (filterMode === 'joined') params.set('joined', 'true')
         if (clubId) params.set('clubId', clubId)
+        if (venueId) params.set('venueId', venueId)
         params.set('timeRange', timeRange)
         params.set('page', page)
         const res = await client.get(`/events?${params.toString()}`)
@@ -89,7 +106,7 @@ export default function EventCalendar() {
     }
     doFetch()
     return () => { active = false }
-  }, [filterMode, clubId, timeRange, page])
+  }, [filterMode, clubId, venueId, timeRange, page])
 
   return (
     <div>
@@ -141,6 +158,20 @@ export default function EventCalendar() {
             <SelectItem value="__all__">All Clubs</SelectItem>
             {clubs.map((club) => (
               <SelectItem key={club.id} value={club.id}>{club.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={venueId || '__all__'} onValueChange={(val) => updateFilter('venueId', val === '__all__' ? '' : val)}>
+          <SelectTrigger className="w-[220px]">
+            <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
+            <SelectValue placeholder="All Venues" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">All Venues</SelectItem>
+            <SelectItem value="none">Other / Custom</SelectItem>
+            {venues.map((v) => (
+              <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -205,10 +236,10 @@ export default function EventCalendar() {
                           <Clock className="h-3 w-3 shrink-0" />
                           {formatTime(event.startTime)} – {formatTime(event.endTime)}
                         </div>
-                        {event.location && (
+                        {event.venue && (
                           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                             <MapPin className="h-3 w-3 shrink-0" />
-                            {event.location}
+                            {event.venue}
                           </div>
                         )}
                       </div>

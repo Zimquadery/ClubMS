@@ -11,6 +11,7 @@ import { Users, Calendar, MapPin, ImageIcon, Clock, Trash2 } from 'lucide-react'
 import BackLink from '@/components/BackLink'
 import ClubAnnouncements from '@/components/ClubAnnouncements'
 import { ImageUploadButton } from '@/components/ImageUploadButton'
+import { VenuePicker } from '@/components/event/VenuePicker'
 import { formatDate, formatTime } from '@/lib/format'
 import { DetailSkeleton } from '@/components/ui/skeleton'
 import { Pagination } from '@/components/Pagination'
@@ -119,10 +120,12 @@ export default function ClubDetail() {
                         <Label htmlFor="event-end">End Time</Label>
                         <Input id="event-end" type="datetime-local" required value={vm.newEvent.endTime} onChange={(e) => vm.setNewEvent({ ...vm.newEvent, endTime: e.target.value })} />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="event-location">Location</Label>
-                        <Input id="event-location" value={vm.newEvent.location} onChange={(e) => vm.setNewEvent({ ...vm.newEvent, location: e.target.value })} />
-                      </div>
+                      <VenuePicker
+                        idPrefix="event"
+                        venueId={vm.newEvent.venueId}
+                        venue={vm.newEvent.venue}
+                        onChange={({ venueId, venue }) => vm.setNewEvent({ ...vm.newEvent, venueId, venue })}
+                      />
                       <div className="space-y-2">
                         <Label htmlFor="event-banner">Banner</Label>
                         <div className="flex gap-2">
@@ -186,10 +189,10 @@ export default function ClubDetail() {
                           <Clock className="h-3 w-3" />
                           {formatTime(event.startTime)}
                         </span>
-                        {event.location && (
+                        {event.venue && (
                           <span className="flex items-center gap-1">
                             <MapPin className="h-3 w-3" />
-                            {event.location}
+                            {event.venue}
                           </span>
                         )}
                       </div>

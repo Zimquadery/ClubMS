@@ -2,7 +2,7 @@ const request = require('supertest');
 const { createApp } = require('../../src/app');
 const { prisma } = require('../db');
 const {
-  makeUser, makeClub, makeEvent, makeOfficer, makeActiveMember,
+  makeUser, makeClub, makeEvent, makeVenue, makeOfficer, makeActiveMember,
   tokenFor, waitFor,
 } = require('../fixtures');
 
@@ -27,11 +27,12 @@ describe('POST /api/clubs/:clubId/events (create)', () => {
         description: 'desc',
         startTime: iso(1),
         endTime: iso(2),
-        location: 'Room A',
+        venue: 'Room A',
       });
 
     expect(res.status).toBe(201);
     expect(res.body.title).toBe('New Event');
+    expect(res.body.venue).toBe('Room A');
     expect(res.body.primaryClubId).toBe(club.id);
     expect(res.body.club.id).toBe(club.id);
 
@@ -118,6 +119,85 @@ describe('POST /api/clubs/:clubId/events (create)', () => {
   });
 });
 
+describe('venue resolution (create + update)', () => {
+  it('create with venueId snapshots the managed venue name', async () => {
+    const officer = await makeUser({ role: 'CLUB_ADMIN' });
+    const club = await makeClub();
+    const venue = await makeVenue({ name: 'Grand Hall' });
+    await makeOfficer({ userId: officer.id, clubId: club.id });
+
+    const res = await request(app)
+      .post(`/api/clubs/${club.id}/events`)
+      .set('Authorization', tokenFor(officer))
+      .send({ title: 'V', startTime: iso(1), endTime: iso(2), venueId: venue.id });
+
+    expect(res.status).toBe(201);
+    expect(res.body.venue).toBe('Grand Hall');
+    expect(res.body.venueId).toBe(venue.id);
+  });
+
+  it('create with venueId that does not exist returns 400', async () => {
+    const officer = await makeUser({ role: 'CLUB_ADMIN' });
+    const club = await makeClub();
+    await makeOfficer({ userId: officer.id, clubId: club.id });
+
+    const res = await request(app)
+      .post(`/api/clubs/${club.id}/events`)
+      .set('Authorization', tokenFor(officer))
+      .send({ title: 'V', startTime: iso(1), endTime: iso(2), venueId: '00000000-0000-0000-0000-000000000000' });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('create with custom venue text sets venue, null venueId', async () => {
+    const officer = await makeUser({ role: 'CLUB_ADMIN' });
+    const club = await makeClub();
+    await makeOfficer({ userId: officer.id, clubId: club.id });
+
+    const res = await request(app)
+      .post(`/api/clubs/${club.id}/events`)
+      .set('Authorization', tokenFor(officer))
+      .send({ title: 'V', startTime: iso(1), endTime: iso(2), venue: "Bob's Backyard" });
+
+    expect(res.status).toBe(201);
+    expect(res.body.venue).toBe("Bob's Backyard");
+    expect(res.body.venueId).toBeNull();
+  });
+
+  it('update to a managed venue sets both venue + venueId', async () => {
+    const officer = await makeUser({ role: 'CLUB_ADMIN' });
+    const club = await makeClub();
+    const venue = await makeVenue({ name: 'Library' });
+    await makeOfficer({ userId: officer.id, clubId: club.id });
+    const event = await makeEvent({ primaryClubId: club.id, creatorUserId: officer.id });
+
+    const res = await request(app)
+      .patch(`/api/events/${event.id}`)
+      .set('Authorization', tokenFor(officer))
+      .send({ venueId: venue.id });
+
+    expect(res.status).toBe(200);
+    expect(res.body.venue).toBe('Library');
+    expect(res.body.venueId).toBe(venue.id);
+  });
+
+  it('update clears venue when venueId sent as empty string', async () => {
+    const officer = await makeUser({ role: 'CLUB_ADMIN' });
+    const club = await makeClub();
+    await makeOfficer({ userId: officer.id, clubId: club.id });
+    const event = await makeEvent({ primaryClubId: club.id, creatorUserId: officer.id, overrides: { venue: 'Somewhere' } });
+
+    const res = await request(app)
+      .patch(`/api/events/${event.id}`)
+      .set('Authorization', tokenFor(officer))
+      .send({ venueId: '' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.venue).toBeNull();
+    expect(res.body.venueId).toBeNull();
+  });
+});
+
 describe('GET /api/events', () => {
   it('returns paginated list with the pagination envelope', async () => {
     const user = await makeUser({ role: 'STUDENT' });
@@ -186,6 +266,41 @@ describe('GET /api/events', () => {
     expect(res.status).toBe(200);
     expect(res.body.total).toBe(1);
     expect(res.body.items[0].primaryClubId).toBe(myClub.id);
+  });
+
+  it('filters by venueId (managed venue)', async () => {
+    const user = await makeUser({ role: 'STUDENT' });
+    const club = await makeClub();
+    const venue = await makeVenue({ name: 'Lab X' });
+    await makeEvent({ primaryClubId: club.id, overrides: { venue: 'Lab X', venueId: venue.id } });
+    await makeEvent({ primaryClubId: club.id, overrides: { venue: 'Lab X', venueId: null } });
+    await makeEvent({ primaryClubId: club.id, overrides: { venue: 'Elsewhere' } });
+
+    const res = await request(app)
+      .get(`/api/events?venueId=${venue.id}`)
+      .set('Authorization', tokenFor(user));
+
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(1);
+    expect(res.body.items[0].venueId).toBe(venue.id);
+  });
+
+  it('venueId=none returns events with custom venue text (venueId null, venue set)', async () => {
+    const user = await makeUser({ role: 'STUDENT' });
+    const club = await makeClub();
+    const venue = await makeVenue();
+    await makeEvent({ primaryClubId: club.id, overrides: { venue: 'Managed', venueId: venue.id } });
+    await makeEvent({ primaryClubId: club.id, overrides: { venue: 'Custom Spot', venueId: null } });
+    await makeEvent({ primaryClubId: club.id, overrides: { venue: null, venueId: null } });
+
+    const res = await request(app)
+      .get('/api/events?venueId=none')
+      .set('Authorization', tokenFor(user));
+
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(1);
+    expect(res.body.items[0].venue).toBe('Custom Spot');
+    expect(res.body.items[0].venueId).toBeNull();
   });
 
   it('requires authentication', async () => {

@@ -19,6 +19,7 @@ const PendingRequests = lazy(() => import('@/pages/admin/PendingRequests'))
 const ClubMembers = lazy(() => import('@/pages/admin/ClubMembers'))
 const NotFound = lazy(() => import('@/pages/NotFound'))
 const AuditLog = lazy(() => import('@/pages/admin/AuditLog'))
+const Venues = lazy(() => import('@/pages/admin/Venues'))
 
 function App() {
   const { resolvedTheme } = useTheme()
@@ -64,6 +65,9 @@ function App() {
             } />
             <Route path="admin/audit-logs" element={
               <ProtectedRoute roles={['PLATFORM_ADMIN']}><AuditLog /></ProtectedRoute>
+            } />
+            <Route path="admin/venues" element={
+              <ProtectedRoute roles={['PLATFORM_ADMIN']}><Venues /></ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />
           </Route>

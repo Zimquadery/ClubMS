@@ -127,7 +127,7 @@ function UpcomingEventsCard({ events, loading }) {
                   <Badge variant="secondary" className="text-xs">{event.club?.name}</Badge>
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {formatDateTime(event.startTime)}{event.location && ` · ${event.location}`}
+                  {formatDateTime(event.startTime)}{event.venue && ` · ${event.venue}`}
                 </p>
               </div>
             ))}
