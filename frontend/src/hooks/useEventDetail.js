@@ -12,7 +12,7 @@ export default function useEventDetail(id, user) {
   const [editDialog, setEditDialog] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({ title: '', description: '', startTime: '', endTime: '', location: '', bannerUrl: '' });
+  const [form, setForm] = useState({ title: '', description: '', startTime: '', endTime: '', venueId: '', venue: '', bannerUrl: '' });
   const [userRsvp, setUserRsvp] = useState(null);
   const [rsvpLoading, setRsvpLoading] = useState(false);
   const [attendeeCount, setAttendeeCount] = useState(0);
@@ -107,7 +107,8 @@ export default function useEventDetail(id, user) {
       description: event.description || '',
       startTime: toLocal(event.startTime),
       endTime: toLocal(event.endTime),
-      location: event.location || '',
+      venueId: event.venueId || '',
+      venue: event.venue || '',
       bannerUrl: event.bannerUrl || '',
     });
     setEditDialog(true);
@@ -126,7 +127,9 @@ export default function useEventDetail(id, user) {
       }
     }
     try {
-      await client.patch(`/events/${id}`, form);
+      const { venueId, venue, ...rest } = form;
+      const payload = venueId ? { ...rest, venueId } : { ...rest, venue };
+      await client.patch(`/events/${id}`, payload);
       setEditDialog(false);
       toast.success('Event updated');
       await fetchEvent();

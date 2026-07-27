@@ -50,7 +50,18 @@ async function assertCanDelete(eventId, userId, skipOwnershipCheck) {
   }
 }
 
-async function list({ clubId, joined, timeRange = 'upcoming', userId, page = 1, limit = 20 }) {
+// venueId wins over venue text. Returns { venue, venueId } for create data and
+// a partial for update. venueId that doesn't resolve → 400.
+async function resolveVenue(venueId, venueText) {
+  if (venueId) {
+    const venue = await prisma.venue.findUnique({ where: { id: venueId } });
+    if (!venue) throw new AppError('Venue not found', 400);
+    return { venue: venue.name, venueId };
+  }
+  return { venue: venueText || null, venueId: null };
+}
+
+async function list({ clubId, joined, timeRange = 'upcoming', userId, venueId, page = 1, limit = 20 }) {
   const now = new Date();
   const where = {};
 
@@ -71,6 +82,13 @@ async function list({ clubId, joined, timeRange = 'upcoming', userId, page = 1, 
     where.hosts = {
       some: { club: { memberships: { some: { userId, status: 'ACTIVE' } } } },
     };
+  }
+
+  if (venueId === 'none') {
+    where.venueId = null;
+    where.venue = { not: null };
+  } else if (venueId) {
+    where.venueId = venueId;
   }
 
   const skip = (page - 1) * limit;
@@ -124,7 +142,7 @@ async function getById(eventId, userId) {
   return attachPrimaryClub(event);
 }
 
-async function create(primaryClubId, { title, description, startTime, endTime, location, bannerUrl, coHostClubIds, creatorUserId }) {
+async function create(primaryClubId, { title, description, startTime, endTime, venueId, venue: venueText, bannerUrl, coHostClubIds, creatorUserId }) {
   const club = await prisma.club.findUnique({ where: { id: primaryClubId } });
   if (!club) throw new AppError('Club not found', 404);
 
@@ -145,6 +163,8 @@ async function create(primaryClubId, { title, description, startTime, endTime, l
     }
   }
 
+  const venueFields = await resolveVenue(venueId, venueText);
+
   const created = await prisma.$transaction(async (tx) => {
     const event = await tx.event.create({
       data: {
@@ -152,8 +172,8 @@ async function create(primaryClubId, { title, description, startTime, endTime, l
         description: description || null,
         startTime: start,
         endTime: end,
-        location: location || null,
         bannerUrl: bannerUrl || null,
+        ...venueFields,
       },
     });
 
@@ -181,15 +201,29 @@ async function create(primaryClubId, { title, description, startTime, endTime, l
   return attachPrimaryClub(created);
 }
 
-async function update(eventId, userId, { title, description, startTime, endTime, location, bannerUrl }, skipOwnershipCheck = false) {
+async function update(eventId, userId, { title, description, startTime, endTime, venueId, venue: venueText, bannerUrl }, skipOwnershipCheck = false) {
   await getEventForOwnerCheck(eventId);
   await assertCanManage(eventId, userId, skipOwnershipCheck);
 
   const data = {};
   if (title !== undefined) data.title = title;
   if (description !== undefined) data.description = description || null;
-  if (location !== undefined) data.location = location || null;
   if (bannerUrl !== undefined) data.bannerUrl = bannerUrl || null;
+
+  if (venueId !== undefined) {
+    if (venueId) {
+      const venue = await prisma.venue.findUnique({ where: { id: venueId } });
+      if (!venue) throw new AppError('Venue not found', 400);
+      data.venue = venue.name;
+      data.venueId = venueId;
+    } else {
+      data.venue = null;
+      data.venueId = null;
+    }
+  } else if (venueText !== undefined) {
+    data.venue = venueText || null;
+    data.venueId = null;
+  }
 
   const existing = await prisma.event.findUnique({ where: { id: eventId } });
 

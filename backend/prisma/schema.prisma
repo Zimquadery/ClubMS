@@ -83,15 +83,27 @@ model Event {
   description String?
   startTime   DateTime
   endTime     DateTime
-  location    String?
+  venue       String?
+  venueId     String?
   bannerUrl   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  hosts       EventHost[]
-  rsvps       EventRsvp[]
+  managedVenue Venue?     @relation(fields: [venueId], references: [id], onDelete: SetNull)
+  hosts        EventHost[]
+  rsvps        EventRsvp[]
 
   @@index([startTime])
+  @@index([venueId])
+}
+
+model Venue {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events Event[]
 }
 
 model EventHost {

@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { ImageUploadButton } from '@/components/ImageUploadButton';
+import { VenuePicker } from '@/components/event/VenuePicker';
 
 export function EditEventDialog({ open, onOpenChange, form, setForm, submitting, onSubmit }) {
   return (
@@ -37,10 +38,12 @@ export function EditEventDialog({ open, onOpenChange, form, setForm, submitting,
               <Input id="ed-end" type="datetime-local" required value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })} />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="ed-loc">Location</Label>
-            <Input id="ed-loc" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
-          </div>
+          <VenuePicker
+            idPrefix="ed"
+            venueId={form.venueId}
+            venue={form.venue}
+            onChange={({ venueId, venue }) => setForm({ ...form, venueId, venue })}
+          />
           <div className="space-y-2">
             <Label htmlFor="ed-banner">Banner</Label>
             <div className="flex gap-2">

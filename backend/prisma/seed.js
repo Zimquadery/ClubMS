@@ -159,6 +159,19 @@ async function main() {
   }
   console.log(`Created ${memberships.length} memberships`);
 
+  // ── Venues (platform-managed; officers pick from these or enter custom)
+  const venueNames = [
+    'Room 201', 'Room 301', 'Main Gym', 'Auditorium', 'Black Box Theatre',
+    'Science Building A', 'Computer Lab B', 'Engineering Lab',
+    'Student Center', 'Lounge B', 'Riverside Park Entrance',
+  ];
+  const venues = {};
+  for (const name of venueNames) {
+    const v = await prisma.venue.create({ data: { name } });
+    venues[v.name] = v;
+  }
+  console.log(`Created ${venueNames.length} venues`);
+
   // ── Events
   const now = Date.now();
 
@@ -166,79 +179,80 @@ async function main() {
     // --- Past events ---
     {
       clubId: cc.id, title: 'Intro to Python Workshop', description: 'Beginner-friendly workshop covering Python basics',
-      startTime: new Date(now - 30 * DAY), endTime: new Date(now - 30 * DAY + 2 * HOUR), location: 'Room 201',
+      startTime: new Date(now - 30 * DAY), endTime: new Date(now - 30 * DAY + 2 * HOUR), venue: 'Room 201',
     },
     {
       clubId: bt.id, title: 'Pre-Season Scrimmage', description: 'Friendly match to warm up for the season',
-      startTime: new Date(now - 14 * DAY), endTime: new Date(now - 14 * DAY + 3 * HOUR), location: 'Main Gym',
+      startTime: new Date(now - 14 * DAY), endTime: new Date(now - 14 * DAY + 3 * HOUR), venue: 'Main Gym',
     },
     {
       clubId: ds.id, title: 'Fall Play: Romeo & Juliet', description: null,
-      startTime: new Date(now - 60 * DAY), endTime: new Date(now - 60 * DAY + 3 * HOUR), location: 'Auditorium',
+      startTime: new Date(now - 60 * DAY), endTime: new Date(now - 60 * DAY + 3 * HOUR), venue: 'Auditorium',
     },
     {
       clubId: so.id, title: 'Regional Science Fair', description: 'Students presented their research projects at the regional fair',
-      startTime: new Date(now - 45 * DAY), endTime: new Date(now - 44 * DAY), location: 'Science Building A',
+      startTime: new Date(now - 45 * DAY), endTime: new Date(now - 44 * DAY), venue: 'Science Building A',
     },
     {
       clubId: cc.id, title: 'Hackathon 2024', description: 'Last year\'s 24-hour coding competition',
-      startTime: new Date(now - 180 * DAY), endTime: new Date(now - 179 * DAY), location: 'Computer Lab B',
+      startTime: new Date(now - 180 * DAY), endTime: new Date(now - 179 * DAY), venue: 'Computer Lab B',
       bannerUrl: '/uploads/banner-hackathon2024.jpg',
     },
 
     // --- Upcoming events ---
     {
       clubId: cc.id, title: 'Hackathon 2025', description: '24-hour coding competition with prizes',
-      startTime: new Date(now + 7 * DAY), endTime: new Date(now + 8 * DAY), location: 'Computer Lab B',
+      startTime: new Date(now + 7 * DAY), endTime: new Date(now + 8 * DAY), venue: 'Computer Lab B',
       bannerUrl: '/uploads/banner-hackathon2025.jpg',
     },
     {
       clubId: cc.id, title: 'Weekly Code Review', description: 'Review each other\'s projects and learn best practices',
-      startTime: new Date(now + 2 * DAY), endTime: new Date(now + 2 * DAY + 2 * HOUR), location: 'Room 301',
+      startTime: new Date(now + 2 * DAY), endTime: new Date(now + 2 * DAY + 2 * HOUR), venue: 'Room 301',
     },
     {
       clubId: bt.id, title: 'Tryouts', description: 'Open tryouts for the upcoming season',
-      startTime: new Date(now + 5 * DAY), endTime: new Date(now + 5 * DAY + 3 * HOUR), location: 'Main Gym',
+      startTime: new Date(now + 5 * DAY), endTime: new Date(now + 5 * DAY + 3 * HOUR), venue: 'Main Gym',
     },
     {
       clubId: ds.id, title: 'Spring Play Auditions', description: 'Auditions for the spring theatre production',
-      startTime: new Date(now + 3 * DAY), endTime: new Date(now + 3 * DAY + 3 * HOUR), location: 'Auditorium',
+      startTime: new Date(now + 3 * DAY), endTime: new Date(now + 3 * DAY + 3 * HOUR), venue: 'Auditorium',
     },
     {
       clubId: ds.id, title: 'Improv Night', description: 'An evening of spontaneous comedy and fun',
-      startTime: new Date(now + 10 * DAY), endTime: new Date(now + 10 * DAY + 2 * HOUR), location: 'Black Box Theatre',
+      startTime: new Date(now + 10 * DAY), endTime: new Date(now + 10 * DAY + 2 * HOUR), venue: 'Black Box Theatre',
     },
     {
       clubId: so.id, title: 'Robotics Build Session', description: 'Hands-on session building competition robots',
-      startTime: new Date(now + 4 * DAY), endTime: new Date(now + 4 * DAY + 4 * HOUR), location: 'Engineering Lab',
+      startTime: new Date(now + 4 * DAY), endTime: new Date(now + 4 * DAY + 4 * HOUR), venue: 'Engineering Lab',
     },
     {
       clubId: so.id, title: 'State Championship Prep', description: 'Final preparation for the state-level olympiad',
-      startTime: new Date(now + 12 * DAY), endTime: new Date(now + 12 * DAY + 6 * HOUR), location: null,
+      startTime: new Date(now + 12 * DAY), endTime: new Date(now + 12 * DAY + 6 * HOUR), venue: null,
     },
     {
       clubId: ce.id, title: 'International Food Festival', description: 'Taste cuisines from around the world',
-      startTime: new Date(now + 6 * DAY), endTime: new Date(now + 6 * DAY + 4 * HOUR), location: 'Student Center',
+      startTime: new Date(now + 6 * DAY), endTime: new Date(now + 6 * DAY + 4 * HOUR), venue: 'Student Center',
       bannerUrl: '/uploads/banner-foodfest.jpg',
     },
     {
       clubId: ce.id, title: 'Language Exchange Meetup', description: null,
-      startTime: new Date(now + 9 * DAY), endTime: new Date(now + 9 * DAY + 2 * HOUR), location: 'Lounge B',
+      startTime: new Date(now + 9 * DAY), endTime: new Date(now + 9 * DAY + 2 * HOUR), venue: 'Lounge B',
     },
     {
       clubId: vc.id, title: 'Park Cleanup Drive', description: 'Help us clean up Riverside Park',
-      startTime: new Date(now + 1 * DAY), endTime: new Date(now + 1 * DAY + 3 * HOUR), location: 'Riverside Park Entrance',
+      startTime: new Date(now + 1 * DAY), endTime: new Date(now + 1 * DAY + 3 * HOUR), venue: 'Riverside Park Entrance',
     },
     {
       clubId: vc.id, title: 'Tutoring Volunteer Orientation', description: 'Orientation for new tutoring volunteers',
-      startTime: new Date(now + 8 * DAY), endTime: new Date(now + 8 * DAY + 2 * HOUR), location: null,
+      startTime: new Date(now + 8 * DAY), endTime: new Date(now + 8 * DAY + 2 * HOUR), venue: null,
     },
   ];
 
   const events = [];
   for (const data of eventsData) {
     const { clubId, ...rest } = data;
-    const ev = await prisma.event.create({ data: rest });
+    const venueId = rest.venue ? venues[rest.venue]?.id || null : null;
+    const ev = await prisma.event.create({ data: { ...rest, venueId } });
     await prisma.eventHost.create({
       data: { eventId: ev.id, clubId, isPrimary: true, addedById: officer1.id },
     });
@@ -253,7 +267,7 @@ async function main() {
       description: 'A collaborative event: coding challenges in the morning, basketball tournament in the afternoon.',
       startTime: new Date(now + 14 * DAY),
       endTime: new Date(now + 14 * DAY + 8 * HOUR),
-      location: 'Main Gym + Computer Lab B',
+      venue: 'Main Gym + Computer Lab B',
       bannerUrl: '/uploads/banner-hackathon2025.jpg',
     },
   });

@@ -10,7 +10,7 @@ export default function useClubDetail(id, user) {
   const [leaveLoading, setLeaveLoading] = useState(false)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [newEvent, setNewEvent] = useState({ title: '', description: '', startTime: '', endTime: '', location: '', bannerUrl: '', coHostClubIds: [] })
+  const [newEvent, setNewEvent] = useState({ title: '', description: '', startTime: '', endTime: '', venueId: '', venue: '', bannerUrl: '', coHostClubIds: [] })
   const [adminClubs, setAdminClubs] = useState([])
   const [deleteEventTarget, setDeleteEventTarget] = useState(null)
   const [membersPage, setMembersPage] = useState(1)
@@ -108,10 +108,12 @@ export default function useClubDetail(id, user) {
       }
     }
     try {
-      await client.post(`/clubs/${id}/events`, newEvent)
+      const { venueId, venue, ...rest } = newEvent
+      const payload = venueId ? { ...rest, venueId } : { ...rest, venue }
+      await client.post(`/clubs/${id}/events`, payload)
       setShowCreateDialog(false)
       toast.success('Event created!')
-      setNewEvent({ title: '', description: '', startTime: '', endTime: '', location: '', bannerUrl: '', coHostClubIds: [] })
+      setNewEvent({ title: '', description: '', startTime: '', endTime: '', venueId: '', venue: '', bannerUrl: '', coHostClubIds: [] })
       await fetchClub()
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to create event')

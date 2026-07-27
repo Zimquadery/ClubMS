@@ -25,6 +25,9 @@ async function main() {
   const deletedClubs = await prisma.club.deleteMany();
   console.log(`Deleted ${deletedClubs.count} clubs`);
 
+  const deletedVenues = await prisma.venue.deleteMany();
+  console.log(`Deleted ${deletedVenues.count} venues`);
+
   const deletedUsers = await prisma.user.deleteMany();
   console.log(`Deleted ${deletedUsers.count} users`);
 

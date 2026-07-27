@@ -4,9 +4,9 @@ const { asyncHandler } = require('../../utils/asyncHandler');
 const { isPrivilegedRole } = require('../../middleware/rbac');
 
 const list = asyncHandler(async (req, res) => {
-  const { clubId, joined, timeRange, page, limit } = req.query;
+  const { clubId, joined, timeRange, venueId, page, limit } = req.query;
   const userId = req.user.userId;
-  const result = await eventsService.list({ clubId, joined: joined === 'true', timeRange, userId, page, limit });
+  const result = await eventsService.list({ clubId, joined: joined === 'true', timeRange, userId, venueId, page, limit });
   res.status(200).json(result);
 });
 

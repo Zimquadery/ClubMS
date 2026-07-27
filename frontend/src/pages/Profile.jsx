@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth'
 import client from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/ui/password-input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -118,11 +119,11 @@ export default function Profile() {
             <form onSubmit={handleProfileUpdate} className="space-y-3">
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
-                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
+                <Input id="name" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                <Input id="email" type="email" autoComplete="email" inputMode="email" autoCapitalize="off" autoCorrect="off" spellCheck={false} value={email} onChange={(e) => setEmail(e.target.value)} required />
               </div>
               <Button type="submit" className="bg-brand-primary hover:bg-brand-primary/90 text-white" disabled={profileLoading}>
                 {profileLoading ? 'Saving...' : 'Save Changes'}
@@ -142,11 +143,11 @@ export default function Profile() {
             <form onSubmit={handlePasswordChange} className="space-y-3">
               <div className="space-y-2">
                 <Label htmlFor="currentPassword">Current Password</Label>
-                <Input id="currentPassword" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
+                <PasswordInput id="currentPassword" autoComplete="current-password" autoCapitalize="off" autoCorrect="off" spellCheck={false} value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="newPassword">New Password</Label>
-                <Input id="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={6} />
+                <PasswordInput id="newPassword" autoComplete="new-password" autoCapitalize="off" autoCorrect="off" spellCheck={false} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={6} />
               </div>
               {newPassword && (
                 <div className="space-y-1">
@@ -167,7 +168,7 @@ export default function Profile() {
               )}
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                <Input id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={6} />
+                <PasswordInput id="confirmPassword" autoComplete="new-password" autoCapitalize="off" autoCorrect="off" spellCheck={false} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={6} />
               </div>
               <Button type="submit" className="bg-brand-primary hover:bg-brand-primary/90 text-white" disabled={passwordLoading}>
                 {passwordLoading ? 'Changing...' : 'Change Password'}

@@ -27,6 +27,9 @@ const router = express.Router();
  *       - in: query
  *         name: clubId
  *         schema: { type: string, format: uuid }
+ *       - in: query
+ *         name: venueId
+ *         schema: { type: string, description: "Venue id, or 'none' for custom/other venues" }
  *     responses:
  *       200:
  *         description: Paginated list of events
@@ -78,7 +81,8 @@ router.get('/:id', authMiddleware, eventsController.getById);
  *               description: { type: string }
  *               startTime: { type: string, format: date-time }
  *               endTime: { type: string, format: date-time }
- *               location: { type: string }
+ *               venueId: { type: string, format: uuid, description: "Managed venue id (mutually exclusive with venue)" }
+ *               venue: { type: string, description: "Custom venue text (used when venueId is absent)" }
  *     responses:
  *       200:
  *         description: Event updated

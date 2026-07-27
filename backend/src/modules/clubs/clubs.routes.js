@@ -159,7 +159,8 @@ router.get('/:id', authMiddleware, validateQuery(getByIdQuerySchema), clubsContr
  *               description: { type: string }
  *               startTime: { type: string, format: date-time }
  *               endTime: { type: string, format: date-time }
- *               location: { type: string }
+ *               venueId: { type: string, format: uuid, description: "Managed venue id (mutually exclusive with venue)" }
+ *               venue: { type: string, description: "Custom venue text (used when venueId is absent)" }
  *     responses:
  *       201:
  *         description: Event created
