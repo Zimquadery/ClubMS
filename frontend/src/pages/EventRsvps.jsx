@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useLayoutEffect } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import client from '@/api/client'
 import { Button } from '@/components/ui/button'
@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Pagination } from '@/components/Pagination'
 import { ListSkeleton } from '@/components/ui/skeleton'
+import { SkeletonReveal } from '@/components/ui/SkeletonReveal'
 import BackLink from '@/components/BackLink'
 import { downloadBlob } from '@/lib/download'
 import { toast } from 'sonner'
@@ -74,6 +75,43 @@ export default function EventRsvps() {
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
   const [counts, setCounts] = useState({ GOING: 0, MAYBE: 0, NOT_GOING: 0 })
+
+  const tablistRef = useRef(null)
+  const pillRef = useRef(null)
+
+  const movePillTo = (tabEl, animate) => {
+    const pill = pillRef.current
+    if (!pill || !tabEl) return
+    if (!animate) {
+      const prev = pill.style.transition
+      pill.style.transition = 'none'
+      pill.style.transform = `translateX(${tabEl.offsetLeft}px)`
+      pill.style.width = `${tabEl.offsetWidth}px`
+      void pill.offsetWidth
+      pill.style.transition = prev
+    } else {
+      pill.style.transform = `translateX(${tabEl.offsetLeft}px)`
+      pill.style.width = `${tabEl.offsetWidth}px`
+    }
+  }
+
+  const getActiveTabEl = () =>
+    tablistRef.current?.querySelector('[aria-selected="true"]') ||
+    tablistRef.current?.querySelector('.t-tab')
+
+  useLayoutEffect(() => {
+    movePillTo(getActiveTabEl(), false)
+  }, [])
+
+  useEffect(() => {
+    movePillTo(getActiveTabEl(), true)
+  }, [statusFilter])
+
+  useEffect(() => {
+    const handler = () => movePillTo(getActiveTabEl(), false)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -172,37 +210,37 @@ export default function EventRsvps() {
       <div className="mt-2 ml-2">
         <div className="flex items-center flex-wrap">
           <span className="whitespace-nowrap text-sm text-muted-foreground">
-            <strong className="font-semibold text-status-green">{counts.GOING}</strong>{' '}going
+            <strong className="font-semibold tabular-nums text-status-green">{counts.GOING}</strong>{' '}going
           </span>
           <span className="mx-1.5 text-muted-foreground/40 select-none" aria-hidden="true">·</span>
           <span className="whitespace-nowrap text-sm text-muted-foreground">
-            <strong className="font-semibold text-status-yellow">{counts.MAYBE}</strong>{' '}maybe
+            <strong className="font-semibold tabular-nums text-status-yellow">{counts.MAYBE}</strong>{' '}maybe
           </span>
           <span className="mx-1.5 text-muted-foreground/40 select-none" aria-hidden="true">·</span>
           <span className="whitespace-nowrap text-sm text-muted-foreground">
-            <strong className="font-semibold text-destructive">{counts.NOT_GOING}</strong>{' '}not going
+            <strong className="font-semibold tabular-nums text-destructive">{counts.NOT_GOING}</strong>{' '}not going
           </span>
           <span className="mx-1.5 text-muted-foreground/40 select-none" aria-hidden="true">·</span>
           <span className="whitespace-nowrap text-sm text-muted-foreground">
-            <strong className="font-semibold text-foreground">{total}</strong>{' '}total
+            <strong className="font-semibold tabular-nums text-foreground">{total}</strong>{' '}total
           </span>
         </div>
       </div>
 
       <div className="mt-4 flex items-center justify-between flex-wrap gap-2">
-        <div className="flex items-center gap-1" role="tablist">
+        <div className="t-tabs" role="tablist" ref={tablistRef}>
+          <span className="t-tabs-pill" aria-hidden="true" ref={pillRef} />
           {STATUS_TABS.map((tab) => (
-            <Button
+            <button
               key={tab.label}
-              variant="ghost"
-              size="sm"
+              type="button"
+              className="t-tab"
               role="tab"
               aria-selected={statusFilter === tab.value}
-              className={statusFilter === tab.value ? 'bg-brand-primary/10 text-brand-primary' : ''}
               onClick={() => updateFilter('statusFilter', tab.value)}
             >
               {tab.label}
-            </Button>
+            </button>
           ))}
         </div>
         <div className="relative">
@@ -218,16 +256,14 @@ export default function EventRsvps() {
       </div>
 
       <div className="mt-4">
-        {loading ? (
-          <ListSkeleton rows={5} />
-        ) : rsvps.length === 0 ? (
+        {!loading && rsvps.length === 0 ? (
           <Card>
             <CardContent className="py-8 text-center text-sm text-muted-foreground">
               {statusFilter ? `No ${statusFilter.toLowerCase().replace('_', ' ')} RSVPs` : 'No RSVPs yet'}
             </CardContent>
           </Card>
         ) : (
-          <>
+          <SkeletonReveal isLoading={loading} skeleton={<ListSkeleton rows={5} />}>
             <Card>
               <CardContent className="p-0">
                 <div className="divide-y">
@@ -254,7 +290,7 @@ export default function EventRsvps() {
               </CardContent>
             </Card>
             <Pagination page={page} totalPages={totalPages} onPageChange={(p) => setURLParam('page', p)} />
-          </>
+          </SkeletonReveal>
         )}
       </div>
     </div>

@@ -43,11 +43,11 @@ export default function ClubDetail() {
   if (!vm.club) return null
 
   return (
-    <div>
+    <div className="animate-fade-in">
       <BackLink to="/clubs" label="Back to Directory" />
 
       <div className="mt-6 flex flex-col sm:flex-row gap-5 items-start">
-        <div className="flex-shrink-0 h-20 w-20 rounded-xl bg-muted flex items-center justify-center overflow-hidden">
+        <div className="relative img-outline flex-shrink-0 h-20 w-20 rounded-xl bg-muted flex items-center justify-center overflow-hidden">
           {vm.club.logoUrl ? (
             <img src={vm.club.logoUrl} alt={vm.club.name} className="h-full w-full object-cover" />
           ) : (
@@ -145,7 +145,7 @@ export default function ClubDetail() {
                                   type="button"
                                   key={club.id}
                                   onClick={() => vm.toggleCoHost(club.id)}
-                                  className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${selected ? 'bg-brand-primary text-white border-brand-primary' : 'bg-background hover:bg-accent'}`}
+                                  className={`text-xs px-3 py-1.5 rounded-full border transition active:scale-[0.96] ${selected ? 'bg-brand-primary text-white border-brand-primary' : 'bg-background hover:bg-accent'}`}
                                 >
                                   {club.name}
                                 </button>
@@ -175,7 +175,7 @@ export default function ClubDetail() {
                       <div className="flex items-start justify-between gap-2">
                         <Link to={`/events/${event.id}`} className="font-medium text-sm hover:underline">{event.title}</Link>
                         {vm.canManageEvents && (
-                          <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0 text-muted-foreground hover:text-destructive" aria-label="Delete event" onClick={() => vm.setDeleteEventTarget(event)}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0 text-muted-foreground hover:text-destructive" aria-label="Delete event" onClick={() => vm.setDeleteEventTarget(event)}>
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         )}

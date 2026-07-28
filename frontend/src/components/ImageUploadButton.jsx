@@ -6,7 +6,7 @@ export function ImageUploadButton({ onUploadComplete, label }) {
   const [uploading, setUploading] = useState(false)
 
   return (
-    <label className="inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-3 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground cursor-pointer">
+    <label className="inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-3 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground cursor-pointer transition active:scale-[0.96]">
       {uploading ? 'Uploading...' : (label || 'Upload')}
       <input
         type="file"

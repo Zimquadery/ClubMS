@@ -16,6 +16,7 @@ import {
 import { MapPin, Plus, Trash2, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
 import { ListSkeleton } from '@/components/ui/skeleton'
+import { SkeletonReveal } from '@/components/ui/SkeletonReveal'
 import { Pagination } from '@/components/Pagination'
 import usePaginatedFetch from '@/hooks/usePaginatedFetch'
 
@@ -160,15 +161,14 @@ export default function Venues() {
         <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">{error}</div>
       )}
 
-      {loading ? (
-        <ListSkeleton rows={4} />
-      ) : venues.length === 0 ? (
+      {!loading && venues.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
             No venues yet. Create your first venue using the button above.
           </CardContent>
         </Card>
       ) : (
+        <SkeletonReveal isLoading={loading} skeleton={<ListSkeleton rows={4} />}>
         <Card>
           <CardContent className="p-0">
             <div className="divide-y">
@@ -200,6 +200,7 @@ export default function Venues() {
             </div>
           </CardContent>
         </Card>
+        </SkeletonReveal>
       )}
 
       <Pagination

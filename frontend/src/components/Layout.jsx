@@ -15,6 +15,27 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { RouteErrorBoundary } from '@/components/ErrorBoundary'
 import { LayoutDashboard, Users, Calendar, LogOut, Shield, Menu, X, UserCircle, ClipboardList, Sun, Moon, Monitor, MapPin } from 'lucide-react'
 
+const THEME_ICONS = { light: Sun, dark: Moon, system: Monitor }
+const THEME_ORDER = ['light', 'dark', 'system']
+
+function ThemeToggleIcon({ theme }) {
+  return (
+    <div className="relative h-4 w-4">
+      {THEME_ORDER.map((key) => {
+        const Icon = THEME_ICONS[key]
+        const active = theme === key
+        return (
+          <Icon
+            key={key}
+            className="absolute inset-0 h-4 w-4 transition-[opacity,transform] duration-200 ease-out-quart"
+            style={{ opacity: active ? 1 : 0, transform: active ? 'rotate(0deg) scale(1)' : 'rotate(-90deg) scale(0.6)' }}
+          />
+        )
+      })}
+    </div>
+  )
+}
+
 export function Layout() {
   const { user, logout } = useAuth()
   const { theme, setTheme } = useTheme()
@@ -32,8 +53,6 @@ export function Layout() {
     const next = theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light'
     setTheme(next)
   }
-
-  const ThemeIcon = theme === 'dark' ? Moon : theme === 'light' ? Sun : Monitor
 
   const initials = user?.name
     ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
@@ -103,18 +122,17 @@ export function Layout() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
               onClick={cycleTheme}
               aria-label={`Switch theme, currently ${theme}`}
             >
-              <ThemeIcon className="h-4 w-4" />
+              <ThemeToggleIcon theme={theme} />
             </Button>
             {user && (
               <>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="md:hidden h-8 w-8"
+                  className="md:hidden"
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                   aria-label="Toggle navigation menu"
                 >
@@ -122,7 +140,7 @@ export function Layout() {
                 </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Button variant="ghost" size="icon" className="relative rounded-full">
                       <Avatar className="h-8 w-8">
                         <AvatarFallback className="bg-brand-primary text-white text-xs">
                           {initials}

@@ -35,6 +35,36 @@
 
 :root {
   --brand-primary: #1E40AF;
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+
+  /* transitions.dev — motion tokens + per-transition tunables
+     (subset for menu-dropdown, tabs-sliding, skeleton-reveal). */
+  --duration-quick: 150ms;
+  --duration-fast: 250ms;
+  --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: ease-in-out;
+
+  /* Menu dropdown */
+  --dropdown-open-dur: 250ms;
+  --dropdown-close-dur: 150ms;
+  --dropdown-pre-scale: 0.97;
+  --dropdown-closing-scale: 0.99;
+  --dropdown-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Tabs sliding — colors resolve to semantic tokens so dark mode adapts. */
+  --tabs-dur: 250ms;
+  --tabs-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --tabs-text-muted: var(--color-muted-foreground);
+  --tabs-text-active: var(--color-foreground);
+  --tabs-bar-bg: var(--color-accent);
+  --tabs-pill-bg: var(--color-background);
+
+  /* Skeleton loader and reveal */
+  --pulse-dur: 1000ms;
+  --pulse-min: 0.5;
+  --reveal-dur: 400ms;
+  --reveal-blur: 2px;
+  --reveal-ease: ease-in-out;
 }
 
 .dark {
@@ -65,6 +95,12 @@
   box-shadow: none;
 }
 
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 250ms;
+  animation-timing-function: var(--ease-out-quart);
+}
+
 @layer base {
   * {
     border-color: var(--color-border);
@@ -72,6 +108,14 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  h1, h2, h3, h4 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
   }
   input[type="checkbox"] {
     accent-color: var(--color-brand-primary);
@@ -91,6 +135,27 @@
   .t-modal,
   .t-modal-overlay {
     animation: none !important;
+  }
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+}
+
+@layer utilities {
+  .ease-out-quart {
+    transition-timing-function: var(--ease-out-quart);
+  }
+  .img-outline::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 1px oklch(0 0 0 / 0.1);
+  }
+  .dark .img-outline::after {
+    box-shadow: inset 0 0 0 1px oklch(1 0 0 / 0.1);
   }
 }
 
@@ -136,4 +201,133 @@
 }
 .t-modal[data-state="closed"] {
   animation: contentHide 187ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* ── Menu dropdown (transitions.dev) ──────────────────────────────
+   Snippet ships transitions keyed off .is-open/.is-closing (JS-toggled).
+   Radix DropdownMenu.Content mounts with data-state="open" already set,
+   so transitions never fire on mount — animations do (same reason
+   .t-modal above uses @keyframes). Adapted to data-state + data-side
+   (Radix's native attributes), no JS orchestration needed. */
+@keyframes dropdownShow {
+  from { opacity: 0; transform: scale(var(--dropdown-pre-scale)); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes dropdownHide {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(var(--dropdown-closing-scale)); }
+}
+.t-dropdown {
+  transform-origin: top center;
+  will-change: transform, opacity;
+}
+.t-dropdown[data-side="top"]    { transform-origin: bottom center; }
+.t-dropdown[data-side="bottom"] { transform-origin: top center; }
+.t-dropdown[data-side="left"]   { transform-origin: right center; }
+.t-dropdown[data-side="right"]  { transform-origin: left center; }
+.t-dropdown[data-state="open"] {
+  animation: dropdownShow var(--dropdown-open-dur) var(--dropdown-ease);
+}
+.t-dropdown[data-state="closed"] {
+  animation: dropdownHide var(--dropdown-close-dur) var(--dropdown-ease);
+}
+
+/* ── Tabs sliding (transitions.dev) ─────────────────────────────── */
+.t-tabs {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 48px;
+  background: var(--tabs-bar-bg);
+}
+.t-tab {
+  position: relative;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  height: 30px;
+  padding: 4px 12px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--tabs-text-muted);
+  cursor: pointer;
+  border-radius: 48px;
+  z-index: 1;
+  transition: color var(--tabs-dur) var(--tabs-ease);
+}
+.t-tab:not([aria-selected="true"]):hover,
+.t-tab[aria-selected="true"] {
+  color: var(--tabs-text-active);
+}
+.t-tabs-pill {
+  position: absolute;
+  top: 3px;
+  left: 0;
+  height: 30px;
+  width: 0;
+  background: var(--tabs-pill-bg);
+  border-radius: 48px;
+  transform: translateX(0);
+  transition:
+    transform var(--tabs-dur) var(--tabs-ease),
+    width     var(--tabs-dur) var(--tabs-ease);
+  will-change: transform, width;
+  z-index: 0;
+  pointer-events: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+/* ── Skeleton loader and reveal (transitions.dev, adapted) ────────
+   Snippet uses position:absolute for both layers, which collapses the
+   wrapper for variable-height content. Adapted to CSS Grid (both
+   layers in cell 1/1) so the wrapper auto-tracks the taller layer.
+   Cross-fade + cross-blur signature and reduced-motion guard preserved. */
+.t-skel {
+  display: grid;
+  position: relative;
+}
+.t-skel-skeleton,
+.t-skel-content {
+  grid-area: 1 / 1;
+  transition:
+    opacity var(--reveal-dur) var(--reveal-ease),
+    filter  var(--reveal-dur) var(--reveal-ease);
+}
+.t-skel-skeleton {
+  z-index: 1;
+  opacity: 1;
+  filter: blur(0);
+}
+.t-skel-content {
+  z-index: 2;
+  opacity: 0;
+  filter: blur(var(--reveal-blur));
+  pointer-events: none;
+}
+.t-skel.is-revealed .t-skel-skeleton {
+  opacity: 0;
+  filter: blur(var(--reveal-blur));
+  pointer-events: none;
+}
+.t-skel.is-revealed .t-skel-content {
+  opacity: 1;
+  filter: blur(0);
+  pointer-events: auto;
+}
+.t-skel-skeleton.is-pulsing > * {
+  animation: t-skel-pulse var(--pulse-dur) ease-in-out infinite;
+}
+@keyframes t-skel-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: var(--pulse-min); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-dropdown[data-state="open"],
+  .t-dropdown[data-state="closed"] { animation: none !important; }
+  .t-tabs-pill, .t-tab { transition: none !important; }
+  .t-skel-skeleton, .t-skel-content { transition: none !important; }
+  .t-skel-skeleton.is-pulsing > * { animation: none !important; }
 }

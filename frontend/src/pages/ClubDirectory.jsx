@@ -15,6 +15,7 @@ import { Search, Users, ImageIcon } from 'lucide-react'
 import { CLUB_CATEGORIES } from '@/lib/constants'
 import { Pagination } from '@/components/Pagination'
 import { CardSkeleton } from '@/components/ui/skeleton'
+import { SkeletonReveal } from '@/components/ui/SkeletonReveal'
 
 export default function ClubDirectory() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -137,60 +138,61 @@ export default function ClubDirectory() {
         </Select>
       </div>
 
-      {loading && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <CardSkeleton key={i} />
-          ))}
-        </div>
-      )}
-
-      {error && (
+      {error ? (
         <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">{error}</div>
-      )}
-
-      {!loading && !error && clubs.length === 0 && (
-        <div className="text-center py-16 text-muted-foreground">
+      ) : !loading && clubs.length === 0 ? (
+        <div className="text-center py-16 text-muted-foreground animate-fade-in">
           <ImageIcon className="h-10 w-10 mx-auto mb-3 text-muted-foreground/40" />
           <p className="text-sm">No clubs found. Try adjusting your search or filters.</p>
         </div>
-      )}
-
-      {!loading && !error && clubs.length > 0 && (
+      ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {clubs.map((club) => (
-              <Link key={club.id} to={`/clubs/${club.id}`} className="group">
-                <Card className="h-full flex flex-col transition-shadow hover:shadow-md">
-                  <div className="h-24 rounded-t-xl bg-muted flex items-center justify-center overflow-hidden">
-                    {club.logoUrl ? (
-                      <img src={club.logoUrl} alt="" className="h-full w-full object-cover" />
-                    ) : (
-                      <ImageIcon className="h-8 w-8 text-muted-foreground/40" />
-                    )}
-                  </div>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base truncate group-hover:text-brand-primary transition-colors">
-                      {club.name}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="flex-1 flex flex-col pt-0">
-                    {club.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{club.description}</p>
-                    )}
-                    <div className="mt-auto flex items-center gap-3">
-                      <Badge variant="secondary" className="text-xs">{club.category}</Badge>
-                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Users className="h-3 w-3" />
-                        {club._count?.memberships ?? 0} member{(club._count?.memberships ?? 0) !== 1 ? 's' : ''}
-                      </span>
+          <SkeletonReveal
+            isLoading={loading}
+            skeleton={
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <CardSkeleton key={i} />
+                ))}
+              </div>
+            }
+          >
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {clubs.map((club) => (
+                <Link key={club.id} to={`/clubs/${club.id}`} className="group">
+                  <Card className="h-full flex flex-col transition-shadow hover:shadow-md">
+                    <div className="relative img-outline h-24 rounded-t-xl bg-muted flex items-center justify-center overflow-hidden">
+                      {club.logoUrl ? (
+                        <img src={club.logoUrl} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <ImageIcon className="h-8 w-8 text-muted-foreground/40" />
+                      )}
                     </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
-          <Pagination page={page} totalPages={totalPages} onPageChange={(p) => setURLParam('page', p)} />
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base truncate group-hover:text-brand-primary transition-colors">
+                        {club.name}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex-1 flex flex-col pt-0">
+                      {club.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{club.description}</p>
+                      )}
+                      <div className="mt-auto flex items-center gap-3">
+                        <Badge variant="secondary" className="text-xs">{club.category}</Badge>
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Users className="h-3 w-3" />
+                          {club._count?.memberships ?? 0} member{(club._count?.memberships ?? 0) !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </SkeletonReveal>
+          {!loading && clubs.length > 0 && (
+            <Pagination page={page} totalPages={totalPages} onPageChange={(p) => setURLParam('page', p)} />
+          )}
         </>
       )}
     </div>

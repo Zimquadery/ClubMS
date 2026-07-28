@@ -1,7 +1,7 @@
 const { prisma } = require('../../lib/prisma');
 const { AppError } = require('../../utils/errors');
 const eventHosts = require('../eventHosts/eventHosts.service');
-const { isPrivilegedRole } = require('../../middleware/rbac');
+const { isPrivilegedRole } = require('../../utils/roles');
 
 async function upsert(eventId, userId, status, userRole) {
   const event = await prisma.event.findUnique({ where: { id: eventId } });

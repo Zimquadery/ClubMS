@@ -14,7 +14,7 @@ export function Pagination({ page, totalPages, onPageChange }) {
       >
         <ChevronLeft className="h-4 w-4" />
       </Button>
-      <span className="text-sm text-muted-foreground">
+      <span className="text-sm text-muted-foreground tabular-nums">
         Page {page} of {totalPages}
       </span>
       <Button

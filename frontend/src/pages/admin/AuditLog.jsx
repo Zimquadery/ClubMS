@@ -17,6 +17,7 @@ import { formatDateTime } from '@/lib/format'
 import { toast } from 'sonner'
 import { Pagination } from '@/components/Pagination'
 import { ListSkeleton } from '@/components/ui/skeleton'
+import { SkeletonReveal } from '@/components/ui/SkeletonReveal'
 
 const ACTIONS = [
   'CLUB_CREATE', 'CLUB_UPDATE', 'CLUB_DELETE',
@@ -98,16 +99,14 @@ export default function AuditLog() {
         </Select>
       </div>
 
-      {loading ? (
-        <ListSkeleton rows={8} />
-      ) : logs.length === 0 ? (
+      {!loading && logs.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
             No audit logs found
           </CardContent>
         </Card>
       ) : (
-        <>
+        <SkeletonReveal isLoading={loading} skeleton={<ListSkeleton rows={8} />}>
           <div className="text-sm text-muted-foreground">{total} log{total !== 1 ? 's' : ''} found</div>
           <div className="space-y-3">
             {logs.map((log) => (
@@ -147,7 +146,7 @@ export default function AuditLog() {
             ))}
           </div>
           <Pagination page={page} totalPages={totalPages} onPageChange={(p) => setURLParam('page', String(p))} />
-        </>
+        </SkeletonReveal>
       )}
     </div>
   )

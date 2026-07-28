@@ -2,7 +2,7 @@ const { prisma } = require('../../lib/prisma');
 const { AppError } = require('../../utils/errors');
 const auditService = require('../audit/audit.service');
 const { isActiveMember } = require('../memberships/memberships.service');
-const { isPrivilegedRole } = require('../../middleware/rbac');
+const { isPrivilegedRole } = require('../../utils/roles');
 
 async function create(clubId, userId, data) {
   const club = await prisma.club.findUnique({ where: { id: clubId } });

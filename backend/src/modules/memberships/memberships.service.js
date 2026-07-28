@@ -1,9 +1,6 @@
 const { prisma } = require('../../lib/prisma');
 const { AppError } = require('../../utils/errors');
-
-function isPrivilegedRole(role) {
-  return role === 'PLATFORM_ADMIN' || role === 'FACULTY';
-}
+const { isPrivilegedRole } = require('../../utils/roles');
 
 const USER_SELECT = { id: true, name: true, email: true };
 

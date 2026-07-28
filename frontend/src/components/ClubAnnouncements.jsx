@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Megaphone, Pin, PinOff, Pencil, Trash2, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { ListSkeleton } from '@/components/ui/skeleton'
+import { SkeletonReveal } from '@/components/ui/SkeletonReveal'
 import { Pagination } from '@/components/Pagination'
 
 function timeAgo(dateStr) {
@@ -149,11 +150,10 @@ export default function ClubAnnouncements({ clubId, userMembership, user }) {
         </div>
       </CardHeader>
       <CardContent>
-        {loading ? (
-          <ListSkeleton rows={3} />
-        ) : announcements.length === 0 ? (
+        {!loading && announcements.length === 0 ? (
           <p className="text-sm text-muted-foreground">No announcements yet.</p>
         ) : (
+          <SkeletonReveal isLoading={loading} skeleton={<ListSkeleton rows={3} />}>
           <div className="divide-y">
             {announcements.map((ann) => (
               <div key={ann.id} className="py-2 first:pt-0 last:pb-0">
@@ -188,6 +188,7 @@ export default function ClubAnnouncements({ clubId, userMembership, user }) {
               </div>
             ))}
           </div>
+          </SkeletonReveal>
         )}
         <Pagination
           page={page}

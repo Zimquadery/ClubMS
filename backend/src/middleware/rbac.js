@@ -33,8 +33,4 @@ function requireClubAdmin(req, res, next) {
     .catch(next);
 }
 
-function isPrivilegedRole(role) {
-  return role === 'PLATFORM_ADMIN' || role === 'FACULTY';
-}
-
-module.exports = { requireRole, requireClubAdmin, isPrivilegedRole };
+module.exports = { requireRole, requireClubAdmin };

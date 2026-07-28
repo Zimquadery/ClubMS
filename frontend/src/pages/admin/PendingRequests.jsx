@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { ListSkeleton } from '@/components/ui/skeleton'
+import { SkeletonReveal } from '@/components/ui/SkeletonReveal'
 import { Pagination } from '@/components/Pagination'
 import { useAdminClubSelector } from '@/hooks/useAdminClubSelector'
 import { AdminClubHeader } from '@/components/admin/AdminClubHeader'
@@ -119,9 +120,7 @@ export default function PendingRequests() {
         <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">{adminError || error}</div>
       )}
 
-      {loading ? (
-        <ListSkeleton rows={5} />
-      ) : requests.length === 0 ? (
+      {!loading && requests.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
             <Users className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
@@ -129,6 +128,7 @@ export default function PendingRequests() {
           </CardContent>
         </Card>
       ) : (
+        <SkeletonReveal isLoading={loading} skeleton={<ListSkeleton rows={5} />}>
         <div className="space-y-3">
           {requests.map((req) => (
             <Card key={req.id}>
@@ -170,6 +170,7 @@ export default function PendingRequests() {
             </Card>
           ))}
         </div>
+        </SkeletonReveal>
       )}
 
       <Pagination

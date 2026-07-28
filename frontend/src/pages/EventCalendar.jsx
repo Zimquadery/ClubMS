@@ -14,6 +14,7 @@ import { Calendar, MapPin, Clock, ImageIcon, Filter } from 'lucide-react'
 import { formatDate, formatTime } from '@/lib/format'
 import { Pagination } from '@/components/Pagination'
 import { EventCardSkeleton } from '@/components/ui/skeleton'
+import { SkeletonReveal } from '@/components/ui/SkeletonReveal'
 
 export default function EventCalendar() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -178,35 +179,32 @@ export default function EventCalendar() {
       </div>
 
       <div className="mt-8">
-        {loading && (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <EventCardSkeleton key={i} />
-            ))}
-          </div>
-        )}
-
-        {error && (
+        {error ? (
           <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">{error}</div>
-        )}
-
-        {!loading && !error && events.length === 0 && (
-          <div className="text-center py-16 text-muted-foreground">
+        ) : !loading && events.length === 0 ? (
+          <div className="text-center py-16 text-muted-foreground animate-fade-in">
             <Calendar className="h-10 w-10 mx-auto mb-3 text-muted-foreground/40" />
             <p className="text-sm">
               {timeRange === 'past' ? 'No past events' : timeRange === 'upcoming' ? 'No upcoming events' : 'No events'}
             </p>
           </div>
-        )}
-
-        {!loading && !error && events.length > 0 && (
-          <>
+        ) : (
+          <SkeletonReveal
+            isLoading={loading}
+            skeleton={
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <EventCardSkeleton key={i} />
+                ))}
+              </div>
+            }
+          >
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {events.map((event) => (
                 <Link key={event.id} to={`/events/${event.id}`}>
                   <Card className="hover:shadow-md transition-shadow h-full overflow-hidden group">
                     {event.bannerUrl && (
-                      <div className="h-40 w-full overflow-hidden">
+                      <div className="relative img-outline h-40 w-full overflow-hidden">
                         <img src={event.bannerUrl} alt={event.title} className="h-full w-full object-cover" />
                       </div>
                     )}
@@ -252,7 +250,7 @@ export default function EventCalendar() {
               ))}
             </div>
             <Pagination page={page} totalPages={totalPages} onPageChange={(p) => setURLParam('page', p)} />
-          </>
+          </SkeletonReveal>
         )}
       </div>
     </div>

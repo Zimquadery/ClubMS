@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom'
 import { formatDateTime } from '@/lib/format'
 import { toast } from 'sonner'
 import { Skeleton, ListSkeleton } from '@/components/ui/skeleton'
+import { SkeletonReveal } from '@/components/ui/SkeletonReveal'
 import { cn } from '@/lib/utils'
 
 function formatStat(n) {
@@ -29,7 +30,7 @@ function StatItem({ value, label, divided, attention }) {
         <span className="mx-1.5 text-muted-foreground/40 select-none" aria-hidden="true">·</span>
       )}
       <strong className={cn(
-        "font-semibold",
+        "font-semibold tabular-nums",
         hasValue ? "text-foreground" : "text-muted-foreground"
       )}>{formatStat(value)}</strong>{' '}
       {label}
@@ -53,52 +54,52 @@ function AdminCard({ isAdmin, adminClubs, clubsLoading }) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {isAdmin ? (
-          <>
-            <p className="text-sm text-muted-foreground">
-              You have platform admin privileges to manage clubs.
-            </p>
-            <Link to="/admin/clubs" className="inline-flex items-center gap-1 text-sm text-brand-primary hover:underline mt-1">
-              Manage Clubs →
-            </Link>
-          </>
-        ) : (
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">
-              You manage the following clubs:
-            </p>
-            {clubsLoading ? (
-              <ListSkeleton rows={2} />
-            ) : adminClubs.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No clubs assigned yet.</p>
+            {isAdmin ? (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  You have platform admin privileges to manage clubs.
+                </p>
+                <Link to="/admin/clubs" className="inline-flex items-center gap-1 text-sm text-brand-primary hover:underline mt-1">
+                  Manage Clubs →
+                </Link>
+              </>
             ) : (
-              <div className="divide-y">
-                {adminClubs.map((club) => (
-                  <div key={club.id} className="flex items-center justify-between py-2 first:pt-0 last:pb-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{club.name}</span>
-                      <Badge variant="secondary" className="text-xs">{club.category}</Badge>
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  You manage the following clubs:
+                </p>
+                <SkeletonReveal isLoading={clubsLoading} skeleton={<ListSkeleton rows={2} />}>
+                  {adminClubs.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No clubs assigned yet.</p>
+                  ) : (
+                    <div className="divide-y">
+                      {adminClubs.map((club) => (
+                        <div key={club.id} className="flex items-center justify-between py-2 first:pt-0 last:pb-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">{club.name}</span>
+                            <Badge variant="secondary" className="text-xs">{club.category}</Badge>
+                          </div>
+                          <div className="flex gap-2">
+                            <Link
+                              to={`/admin/clubs/${club.id}/requests`}
+                              className="text-xs text-brand-primary hover:underline"
+                            >
+                              Requests
+                            </Link>
+                            <Link
+                              to={`/admin/clubs/${club.id}/members`}
+                              className="text-xs text-brand-primary hover:underline"
+                            >
+                              Members
+                            </Link>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <div className="flex gap-2">
-                      <Link
-                        to={`/admin/clubs/${club.id}/requests`}
-                        className="text-xs text-brand-primary hover:underline"
-                      >
-                        Requests
-                      </Link>
-                      <Link
-                        to={`/admin/clubs/${club.id}/members`}
-                        className="text-xs text-brand-primary hover:underline"
-                      >
-                        Members
-                      </Link>
-                    </div>
-                  </div>
-                ))}
+                  )}
+                </SkeletonReveal>
               </div>
             )}
-          </div>
-        )}
       </CardContent>
     </Card>
   )
@@ -114,29 +115,29 @@ function UpcomingEventsCard({ events, loading }) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {loading ? (
-          <ListSkeleton rows={3} />
-        ) : events.length > 0 ? (
-          <div className="space-y-3">
-            {events.map((event) => (
-              <div key={event.id}>
-                <div className="flex items-center gap-2">
-                  <Link to={`/events/${event.id}`} className="text-sm font-medium hover:underline">
-                    {event.title}
-                  </Link>
-                  <Badge variant="secondary" className="text-xs">{event.club?.name}</Badge>
+        <SkeletonReveal isLoading={loading} skeleton={<ListSkeleton rows={3} />}>
+          {events.length > 0 ? (
+            <div className="space-y-3">
+              {events.map((event) => (
+                <div key={event.id}>
+                  <div className="flex items-center gap-2">
+                    <Link to={`/events/${event.id}`} className="text-sm font-medium hover:underline">
+                      {event.title}
+                    </Link>
+                    <Badge variant="secondary" className="text-xs">{event.club?.name}</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {formatDateTime(event.startTime)}{event.venue && ` · ${event.venue}`}
+                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {formatDateTime(event.startTime)}{event.venue && ` · ${event.venue}`}
-                </p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            No upcoming events. Join a club to see events here.
-          </p>
-        )}
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No upcoming events. Join a club to see events here.
+            </p>
+          )}
+        </SkeletonReveal>
       </CardContent>
     </Card>
   )
@@ -152,35 +153,35 @@ function YourClubsCard({ clubs, loading }) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {loading ? (
-          <ListSkeleton rows={3} />
-        ) : clubs.length > 0 ? (
-          <div className="divide-y">
-            {clubs.map((club) => (
-              <div key={club.id} className="flex items-center justify-between py-2 first:pt-0 last:pb-0">
-                <div className="flex items-center gap-2">
-                  <Link to={`/clubs/${club.id}`} className="text-sm font-medium hover:underline">
-                    {club.name}
-                  </Link>
-                  <Badge variant="secondary" className="text-xs">{club.category}</Badge>
-                  {club.membershipStatus === 'PENDING' && (
-                    <Badge variant="outline" className="text-xs text-status-yellow border-status-yellow">Pending</Badge>
+        <SkeletonReveal isLoading={loading} skeleton={<ListSkeleton rows={3} />}>
+          {clubs.length > 0 ? (
+            <div className="divide-y">
+              {clubs.map((club) => (
+                <div key={club.id} className="flex items-center justify-between py-2 first:pt-0 last:pb-0">
+                  <div className="flex items-center gap-2">
+                    <Link to={`/clubs/${club.id}`} className="text-sm font-medium hover:underline">
+                      {club.name}
+                    </Link>
+                    <Badge variant="secondary" className="text-xs">{club.category}</Badge>
+                    {club.membershipStatus === 'PENDING' && (
+                      <Badge variant="outline" className="text-xs text-status-yellow border-status-yellow">Pending</Badge>
+                    )}
+                  </div>
+                  {club.announcementCount > 0 && (
+                    <Badge variant="secondary" className="text-xs">
+                      {club.announcementCount}
+                    </Badge>
                   )}
                 </div>
-                {club.announcementCount > 0 && (
-                  <Badge variant="secondary" className="text-xs">
-                    {club.announcementCount}
-                  </Badge>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            You haven&apos;t joined any clubs yet.{' '}
-            <Link to="/clubs" className="font-bold text-brand-primary hover:underline">Browse clubs →</Link>
-          </p>
-        )}
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              You haven&apos;t joined any clubs yet.{' '}
+              <Link to="/clubs" className="font-bold text-brand-primary hover:underline">Browse clubs →</Link>
+            </p>
+          )}
+        </SkeletonReveal>
       </CardContent>
     </Card>
   )

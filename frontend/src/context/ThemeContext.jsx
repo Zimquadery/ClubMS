@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { createContext, useContext, useState, useEffect, useLayoutEffect, useCallback } from 'react'
 
 const ThemeContext = createContext(undefined)
 
@@ -12,6 +12,10 @@ function resolveTheme(theme) {
   return theme === 'system' ? getSystemPreference() : theme
 }
 
+function prefersReducedMotion() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
 export function ThemeProvider({ children }) {
   const [theme, setThemeState] = useState(() => {
     const stored = localStorage.getItem(STORAGE_KEY)
@@ -21,10 +25,18 @@ export function ThemeProvider({ children }) {
   const resolvedTheme = resolveTheme(theme)
 
   const applyTheme = useCallback((resolved) => {
-    document.documentElement.classList.toggle('dark', resolved === 'dark')
+    const root = document.documentElement
+    const shouldDark = resolved === 'dark'
+    if (root.classList.contains('dark') === shouldDark) return
+    const mutate = () => root.classList.toggle('dark', shouldDark)
+    if (document.startViewTransition && !prefersReducedMotion()) {
+      document.startViewTransition(() => mutate())
+    } else {
+      mutate()
+    }
   }, [])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     applyTheme(resolvedTheme)
   }, [resolvedTheme, applyTheme])
 

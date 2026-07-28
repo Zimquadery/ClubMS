@@ -1,7 +1,7 @@
 const eventsService = require('./events.service');
 const eventHostsService = require('../eventHosts/eventHosts.service');
 const { asyncHandler } = require('../../utils/asyncHandler');
-const { isPrivilegedRole } = require('../../middleware/rbac');
+const { isPrivilegedRole } = require('../../utils/roles');
 
 const list = asyncHandler(async (req, res) => {
   const { clubId, joined, timeRange, venueId, page, limit } = req.query;

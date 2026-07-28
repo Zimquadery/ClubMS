@@ -45,7 +45,7 @@ export function RsvpCard({ id, userRsvp, rsvpLoading, attendeeCount, canManage, 
             </div>
             <div className="flex items-center gap-3">
               {canManage && attendeeCount > 0 && (
-                <span className="text-sm text-muted-foreground">{attendeeCount} attending</span>
+                <span className="text-sm text-muted-foreground tabular-nums">{attendeeCount} attending</span>
               )}
               {canManage && (
                 <>
@@ -78,7 +78,7 @@ export function RsvpCard({ id, userRsvp, rsvpLoading, attendeeCount, canManage, 
 
   if (canManage && attendeeCount > 0) {
     return (
-      <p className="mt-4 text-sm text-muted-foreground">
+      <p className="mt-4 text-sm text-muted-foreground tabular-nums">
         {attendeeCount} attendee{attendeeCount !== 1 ? 's' : ''}
       </p>
     );

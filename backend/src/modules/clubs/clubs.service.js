@@ -1,7 +1,8 @@
 const { prisma } = require('../../lib/prisma');
 const { AppError } = require('../../utils/errors');
 const { CLUB_CATEGORIES } = require('./clubs.constants');
-const { isPrivilegedRole } = require('../../middleware/rbac');
+const { isPrivilegedRole } = require('../../utils/roles');
+const { isPrimaryHostClub } = require('../eventHosts/eventHosts.service');
 
 async function list({ search, category, page = 1, limit = 20 }) {
   const where = {};
@@ -150,11 +151,7 @@ async function deleteClub(id) {
   const club = await prisma.club.findUnique({ where: { id } });
   if (!club) throw new AppError('Club not found', 404);
 
-  const primaryEvent = await prisma.eventHost.findFirst({
-    where: { clubId: id, isPrimary: true },
-    select: { eventId: true },
-  });
-  if (primaryEvent) {
+  if (await isPrimaryHostClub(id)) {
     throw new AppError('Cannot delete a club that is the primary host of an event. Transfer primary or delete those events first.', 409);
   }
 

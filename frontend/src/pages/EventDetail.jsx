@@ -34,11 +34,11 @@ export default function EventDetail() {
   if (!vm.event) return null;
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-3xl mx-auto animate-fade-in">
       <BackLink to="/events" label="Back to Events" />
 
       {vm.event.bannerUrl && (
-        <div className="mt-4 w-full h-48 sm:h-64 rounded-xl overflow-hidden">
+        <div className="relative img-outline mt-4 w-full h-48 sm:h-64 rounded-xl overflow-hidden">
           <img src={vm.event.bannerUrl} alt={vm.event.title} className="w-full h-full object-cover" />
         </div>
       )}

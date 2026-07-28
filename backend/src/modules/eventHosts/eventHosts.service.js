@@ -100,9 +100,6 @@ async function removeCoHost(eventId, clubId) {
 
 module.exports = {
   HOST_CLUB_SELECT,
-  resolveHostClubs,
-  getHostClubIds,
-  getPrimaryClubId,
   isHostOfficer,
   isPrimaryHostOfficer,
   isActiveMemberOfAnyHost,
