@@ -248,11 +248,29 @@ async function main() {
     },
   ];
 
+  const tagsByTitle = {
+    'Intro to Python Workshop': ['workshop', 'beginner', 'coding'],
+    'Pre-Season Scrimmage': ['sports', 'basketball'],
+    'Fall Play: Romeo & Juliet': ['theatre', 'performance'],
+    'Regional Science Fair': ['science', 'competition'],
+    'Hackathon 2024': ['hackathon', 'coding', 'competition'],
+    'Hackathon 2025': ['hackathon', 'coding', 'competition'],
+    'Weekly Code Review': ['coding', 'workshop'],
+    'Tryouts': ['sports', 'basketball', 'tryouts'],
+    'Spring Play Auditions': ['theatre', 'audition'],
+    'Improv Night': ['theatre', 'comedy'],
+    'Robotics Build Session': ['robotics', 'workshop', 'stem'],
+    'International Food Festival': ['cultural', 'food', 'community'],
+    'Park Cleanup Drive': ['volunteer', 'environment', 'community'],
+    'Tutoring Volunteer Orientation': ['volunteer', 'tutoring'],
+    'Sports & Code: Hack & Play Tournament': ['coding', 'sports', 'competition', 'community'],
+  };
+
   const events = [];
   for (const data of eventsData) {
     const { clubId, ...rest } = data;
     const venueId = rest.venue ? venues[rest.venue]?.id || null : null;
-    const ev = await prisma.event.create({ data: { ...rest, venueId } });
+    const ev = await prisma.event.create({ data: { ...rest, venueId, tags: tagsByTitle[rest.title] || [] } });
     await prisma.eventHost.create({
       data: { eventId: ev.id, clubId, isPrimary: true, addedById: officer1.id },
     });
@@ -269,6 +287,7 @@ async function main() {
       endTime: new Date(now + 14 * DAY + 8 * HOUR),
       venue: 'Main Gym + Computer Lab B',
       bannerUrl: '/uploads/banner-hackathon2025.jpg',
+      tags: ['coding', 'sports', 'competition', 'community'],
     },
   });
   await prisma.eventHost.create({
@@ -279,6 +298,13 @@ async function main() {
   });
   events.push(collabEvent);
   console.log('Created 1 multi-host (collaborative) event');
+
+  // Pending co-host invitation: Science Olympiad invited to co-host the collab event.
+  // officer3 (Science Olympiad) will see this on the Dashboard + club page.
+  await prisma.eventHostInvite.create({
+    data: { eventId: collabEvent.id, clubId: so.id },
+  });
+  console.log('Created 1 pending co-host invitation');
 
   // ── RSVPs
   const upcoming = events.filter(e => e.startTime.getTime() >= now);

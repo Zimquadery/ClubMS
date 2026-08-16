@@ -11,11 +11,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { ImageUploadButton } from '@/components/ImageUploadButton';
 import { VenuePicker } from '@/components/event/VenuePicker';
+import { TagInput } from '@/components/event/TagInput';
 
 export function EditEventDialog({ open, onOpenChange, form, setForm, submitting, onSubmit }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Edit Event</DialogTitle>
         </DialogHeader>
@@ -51,6 +52,11 @@ export function EditEventDialog({ open, onOpenChange, form, setForm, submitting,
               <ImageUploadButton onUploadComplete={(url) => setForm({ ...form, bannerUrl: url })} />
             </div>
           </div>
+          <TagInput
+            idPrefix="ed"
+            value={form.tags}
+            onChange={(tags) => setForm({ ...form, tags })}
+          />
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>Cancel</Button>
             <Button type="submit" className="bg-brand-primary hover:bg-brand-primary/90 text-white" disabled={submitting}>{submitting ? 'Saving...' : 'Save'}</Button>

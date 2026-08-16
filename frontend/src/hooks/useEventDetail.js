@@ -12,12 +12,12 @@ export default function useEventDetail(id, user) {
   const [editDialog, setEditDialog] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({ title: '', description: '', startTime: '', endTime: '', venueId: '', venue: '', bannerUrl: '' });
+  const [form, setForm] = useState({ title: '', description: '', startTime: '', endTime: '', venueId: '', venue: '', bannerUrl: '', tags: [] });
   const [userRsvp, setUserRsvp] = useState(null);
   const [rsvpLoading, setRsvpLoading] = useState(false);
   const [attendeeCount, setAttendeeCount] = useState(0);
   const [coHostDialog, setCoHostDialog] = useState(false);
-  const [adminClubs, setAdminClubs] = useState([]);
+  const [pendingInvites, setPendingInvites] = useState([]);
   const [coHostSubmitting, setCoHostSubmitting] = useState(false);
 
   async function fetchEvent() {
@@ -38,6 +38,9 @@ export default function useEventDetail(id, user) {
         client.get(`/events/${id}/rsvps`, { params: { limit: 1 } })
           .then(countRes => setAttendeeCount(countRes.data.total))
           .catch(() => {});
+        client.get(`/events/${id}/cohost-invites`)
+          .then(invRes => setPendingInvites(invRes.data.items || []))
+          .catch(() => setPendingInvites([]));
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load event');
@@ -110,6 +113,7 @@ export default function useEventDetail(id, user) {
       venueId: event.venueId || '',
       venue: event.venue || '',
       bannerUrl: event.bannerUrl || '',
+      tags: Array.isArray(event.tags) ? event.tags : [],
     });
     setEditDialog(true);
   }
@@ -166,35 +170,27 @@ export default function useEventDetail(id, user) {
     && event?.userMembership?.clubId === primaryClubId;
   const canDelete = isPrimaryOfficer || user?.role === 'PLATFORM_ADMIN' || user?.role === 'FACULTY';
 
-  useEffect(() => {
-    if (!canManage) {
-      setAdminClubs([]);
-      return;
-    }
-    let active = true;
-    async function fetchAdminClubs() {
-      try {
-        const res = await client.get('/memberships/my-admin-clubs');
-        if (active) {
-          const hostIds = (event?.hosts || []).map((h) => h.clubId);
-          setAdminClubs(res.data.filter((c) => !hostIds.includes(c.id)));
-        }
-      } catch {
-        // best-effort
-      }
-    }
-    fetchAdminClubs();
-    return () => { active = false };
-  }, [canManage, event?.hosts]);
-
-  async function handleAddCoHost(clubId) {
+  async function handleInvite(club) {
     setCoHostSubmitting(true);
     try {
-      await client.post(`/events/${id}/cohosts`, { clubId });
-      toast.success('Co-host added');
-      await fetchEvent();
+      await client.post(`/events/${id}/cohost-invites`, { clubId: club.id });
+      toast.success(`Invitation sent to ${club.name}`);
+      const invRes = await client.get(`/events/${id}/cohost-invites`);
+      setPendingInvites(invRes.data.items || []);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to add co-host');
+      toast.error(err.response?.data?.message || 'Failed to send invitation');
+    } finally {
+      setCoHostSubmitting(false);
+    }
+  }
+
+  async function handleCancelInvite(inviteId) {
+    setCoHostSubmitting(true);
+    try {
+      await client.delete(`/events/${id}/cohost-invites/${inviteId}`);
+      setPendingInvites((prev) => prev.filter((inv) => inv.id !== inviteId));
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to cancel invitation');
     } finally {
       setCoHostSubmitting(false);
     }
@@ -222,7 +218,7 @@ export default function useEventDetail(id, user) {
     openEdit, handleEdit, handleDelete,
     canManage, canDelete, canRsvp, isPast,
     coHosts, coHostDialog, setCoHostDialog,
-    adminClubs, coHostSubmitting, handleAddCoHost, handleRemoveCoHost,
+    pendingInvites, coHostSubmitting, handleInvite, handleCancelInvite, handleRemoveCoHost,
     id,
   };
 }

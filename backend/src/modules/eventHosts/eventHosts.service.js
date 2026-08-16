@@ -67,24 +67,6 @@ async function isPrimaryHostClub(clubId) {
   return !!row;
 }
 
-async function addCoHost(eventId, clubId, addedById) {
-  const existing = await prisma.eventHost.findUnique({
-    where: { eventId_clubId: { eventId, clubId } },
-    select: { isPrimary: true },
-  });
-  if (existing) {
-    throw new AppError('Club is already a host of this event', 409);
-  }
-
-  const club = await prisma.club.findUnique({ where: { id: clubId }, select: { id: true } });
-  if (!club) throw new AppError('Club not found', 404);
-
-  return prisma.eventHost.create({
-    data: { eventId, clubId, isPrimary: false, addedById },
-    include: { club: { select: HOST_CLUB_SELECT } },
-  });
-}
-
 async function removeCoHost(eventId, clubId) {
   const existing = await prisma.eventHost.findUnique({
     where: { eventId_clubId: { eventId, clubId } },
@@ -105,6 +87,5 @@ module.exports = {
   isActiveMemberOfAnyHost,
   assertHostOfficer,
   isPrimaryHostClub,
-  addCoHost,
   removeCoHost,
 };

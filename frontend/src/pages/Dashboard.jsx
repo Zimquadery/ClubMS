@@ -10,6 +10,7 @@ import { toast } from 'sonner'
 import { Skeleton, ListSkeleton } from '@/components/ui/skeleton'
 import { SkeletonReveal } from '@/components/ui/SkeletonReveal'
 import { cn } from '@/lib/utils'
+import { ClubCoHostInvitesCard } from '@/components/event/ClubCoHostInvitesCard'
 
 function formatStat(n) {
   return typeof n === 'number' ? n.toLocaleString() : n
@@ -271,6 +272,10 @@ export default function Dashboard() {
 
       {(isAdmin || isClubAdmin) && (
         <AdminCard isAdmin={isAdmin} adminClubs={adminClubs} clubsLoading={clubsLoading} />
+      )}
+
+      {isClubAdmin && (
+        <ClubCoHostInvitesCard />
       )}
 
       <div className="grid gap-4 md:grid-cols-2 mt-6">

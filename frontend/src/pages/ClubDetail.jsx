@@ -7,11 +7,14 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Users, Calendar, MapPin, ImageIcon, Clock, Trash2 } from 'lucide-react'
+import { Users, Calendar, MapPin, ImageIcon, Clock, Trash2, X } from 'lucide-react'
 import BackLink from '@/components/BackLink'
 import ClubAnnouncements from '@/components/ClubAnnouncements'
 import { ImageUploadButton } from '@/components/ImageUploadButton'
 import { VenuePicker } from '@/components/event/VenuePicker'
+import { ClubSearchPicker } from '@/components/event/ClubSearchPicker'
+import { ClubCoHostInvitesCard } from '@/components/event/ClubCoHostInvitesCard'
+import { TagInput } from '@/components/event/TagInput'
 import { formatDate, formatTime } from '@/lib/format'
 import { DetailSkeleton } from '@/components/ui/skeleton'
 import { Pagination } from '@/components/Pagination'
@@ -84,6 +87,12 @@ export default function ClubDetail() {
         <ClubAnnouncements clubId={vm.club.id} userMembership={vm.userMembership} user={user} />
       )}
 
+      {vm.canManageEvents && (
+        <div className="mt-6">
+          <ClubCoHostInvitesCard clubId={vm.club.id} />
+        </div>
+      )}
+
       <div className={`grid gap-4 mt-8 ${vm.canViewMembers ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
         <Card className="md:col-span-2">
           <CardHeader>
@@ -133,27 +142,34 @@ export default function ClubDetail() {
                           <ImageUploadButton onUploadComplete={(url) => vm.setNewEvent({ ...vm.newEvent, bannerUrl: url })} />
                         </div>
                       </div>
-                      {vm.adminClubs.length > 0 && (
-                        <div className="space-y-2">
-                          <Label>Co-host clubs (optional)</Label>
-                          <p className="text-xs text-muted-foreground">Invite other clubs you officer to collaborate on this event.</p>
+                      <div className="space-y-2">
+                        <Label>Invite co-host clubs (optional)</Label>
+                        <p className="text-xs text-muted-foreground">Invite other clubs to collaborate. Their officers must accept before co-hosting.</p>
+                        <ClubSearchPicker
+                          onSelect={vm.addInvitee}
+                          excludeIds={[vm.club?.id, ...vm.newEvent.invitedClubs.map((c) => c.id)]}
+                        />
+                        {vm.newEvent.invitedClubs.length > 0 && (
                           <div className="flex flex-wrap gap-2">
-                            {vm.adminClubs.map((club) => {
-                              const selected = vm.newEvent.coHostClubIds.includes(club.id)
-                              return (
-                                <button
-                                  type="button"
-                                  key={club.id}
-                                  onClick={() => vm.toggleCoHost(club.id)}
-                                  className={`text-xs px-3 py-1.5 rounded-full border transition active:scale-[0.96] ${selected ? 'bg-brand-primary text-white border-brand-primary' : 'bg-background hover:bg-accent'}`}
-                                >
-                                  {club.name}
-                                </button>
-                              )
-                            })}
+                            {vm.newEvent.invitedClubs.map((club) => (
+                              <button
+                                type="button"
+                                key={club.id}
+                                onClick={() => vm.removeInvitee(club.id)}
+                                className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full border bg-brand-primary text-white border-brand-primary transition active:scale-[0.96]"
+                              >
+                                {club.name}
+                                <X className="h-3 w-3" />
+                              </button>
+                            ))}
                           </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
+                      <TagInput
+                        idPrefix="event"
+                        value={vm.newEvent.tags}
+                        onChange={(tags) => vm.setNewEvent({ ...vm.newEvent, tags })}
+                      />
                       <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => vm.setShowCreateDialog(false)} disabled={vm.submitting}>Cancel</Button>
                         <Button type="submit" className="bg-brand-primary hover:bg-brand-primary/90 text-white" disabled={vm.submitting}>{vm.submitting ? 'Creating...' : 'Create'}</Button>

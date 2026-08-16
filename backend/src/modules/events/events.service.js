@@ -19,6 +19,20 @@ function validateDateRange(start, end) {
   }
 }
 
+function normalizeTags(tags) {
+  if (!Array.isArray(tags)) return [];
+  const seen = new Set();
+  const out = [];
+  for (const raw of tags) {
+    const tag = String(raw).trim().toLowerCase();
+    if (!tag || seen.has(tag)) continue;
+    seen.add(tag);
+    out.push(tag);
+    if (out.length >= 10) break;
+  }
+  return out;
+}
+
 function attachPrimaryClub(event) {
   if (!event || !event.hosts) return event;
   const primaryHost = event.hosts.find((h) => h.isPrimary) || event.hosts[0];
@@ -61,7 +75,7 @@ async function resolveVenue(venueId, venueText) {
   return { venue: venueText || null, venueId: null };
 }
 
-async function list({ clubId, joined, timeRange = 'upcoming', userId, venueId, page = 1, limit = 20 }) {
+async function list({ clubId, joined, timeRange = 'upcoming', userId, venueId, tags, page = 1, limit = 20 }) {
   const now = new Date();
   const where = {};
 
@@ -89,6 +103,13 @@ async function list({ clubId, joined, timeRange = 'upcoming', userId, venueId, p
     where.venue = { not: null };
   } else if (venueId) {
     where.venueId = venueId;
+  }
+
+  if (tags) {
+    const tagList = normalizeTags(tags.split(','));
+    if (tagList.length > 0) {
+      where.tags = { hasSome: tagList };
+    }
   }
 
   const skip = (page - 1) * limit;
@@ -142,7 +163,7 @@ async function getById(eventId, userId) {
   return attachPrimaryClub(event);
 }
 
-async function create(primaryClubId, { title, description, startTime, endTime, venueId, venue: venueText, bannerUrl, coHostClubIds, creatorUserId }) {
+async function create(primaryClubId, { title, description, startTime, endTime, venueId, venue: venueText, bannerUrl, inviteClubIds, tags, creatorUserId }) {
   const club = await prisma.club.findUnique({ where: { id: primaryClubId } });
   if (!club) throw new AppError('Club not found', 404);
 
@@ -155,11 +176,13 @@ async function create(primaryClubId, { title, description, startTime, endTime, v
 
   validateDateRange(start, end);
 
-  const uniqueCoHosts = Array.from(new Set(coHostClubIds || [])).filter((id) => id !== primaryClubId);
-  if (uniqueCoHosts.length > 0) {
-    const valid = await prisma.club.count({ where: { id: { in: uniqueCoHosts } } });
-    if (valid !== uniqueCoHosts.length) {
-      throw new AppError('One or more co-host clubs not found', 400);
+  // Invited clubs become PENDING invitations, not immediate hosts. Consent is
+  // required: the invited club's officers must accept before gaining access.
+  const uniqueInvitees = Array.from(new Set(inviteClubIds || [])).filter((id) => id !== primaryClubId);
+  if (uniqueInvitees.length > 0) {
+    const valid = await prisma.club.count({ where: { id: { in: uniqueInvitees } } });
+    if (valid !== uniqueInvitees.length) {
+      throw new AppError('One or more invited clubs not found', 400);
     }
   }
 
@@ -173,6 +196,7 @@ async function create(primaryClubId, { title, description, startTime, endTime, v
         startTime: start,
         endTime: end,
         bannerUrl: bannerUrl || null,
+        tags: normalizeTags(tags),
         ...venueFields,
       },
     });
@@ -181,14 +205,10 @@ async function create(primaryClubId, { title, description, startTime, endTime, v
       data: { eventId: event.id, clubId: primaryClubId, isPrimary: true, addedById: creatorUserId },
     });
 
-    if (uniqueCoHosts.length > 0) {
-      await tx.eventHost.createMany({
-        data: uniqueCoHosts.map((clubId) => ({
-          eventId: event.id,
-          clubId,
-          isPrimary: false,
-          addedById: creatorUserId,
-        })),
+    if (uniqueInvitees.length > 0) {
+      await tx.eventHostInvite.createMany({
+        data: uniqueInvitees.map((clubId) => ({ eventId: event.id, clubId })),
+        skipDuplicates: true,
       });
     }
 
@@ -201,7 +221,7 @@ async function create(primaryClubId, { title, description, startTime, endTime, v
   return attachPrimaryClub(created);
 }
 
-async function update(eventId, userId, { title, description, startTime, endTime, venueId, venue: venueText, bannerUrl }, skipOwnershipCheck = false) {
+async function update(eventId, userId, { title, description, startTime, endTime, venueId, venue: venueText, bannerUrl, tags }, skipOwnershipCheck = false) {
   await getEventForOwnerCheck(eventId);
   await assertCanManage(eventId, userId, skipOwnershipCheck);
 
@@ -209,6 +229,7 @@ async function update(eventId, userId, { title, description, startTime, endTime,
   if (title !== undefined) data.title = title;
   if (description !== undefined) data.description = description || null;
   if (bannerUrl !== undefined) data.bannerUrl = bannerUrl || null;
+  if (tags !== undefined) data.tags = normalizeTags(tags);
 
   if (venueId !== undefined) {
     if (venueId) {

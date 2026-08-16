@@ -10,8 +10,7 @@ export default function useClubDetail(id, user) {
   const [leaveLoading, setLeaveLoading] = useState(false)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [newEvent, setNewEvent] = useState({ title: '', description: '', startTime: '', endTime: '', venueId: '', venue: '', bannerUrl: '', coHostClubIds: [] })
-  const [adminClubs, setAdminClubs] = useState([])
+  const [newEvent, setNewEvent] = useState({ title: '', description: '', startTime: '', endTime: '', venueId: '', venue: '', bannerUrl: '', invitedClubs: [], tags: [] })
   const [deleteEventTarget, setDeleteEventTarget] = useState(null)
   const [membersPage, setMembersPage] = useState(1)
   const [eventsPage, setEventsPage] = useState(1)
@@ -108,12 +107,14 @@ export default function useClubDetail(id, user) {
       }
     }
     try {
-      const { venueId, venue, ...rest } = newEvent
+      const { venueId, venue, invitedClubs, tags, ...rest } = newEvent
       const payload = venueId ? { ...rest, venueId } : { ...rest, venue }
+      if (invitedClubs.length > 0) payload.inviteClubIds = invitedClubs.map((c) => c.id)
+      if (tags.length > 0) payload.tags = tags
       await client.post(`/clubs/${id}/events`, payload)
       setShowCreateDialog(false)
       toast.success('Event created!')
-      setNewEvent({ title: '', description: '', startTime: '', endTime: '', venueId: '', venue: '', bannerUrl: '', coHostClubIds: [] })
+      setNewEvent({ title: '', description: '', startTime: '', endTime: '', venueId: '', venue: '', bannerUrl: '', invitedClubs: [], tags: [] })
       await fetchClub()
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to create event')
@@ -143,31 +144,14 @@ export default function useClubDetail(id, user) {
   const membersTotalPages = Math.ceil(totalMembers / 10) || 1
   const eventsTotalPages = Math.ceil(totalEvents / 5) || 1
 
-  useEffect(() => {
-    if (!canManageEvents) return
-    let active = true
-    async function fetchAdminClubs() {
-      try {
-        const res = await client.get('/memberships/my-admin-clubs')
-        if (active) setAdminClubs(res.data.filter((c) => c.id !== id))
-      } catch {
-        // best-effort: co-host picker stays empty
-      }
-    }
-    fetchAdminClubs()
-    return () => { active = false }
-  }, [id, canManageEvents])
+  function addInvitee(club) {
+    setNewEvent((prev) => prev.invitedClubs.some((c) => c.id === club.id)
+      ? prev
+      : { ...prev, invitedClubs: [...prev.invitedClubs, club] })
+  }
 
-  function toggleCoHost(clubId) {
-    setNewEvent((prev) => {
-      const has = prev.coHostClubIds.includes(clubId)
-      return {
-        ...prev,
-        coHostClubIds: has
-          ? prev.coHostClubIds.filter((c) => c !== clubId)
-          : [...prev.coHostClubIds, clubId],
-      }
-    })
+  function removeInvitee(clubId) {
+    setNewEvent((prev) => ({ ...prev, invitedClubs: prev.invitedClubs.filter((c) => c.id !== clubId) }))
   }
 
   return {
@@ -175,7 +159,7 @@ export default function useClubDetail(id, user) {
     joinLoading, leaveLoading,
     showCreateDialog, setShowCreateDialog,
     submitting, newEvent, setNewEvent,
-    adminClubs, toggleCoHost,
+    addInvitee, removeInvitee,
     deleteEventTarget, setDeleteEventTarget,
     membersPage, setMembersPage, eventsPage, setEventsPage,
     totalMembers, totalEvents,

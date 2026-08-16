@@ -10,8 +10,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Calendar, MapPin, Clock, ImageIcon, Filter } from 'lucide-react'
+import { Calendar, MapPin, Clock, ImageIcon, Filter, X, Tag } from 'lucide-react'
 import { formatDate, formatTime } from '@/lib/format'
+import { Input } from '@/components/ui/input'
 import { Pagination } from '@/components/Pagination'
 import { EventCardSkeleton } from '@/components/ui/skeleton'
 import { SkeletonReveal } from '@/components/ui/SkeletonReveal'
@@ -44,6 +45,8 @@ export default function EventCalendar() {
   const clubId = searchParams.get('clubId') || ''
   const venueId = searchParams.get('venueId') || ''
   const timeRange = searchParams.get('timeRange') || 'upcoming'
+  const tags = searchParams.get('tags') || ''
+  const [tagDraft, setTagDraft] = useState('')
 
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
@@ -90,6 +93,7 @@ export default function EventCalendar() {
         if (filterMode === 'joined') params.set('joined', 'true')
         if (clubId) params.set('clubId', clubId)
         if (venueId) params.set('venueId', venueId)
+        if (tags) params.set('tags', tags)
         params.set('timeRange', timeRange)
         params.set('page', page)
         const res = await client.get(`/events?${params.toString()}`)
@@ -107,7 +111,7 @@ export default function EventCalendar() {
     }
     doFetch()
     return () => { active = false }
-  }, [filterMode, clubId, venueId, timeRange, page])
+  }, [filterMode, clubId, venueId, tags, timeRange, page])
 
   return (
     <div>
@@ -176,6 +180,37 @@ export default function EventCalendar() {
             ))}
           </SelectContent>
         </Select>
+
+        <div className="relative">
+          <Tag className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          <Input
+            type="text"
+            placeholder="Search by tag"
+            value={tagDraft}
+            onChange={(e) => setTagDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                const v = tagDraft.trim().toLowerCase()
+                if (v) updateFilter('tags', v)
+                setTagDraft('')
+              }
+            }}
+            className="w-[180px] pl-9"
+          />
+        </div>
+
+        {tags && (
+          <button
+            type="button"
+            onClick={() => updateFilter('tags', '')}
+            className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full border bg-brand-primary/10 text-brand-primary border-brand-primary/30 hover:bg-brand-primary/20"
+          >
+            <Tag className="h-3 w-3" />
+            {tags}
+            <X className="h-3 w-3" />
+          </button>
+        )}
       </div>
 
       <div className="mt-8">
@@ -243,6 +278,18 @@ export default function EventCalendar() {
                       </div>
                       {event.description && (
                         <p className="mt-2.5 text-xs text-muted-foreground line-clamp-2">{event.description}</p>
+                      )}
+                      {event.tags?.length > 0 && (
+                        <div className="mt-2.5 flex flex-wrap gap-1.5">
+                          {event.tags.slice(0, 3).map((tag) => (
+                            <span key={tag} className="inline-flex items-center rounded-full border border-brand-primary/30 bg-brand-primary/10 px-2 py-0.5 text-[10px] font-medium text-brand-primary">
+                              {tag}
+                            </span>
+                          ))}
+                          {event.tags.length > 3 && (
+                            <span className="inline-flex items-center text-[10px] text-muted-foreground">+{event.tags.length - 3}</span>
+                          )}
+                        </div>
                       )}
                     </CardContent>
                   </Card>

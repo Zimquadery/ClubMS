@@ -161,6 +161,7 @@ router.get('/:id', authMiddleware, validateQuery(getByIdQuerySchema), clubsContr
  *               endTime: { type: string, format: date-time }
  *               venueId: { type: string, format: uuid, description: "Managed venue id (mutually exclusive with venue)" }
  *               venue: { type: string, description: "Custom venue text (used when venueId is absent)" }
+ *               tags: { type: array, items: { type: string }, description: "Optional event tags (max 10)" }
  *     responses:
  *       201:
  *         description: Event created
@@ -171,7 +172,7 @@ router.get('/:id', authMiddleware, validateQuery(getByIdQuerySchema), clubsContr
  *       403:
  *         description: Forbidden
  */
-router.post('/:clubId/events', authMiddleware, requireRole('CLUB_ADMIN'), requireClubAdmin, validate(eventCreateSchema), auditLog('EVENT_CREATE', (req) => ({ type: 'event', id: req.createdEventId, metadata: { primaryClubId: req.params.clubId, coHostClubIds: req.body.coHostClubIds || [], title: req.body.title } })), eventsController.create);
+router.post('/:clubId/events', authMiddleware, requireRole('CLUB_ADMIN'), requireClubAdmin, validate(eventCreateSchema), auditLog('EVENT_CREATE', (req) => ({ type: 'event', id: req.createdEventId, metadata: { primaryClubId: req.params.clubId, inviteClubIds: req.body.inviteClubIds || [], title: req.body.title } })), eventsController.create);
 
 /**
  * @openapi

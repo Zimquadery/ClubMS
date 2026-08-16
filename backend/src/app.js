@@ -16,6 +16,7 @@ const uploadRoutes = require('./modules/upload/upload.routes');
 const auditRoutes = require('./modules/audit/audit.routes');
 const { router: announcementsRoutes, recentRouter: announcementsRecentRouter } = require('./modules/announcements/announcements.routes');
 const venueRoutes = require('./modules/venues/venues.routes');
+const cohostInviteRoutes = require('./modules/cohostInvites/cohostInvites.routes');
 const swaggerUi = require('swagger-ui-express');
 const { specs } = require('./config/swagger');
 const { prisma } = require('./lib/prisma');
@@ -64,6 +65,7 @@ function createApp({ skipRateLimit } = {}) {
   app.use('/api/audit-logs', auditRoutes);
   app.use('/api/announcements', announcementsRecentRouter);
   app.use('/api/venues', venueRoutes);
+  app.use('/api/cohost-invites', cohostInviteRoutes);
   app.use('/api/upload', uploadRoutes);
   app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(specs));
 

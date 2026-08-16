@@ -157,7 +157,7 @@ Events no longer have a `clubId` column. Instead an `EventHost` join table (`@@u
 
 - **Primary host:** exactly one `EventHost` per event with `isPrimary: true`. Always exists (seed/migration backfill guarantees it). Cannot be removed via API.
 - **Co-hosts:** zero or more `EventHost` rows with `isPrimary: false`.
-- **Shared helpers live in `modules/eventHosts/eventHosts.service.js`:** `isHostOfficer`, `isPrimaryHostOfficer`, `isActiveMemberOfAnyHost`, `assertHostOfficer`, `isPrimaryHostClub`, `addCoHost`, `removeCoHost`. (`resolveHostClubs`/`getHostClubIds`/`getPrimaryClubId` are internal-only — not exported.) Import this — do NOT re-derive `event.clubId` (it doesn't exist). `clubs.service.deleteClub` consumes `isPrimaryHostClub` for the 409 primary-host guard.
+- **Shared helpers live in `modules/eventHosts/eventHosts.service.js`:** `isHostOfficer`, `isPrimaryHostOfficer`, `isActiveMemberOfAnyHost`, `assertHostOfficer`, `isPrimaryHostClub`, `removeCoHost`. (`resolveHostClubs`/`getHostClubIds`/`getPrimaryClubId` are internal-only — not exported.) Import this — do NOT re-derive `event.clubId` (it doesn't exist). `clubs.service.deleteClub` consumes `isPrimaryHostClub` for the 409 primary-host guard.
 - **Permission matrix:**
   | Action | Allowed |
   |---|---|
@@ -168,9 +168,20 @@ Events no longer have a `clubId` column. Instead an `EventHost` join table (`@@u
   | View/export RSVPs | Officer of ANY host club |
 - **API responses** (`getById`/`list`) attach computed `club` (primary), `clubId` (primary), `primaryClubId` for backward compat with frontend reads like `event.club.name`. The actual host list is in `hosts: [{ clubId, isPrimary, club }]`.
 - **Club deletion guard:** `clubs.service.deleteClub` checks `isPrimaryHostClub` and throws 409 if the club is primary of any event. Co-host clubs can be deleted (their EventHost rows cascade, event survives on remaining hosts).
-- **Routes:** `POST /api/events/:id/cohosts` (body `{ clubId }`), `DELETE /api/events/:id/cohosts/:clubId` — multi-segment, safe on the `/api/events` collision zone. Audit actions: `EVENT_COHOST_ADD`, `EVENT_COHOST_REMOVE`.
-- **Frontend co-host picker source:** existing `GET /api/memberships/my-admin-clubs` (returns clubs where current user is OFFICER+ACTIVE). Do NOT create a new endpoint. Hook `useAdminClubSelector` already wraps it.
+- **Routes:** `DELETE /api/events/:id/cohosts/:clubId` — multi-segment, safe on the `/api/events` collision zone. Audit action: `EVENT_COHOST_REMOVE`. (All co-host *additions* go through the consent-based invite flow below; the old no-consent `POST /cohosts` was removed because it bypassed the consent invariant — the invite flow's privileged create+accept covers the admin-override case. Detachment needs no consent, so `DELETE /cohosts/:clubId` stays.)
 - **`clubs.service.getById` no longer uses `Club.events` relation** (removed from schema). It now queries events via `prisma.event.findMany({ where: { hosts: { some: { clubId } } } })` and maps each to a synthetic `{ ...event, club, clubId }` for frontend compatibility.
+
+### Co-host Invites (consent-based cross-club collaboration)
+
+The original `coHostClubIds` created `EventHost` rows directly and the picker only showed clubs the *creator* officers — useless for real collaboration between different clubs' officers. Replaced with a **consent-based invitation model** mirroring the membership PENDING→ACTIVE flow.
+
+- **`EventHostInvite` table holds ONLY pending rows** (`{ id, eventId, clubId, createdAt }`, `@@unique([eventId, clubId])`, `@@index([clubId])`). No status enum, no User relations. **Accept** = create `EventHost{isPrimary:false}` + delete invite (in one tx, race-safe via in-tx host re-check + `deleteMany`). **Reject/Cancel** = delete invite. Re-invite after reject just inserts fresh (unique constraint blocks only concurrent duplicates). Keeping pending state OUT of `EventHost` means **host-based authz (`isHostOfficer`, `isActiveMemberOfAnyHost`, event list filter) never sees un-accepted invites** — zero edits to the proven read paths, zero privilege-leak risk. This is why invites live in a separate table rather than a `status` column on `EventHost`.
+- **`events.service.create`** body field is `inviteClubIds` (was `coHostClubIds`); it creates pending invite rows (via `tx.eventHostInvite.createMany`), NOT hosts. Primary `EventHost` creation unchanged. Max 10 invitees.
+- **Module:** `modules/cohostInvites/` (service/controller/schemas/routes) — separate from `eventHosts` (which owns accepted-host predicates). Service has a local `assertClubOfficer(userId, clubId)` (DB-backed) for accept/reject authorization.
+- **Routes:** event-scoped on the `/api/events` collision zone (all multi-segment, safe): `POST /api/events/:id/cohost-invites`, `GET /api/events/:id/cohost-invites`, `DELETE /api/events/:id/cohost-invites/:inviteId`. User-scoped on collision-free mount: `GET /api/cohost-invites/incoming` (optional `?clubId=`), `POST /api/cohost-invites/:id/accept`, `POST /api/cohost-invites/:id/reject`.
+- **Permission matrix:** create/cancel/list-for-event = officer of ANY host club (`assertHostOfficer`, bypassed by FACULTY/PLATFORM_ADMIN via `isPrivilegedRole`). accept/reject = officer of the INVITED club (`assertClubOfficer`, also bypassed by privileged roles). `/incoming` returns ONLY invites for clubs where the caller is OFFICER (a CLUB_ADMIN of club X never sees club Y's invites) — defense in depth, and the silent-catch in `useCohostInvites` means no 403 toast.
+- **Audit:** `EVENT_COHOST_INVITE`, `EVENT_COHOST_INVITE_ACCEPT`, `EVENT_COHOST_INVITE_REJECT`, `EVENT_COHOST_INVITE_CANCEL` (targetType `event`; accept/reject capture the eventId via `req.auditEventId` set in the controller, since the route param is the invite id). Added to `ACTIONS` in `AuditLog.jsx`.
+- **Frontend:** `ClubSearchPicker` (`components/event/`) = debounced combobox over `GET /api/clubs?search=&limit=8`, multi-use (create dialog multi-select + manage-dialog single invite); excludes primary/already-hosted/already-invited via `excludeIds`. `useCohostInvites(clubId?)` hook (omit clubId = all officer clubs). `ManageCoHostsDialog` shows Primary badge + Accepted co-hosts (Remove) + Pending invites (Cancel) + search-to-invite. Discovery: `ClubCoHostInvitesCard` (renders nothing when empty) on the Dashboard (all officer clubs) AND on the club detail page (single club, officer-only) — reuses the shared `CoHostInvitesList`. Create dialog uses `addInvitee`/`removeInvitee` chips in `useClubDetail` (state: `newEvent.invitedClubs: [{id,name,...}]`, submitted as `inviteClubIds`).
 
 ### Frontend Styling (Dashboard = gold standard)
 
@@ -202,6 +213,8 @@ Use `@keyframes` with `data-state` selectors, NOT CSS transitions (transitions d
 ---
 
 ## Learnings (historical context)
+
+- **Overflow fixes belong in shared primitives, not per-instance:** Create-event dialog overflowed viewport; the same `max-h-[90vh] overflow-y-auto` was already copy-pasted on 3 dialogs while 16 others lacked it (ManageClubs/ClubAnnouncements forms also overflow on short screens). Fix: bake `max-h-[90vh] overflow-y-auto` into `DialogContent` in `components/ui/dialog.jsx` and delete per-instance duplicates. Grep `DialogContent className` to confirm zero remain.
 
 - **Route collision happened twice:** `/my-admin-clubs`, `/my-clubs` swallowed by `/:id` on `membershipsRoutes`. See Rules.
 - **Per-resource auth:** `requireRole()` is global; CLUB_ADMIN needs `requireClubAdmin` for own-club checks.

@@ -16,6 +16,9 @@ async function main() {
   const deletedEventHosts = await prisma.eventHost.deleteMany();
   console.log(`Deleted ${deletedEventHosts.count} event host associations`);
 
+  const deletedInvites = await prisma.eventHostInvite.deleteMany();
+  console.log(`Deleted ${deletedInvites.count} co-host invitations`);
+
   const deletedEvents = await prisma.event.deleteMany();
   console.log(`Deleted ${deletedEvents.count} events`);
 

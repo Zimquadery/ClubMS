@@ -7,19 +7,25 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, X } from 'lucide-react';
+import { ClubSearchPicker } from '@/components/event/ClubSearchPicker';
+import { Clock, X } from 'lucide-react';
 
-export function ManageCoHostsDialog({ open, onOpenChange, hosts, adminClubs, submitting, onAdd, onRemove }) {
+export function ManageCoHostsDialog({ open, onOpenChange, hosts, pendingInvites, submitting, onInvite, onCancelInvite, onRemove }) {
   const coHosts = (hosts || []).filter((h) => !h.isPrimary);
   const primary = (hosts || []).find((h) => h.isPrimary);
 
+  const excludeIds = [
+    ...(hosts || []).map((h) => h.clubId),
+    ...(pendingInvites || []).map((i) => i.clubId),
+  ];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Manage host clubs</DialogTitle>
           <DialogDescription>
-            Primary club cannot be removed. Any officer of a host club can add or remove co-hosts.
+            Invite other clubs to collaborate. The primary club cannot be removed. Any officer of a host club can invite or remove co-hosts.
           </DialogDescription>
         </DialogHeader>
 
@@ -62,27 +68,42 @@ export function ManageCoHostsDialog({ open, onOpenChange, hosts, adminClubs, sub
             )}
           </div>
 
-          {adminClubs.length > 0 && (
+          {pendingInvites.length > 0 && (
             <div>
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">
-                Add a co-host
+                Pending invitations ({pendingInvites.length})
               </p>
-              <div className="flex flex-wrap gap-2">
-                {adminClubs.map((club) => (
-                  <Button
-                    key={club.id}
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={submitting}
-                    onClick={() => onAdd(club.id)}
-                  >
-                    <Plus className="h-3.5 w-3.5 mr-1" /> {club.name}
-                  </Button>
+              <div className="space-y-1.5">
+                {pendingInvites.map((inv) => (
+                  <div key={inv.id} className="flex items-center justify-between py-1.5">
+                    <span className="inline-flex items-center gap-1.5 text-sm font-medium">
+                      <Clock className="h-3.5 w-3.5 text-status-yellow" />
+                      {inv.club?.name}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-muted-foreground hover:text-destructive"
+                      disabled={submitting}
+                      onClick={() => onCancelInvite(inv.id)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
                 ))}
               </div>
             </div>
           )}
+
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">Invite a club</p>
+            <ClubSearchPicker
+              onSelect={onInvite}
+              excludeIds={excludeIds}
+              placeholder="Search clubs to invite..."
+            />
+          </div>
         </div>
       </DialogContent>
     </Dialog>

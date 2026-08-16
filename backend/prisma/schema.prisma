@@ -59,6 +59,20 @@ model Club {
   memberships   ClubMembership[]
   eventHosts    EventHost[]
   announcements Announcement[]
+  invites       EventHostInvite[]
+}
+
+model EventHostInvite {
+  id        String   @id @default(uuid())
+  eventId   String
+  clubId    String
+  createdAt DateTime @default(now())
+
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  club      Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, clubId])
+  @@index([clubId])
 }
 
 model ClubMembership {
@@ -86,11 +100,13 @@ model Event {
   venue       String?
   venueId     String?
   bannerUrl   String?
+  tags        String[] @default([])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   managedVenue Venue?     @relation(fields: [venueId], references: [id], onDelete: SetNull)
   hosts        EventHost[]
+  invites      EventHostInvite[]
   rsvps        EventRsvp[]
 
   @@index([startTime])

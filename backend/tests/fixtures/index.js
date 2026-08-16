@@ -85,6 +85,7 @@ async function makeEvent({ primaryClubId, coHostClubIds = [], overrides = {}, cr
       venue: overrides.venue !== undefined ? overrides.venue : 'Room A',
       venueId: overrides.venueId !== undefined ? overrides.venueId : null,
       bannerUrl: overrides.bannerUrl !== undefined ? overrides.bannerUrl : null,
+      tags: overrides.tags !== undefined ? overrides.tags : [],
     },
   });
   await prisma.eventHost.create({
@@ -112,6 +113,10 @@ async function makeAnnouncement({ clubId, authorId, overrides = {} }) {
 
 async function makeRsvp({ eventId, userId, status = 'GOING' }) {
   return prisma.eventRsvp.create({ data: { eventId, userId, status } });
+}
+
+async function makeCohostInvite({ eventId, clubId }) {
+  return prisma.eventHostInvite.create({ data: { eventId, clubId } });
 }
 
 function tokenFor(user) {
@@ -163,6 +168,7 @@ module.exports = {
   makeVenue,
   makeAnnouncement,
   makeRsvp,
+  makeCohostInvite,
   tokenFor,
   expiredTokenFor,
   as,

@@ -4,9 +4,9 @@ const { asyncHandler } = require('../../utils/asyncHandler');
 const { isPrivilegedRole } = require('../../utils/roles');
 
 const list = asyncHandler(async (req, res) => {
-  const { clubId, joined, timeRange, venueId, page, limit } = req.query;
+  const { clubId, joined, timeRange, venueId, tags, page, limit } = req.query;
   const userId = req.user.userId;
-  const result = await eventsService.list({ clubId, joined: joined === 'true', timeRange, userId, venueId, page, limit });
+  const result = await eventsService.list({ clubId, joined: joined === 'true', timeRange, userId, venueId, tags, page, limit });
   res.status(200).json(result);
 });
 
@@ -35,17 +35,6 @@ const deleteEvent = asyncHandler(async (req, res) => {
   res.status(200).json(result);
 });
 
-const addCoHost = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const { clubId } = req.body;
-  if (!isPrivilegedRole(req.user.role)) {
-    await eventHostsService.assertHostOfficer(req.user.userId, id);
-  }
-  const host = await eventHostsService.addCoHost(id, clubId, req.user.userId);
-  req.coHostClubId = clubId;
-  res.status(201).json(host);
-});
-
 const removeCoHost = asyncHandler(async (req, res) => {
   const { id, clubId } = req.params;
   if (!isPrivilegedRole(req.user.role)) {
@@ -55,4 +44,4 @@ const removeCoHost = asyncHandler(async (req, res) => {
   res.status(200).json(result);
 });
 
-module.exports = { list, getById, create, updateEvent, deleteEvent, addCoHost, removeCoHost };
+module.exports = { list, getById, create, updateEvent, deleteEvent, removeCoHost };

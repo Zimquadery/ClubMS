@@ -3,7 +3,7 @@ const { createApp } = require('../../src/app');
 const { prisma } = require('../db');
 const {
   makeUser, makeClub, makeEvent, makeVenue, makeOfficer, makeActiveMember,
-  tokenFor, waitFor,
+  tokenFor,
 } = require('../fixtures');
 
 let app;
@@ -54,7 +54,7 @@ describe('POST /api/clubs/:clubId/events (create)', () => {
     expect(res.status).toBe(422);
   });
 
-  it('returns 400 when co-host club does not exist', async () => {
+  it('returns 400 when invited club does not exist', async () => {
     const officer = await makeUser({ role: 'CLUB_ADMIN' });
     const club = await makeClub();
     await makeOfficer({ userId: officer.id, clubId: club.id });
@@ -64,16 +64,16 @@ describe('POST /api/clubs/:clubId/events (create)', () => {
       .set('Authorization', tokenFor(officer))
       .send({
         title: 'X', startTime: iso(1), endTime: iso(2),
-        coHostClubIds: ['00000000-0000-0000-0000-000000000000'],
+        inviteClubIds: ['00000000-0000-0000-0000-000000000000'],
       });
 
     expect(res.status).toBe(400);
   });
 
-  it('dedupes co-hosts and excludes the primary club', async () => {
+  it('creates PENDING invites (not hosts) for inviteClubIds, deduped, primary excluded', async () => {
     const officer = await makeUser({ role: 'CLUB_ADMIN' });
     const club = await makeClub();
-    const cohost = await makeClub();
+    const invitee = await makeClub();
     await makeOfficer({ userId: officer.id, clubId: club.id });
 
     const res = await request(app)
@@ -81,17 +81,17 @@ describe('POST /api/clubs/:clubId/events (create)', () => {
       .set('Authorization', tokenFor(officer))
       .send({
         title: 'X', startTime: iso(1), endTime: iso(2),
-        coHostClubIds: [club.id, cohost.id, cohost.id],
+        inviteClubIds: [club.id, invitee.id, invitee.id],
       });
 
     expect(res.status).toBe(201);
-    const hosts = await prisma.eventHost.findMany({
-      where: { eventId: res.body.id },
-      orderBy: { createdAt: 'asc' },
-    });
-    expect(hosts).toHaveLength(2);
-    expect(hosts.filter((h) => h.isPrimary)).toHaveLength(1);
-    expect(hosts.find((h) => !h.isPrimary).clubId).toBe(cohost.id);
+    const hosts = await prisma.eventHost.findMany({ where: { eventId: res.body.id } });
+    expect(hosts).toHaveLength(1);
+    expect(hosts[0].isPrimary).toBe(true);
+
+    const invites = await prisma.eventHostInvite.findMany({ where: { eventId: res.body.id } });
+    expect(invites).toHaveLength(1);
+    expect(invites[0].clubId).toBe(invitee.id);
   });
 
   it('returns 403 for STUDENT (no CLUB_ADMIN role)', async () => {
@@ -195,6 +195,156 @@ describe('venue resolution (create + update)', () => {
     expect(res.status).toBe(200);
     expect(res.body.venue).toBeNull();
     expect(res.body.venueId).toBeNull();
+  });
+});
+
+describe('event tags (create + update + filter)', () => {
+  it('create normalizes tags: trims, lowercases, dedupes (case-insensitive)', async () => {
+    const officer = await makeUser({ role: 'CLUB_ADMIN' });
+    const club = await makeClub();
+    await makeOfficer({ userId: officer.id, clubId: club.id });
+
+    const res = await request(app)
+      .post(`/api/clubs/${club.id}/events`)
+      .set('Authorization', tokenFor(officer))
+      .send({ title: 'T', startTime: iso(1), endTime: iso(2), tags: ['  Music ', 'music', 'TECH', 'tech'] });
+
+    expect(res.status).toBe(201);
+    expect(res.body.tags).toEqual(['music', 'tech']);
+    const row = await prisma.event.findUnique({ where: { id: res.body.id }, select: { tags: true } });
+    expect(row.tags).toEqual(['music', 'tech']);
+  });
+
+  it('create without tags yields an empty array', async () => {
+    const officer = await makeUser({ role: 'CLUB_ADMIN' });
+    const club = await makeClub();
+    await makeOfficer({ userId: officer.id, clubId: club.id });
+
+    const res = await request(app)
+      .post(`/api/clubs/${club.id}/events`)
+      .set('Authorization', tokenFor(officer))
+      .send({ title: 'T', startTime: iso(1), endTime: iso(2) });
+
+    expect(res.status).toBe(201);
+    expect(res.body.tags).toEqual([]);
+  });
+
+  it('create rejects more than 10 tags', async () => {
+    const officer = await makeUser({ role: 'CLUB_ADMIN' });
+    const club = await makeClub();
+    await makeOfficer({ userId: officer.id, clubId: club.id });
+
+    const res = await request(app)
+      .post(`/api/clubs/${club.id}/events`)
+      .set('Authorization', tokenFor(officer))
+      .send({ title: 'T', startTime: iso(1), endTime: iso(2), tags: Array.from({ length: 11 }, (_, i) => `t${i}`) });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('create rejects a tag containing a comma', async () => {
+    const officer = await makeUser({ role: 'CLUB_ADMIN' });
+    const club = await makeClub();
+    await makeOfficer({ userId: officer.id, clubId: club.id });
+
+    const res = await request(app)
+      .post(`/api/clubs/${club.id}/events`)
+      .set('Authorization', tokenFor(officer))
+      .send({ title: 'T', startTime: iso(1), endTime: iso(2), tags: ['has,comma'] });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('create rejects an oversized tag (>30 chars)', async () => {
+    const officer = await makeUser({ role: 'CLUB_ADMIN' });
+    const club = await makeClub();
+    await makeOfficer({ userId: officer.id, clubId: club.id });
+
+    const res = await request(app)
+      .post(`/api/clubs/${club.id}/events`)
+      .set('Authorization', tokenFor(officer))
+      .send({ title: 'T', startTime: iso(1), endTime: iso(2), tags: ['a'.repeat(31)] });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('update sets tags and clear with an empty array', async () => {
+    const officer = await makeUser({ role: 'CLUB_ADMIN' });
+    const club = await makeClub();
+    await makeOfficer({ userId: officer.id, clubId: club.id });
+    const event = await makeEvent({ primaryClubId: club.id, creatorUserId: officer.id });
+
+    const set = await request(app)
+      .patch(`/api/events/${event.id}`)
+      .set('Authorization', tokenFor(officer))
+      .send({ tags: ['Music', 'Sports'] });
+    expect(set.status).toBe(200);
+    expect(set.body.tags).toEqual(['music', 'sports']);
+
+    const cleared = await request(app)
+      .patch(`/api/events/${event.id}`)
+      .set('Authorization', tokenFor(officer))
+      .send({ tags: [] });
+    expect(cleared.status).toBe(200);
+    expect(cleared.body.tags).toEqual([]);
+  });
+
+  it('omitting tags on update leaves them unchanged', async () => {
+    const officer = await makeUser({ role: 'CLUB_ADMIN' });
+    const club = await makeClub();
+    await makeOfficer({ userId: officer.id, clubId: club.id });
+    const event = await makeEvent({ primaryClubId: club.id, creatorUserId: officer.id, overrides: { tags: ['music'] } });
+
+    const res = await request(app)
+      .patch(`/api/events/${event.id}`)
+      .set('Authorization', tokenFor(officer))
+      .send({ title: 'New Title' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.tags).toEqual(['music']);
+  });
+
+  it('list filters by a single tag (case-insensitive match)', async () => {
+    const user = await makeUser({ role: 'STUDENT' });
+    const club = await makeClub();
+    await makeEvent({ primaryClubId: club.id, overrides: { tags: ['music'] } });
+    await makeEvent({ primaryClubId: club.id, overrides: { tags: ['tech'] } });
+
+    const res = await request(app)
+      .get('/api/events?tags=music')
+      .set('Authorization', tokenFor(user));
+
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(1);
+    expect(res.body.items[0].tags).toContain('music');
+  });
+
+  it('list filters by comma-separated tags (hasSome OR semantics)', async () => {
+    const user = await makeUser({ role: 'STUDENT' });
+    const club = await makeClub();
+    await makeEvent({ primaryClubId: club.id, overrides: { tags: ['music'] } });
+    await makeEvent({ primaryClubId: club.id, overrides: { tags: ['tech'] } });
+    await makeEvent({ primaryClubId: club.id, overrides: { tags: ['sports'] } });
+
+    const res = await request(app)
+      .get('/api/events?tags=music,tech')
+      .set('Authorization', tokenFor(user));
+
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(2);
+  });
+
+  it('list ignores an all-empty tags param (no 500, returns results)', async () => {
+    const user = await makeUser({ role: 'STUDENT' });
+    const club = await makeClub();
+    await makeEvent({ primaryClubId: club.id });
+
+    const res = await request(app)
+      .get('/api/events?tags=,,')
+      .set('Authorization', tokenFor(user));
+
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBeGreaterThanOrEqual(1);
   });
 });
 
@@ -558,63 +708,6 @@ describe('DELETE /api/events/:id', () => {
       .set('Authorization', tokenFor(faculty));
 
     expect(res.status).toBe(200);
-  });
-});
-
-describe('POST /api/events/:id/cohosts', () => {
-  it('host officer can add a co-host', async () => {
-    const officer = await makeUser({ role: 'CLUB_ADMIN' });
-    const primary = await makeClub();
-    const cohost = await makeClub();
-    await makeOfficer({ userId: officer.id, clubId: primary.id });
-    const event = await makeEvent({ primaryClubId: primary.id, creatorUserId: officer.id });
-
-    const res = await request(app)
-      .post(`/api/events/${event.id}/cohosts`)
-      .set('Authorization', tokenFor(officer))
-      .send({ clubId: cohost.id });
-
-    expect(res.status).toBe(201);
-    expect(res.body.clubId).toBe(cohost.id);
-    expect(res.body.isPrimary).toBe(false);
-
-    const audit = await waitFor(() =>
-      prisma.auditLog.findFirst({ where: { action: 'EVENT_COHOST_ADD', targetId: event.id } })
-    );
-    expect(audit).toBeTruthy();
-  });
-
-  it('returns 409 when the club is already a host', async () => {
-    const officer = await makeUser({ role: 'CLUB_ADMIN' });
-    const primary = await makeClub();
-    const cohost = await makeClub();
-    await makeOfficer({ userId: officer.id, clubId: primary.id });
-    const event = await makeEvent({
-      primaryClubId: primary.id,
-      coHostClubIds: [cohost.id],
-      creatorUserId: officer.id,
-    });
-
-    const res = await request(app)
-      .post(`/api/events/${event.id}/cohosts`)
-      .set('Authorization', tokenFor(officer))
-      .send({ clubId: cohost.id });
-
-    expect(res.status).toBe(409);
-  });
-
-  it('returns 404 when the co-host club does not exist', async () => {
-    const officer = await makeUser({ role: 'CLUB_ADMIN' });
-    const primary = await makeClub();
-    await makeOfficer({ userId: officer.id, clubId: primary.id });
-    const event = await makeEvent({ primaryClubId: primary.id, creatorUserId: officer.id });
-
-    const res = await request(app)
-      .post(`/api/events/${event.id}/cohosts`)
-      .set('Authorization', tokenFor(officer))
-      .send({ clubId: '00000000-0000-0000-0000-000000000000' });
-
-    expect(res.status).toBe(404);
   });
 });
 

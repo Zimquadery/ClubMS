@@ -1,5 +1,4 @@
-import { useParams } from 'react-router-dom';
-import { Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -114,6 +113,20 @@ export default function EventDetail() {
             {vm.event.description}
           </div>
         )}
+
+        {vm.event.tags?.length > 0 && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {vm.event.tags.map((tag) => (
+              <Link
+                key={tag}
+                to={`/events?tags=${encodeURIComponent(tag)}`}
+                className="inline-flex items-center rounded-full border border-brand-primary/30 bg-brand-primary/10 px-2.5 py-0.5 text-xs font-medium text-brand-primary hover:bg-brand-primary/20"
+              >
+                {tag}
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
       {vm.canManage && (
@@ -176,9 +189,10 @@ export default function EventDetail() {
         open={vm.coHostDialog}
         onOpenChange={vm.setCoHostDialog}
         hosts={vm.event.hosts || []}
-        adminClubs={vm.adminClubs}
+        pendingInvites={vm.pendingInvites}
         submitting={vm.coHostSubmitting}
-        onAdd={vm.handleAddCoHost}
+        onInvite={vm.handleInvite}
+        onCancelInvite={vm.handleCancelInvite}
         onRemove={vm.handleRemoveCoHost}
       />
     </div>
