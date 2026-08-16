@@ -1,6 +1,7 @@
 const { prisma } = require('../../lib/prisma');
 const { AppError } = require('../../utils/errors');
 const { isPrivilegedRole } = require('../../utils/roles');
+const { userSearchWhere } = require('../../utils/search');
 
 const USER_SELECT = { id: true, name: true, email: true };
 
@@ -48,9 +49,11 @@ async function requestJoin(clubId, userId) {
   });
 }
 
-async function listMembers(clubId, { status, page = 1, limit = 50 } = {}) {
+async function listMembers(clubId, { status, page = 1, limit = 50, search } = {}) {
   const where = { clubId };
   if (status) where.status = status;
+  const searchWhere = userSearchWhere(search);
+  if (searchWhere) where.user = searchWhere;
 
   const skip = (page - 1) * limit;
 

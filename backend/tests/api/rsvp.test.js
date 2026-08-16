@@ -179,6 +179,20 @@ describe('GET /api/events/:id/rsvps (list)', () => {
 
     expect(res.status).toBe(200);
   });
+
+  it('rejects a search longer than 25 characters', async () => {
+    const officer = await makeUser({ role: 'CLUB_ADMIN' });
+    const club = await makeClub();
+    await makeOfficer({ userId: officer.id, clubId: club.id });
+    const event = await makeEvent({ primaryClubId: club.id, creatorUserId: officer.id });
+
+    const res = await request(app)
+      .get(`/api/events/${event.id}/rsvps`)
+      .query({ search: 'a'.repeat(26) })
+      .set('Authorization', tokenFor(officer));
+
+    expect(res.status).toBe(400);
+  });
 });
 
 describe('GET /api/events/:id/rsvps/export', () => {

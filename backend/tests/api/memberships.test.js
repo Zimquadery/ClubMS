@@ -187,6 +187,95 @@ describe('GET /api/clubs/:clubId/members', () => {
 
     expect(res.status).toBe(403);
   });
+
+  it('searches members by name case-insensitively', async () => {
+    const admin = await makeUser({ role: 'CLUB_ADMIN' });
+    const club = await makeClub();
+    await makeOfficer({ userId: admin.id, clubId: club.id });
+    const alice = await makeUser({ role: 'STUDENT', name: 'Alice Johnson' });
+    const bob = await makeUser({ role: 'STUDENT', name: 'Bob Smith' });
+    await makeActiveMember({ userId: alice.id, clubId: club.id });
+    await makeActiveMember({ userId: bob.id, clubId: club.id });
+
+    const res = await request(app)
+      .get(`/api/clubs/${club.id}/members`)
+      .query({ search: 'ALICE' })
+      .set('Authorization', tokenFor(admin));
+
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(1);
+    expect(res.body.items).toHaveLength(1);
+    expect(res.body.items[0].user.name).toBe('Alice Johnson');
+  });
+
+  it('searches members by partial email match', async () => {
+    const admin = await makeUser({ role: 'CLUB_ADMIN' });
+    const club = await makeClub();
+    await makeOfficer({ userId: admin.id, clubId: club.id });
+    const alice = await makeUser({ role: 'STUDENT', name: 'Alice Johnson' });
+    const bob = await makeUser({ role: 'STUDENT', name: 'Bob Smith' });
+    await makeActiveMember({ userId: alice.id, clubId: club.id });
+    await makeActiveMember({ userId: bob.id, clubId: club.id });
+
+    const res = await request(app)
+      .get(`/api/clubs/${club.id}/members`)
+      .query({ search: alice.email.slice(-14) })
+      .set('Authorization', tokenFor(admin));
+
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(1);
+    expect(res.body.items[0].user.id).toBe(alice.id);
+  });
+
+  it('combines search with status=ALUMNI', async () => {
+    const admin = await makeUser({ role: 'CLUB_ADMIN' });
+    const club = await makeClub();
+    await makeOfficer({ userId: admin.id, clubId: club.id });
+    const alumni = await makeUser({ role: 'STUDENT', name: 'Zoe Smith' });
+    const active = await makeUser({ role: 'STUDENT', name: 'Zoe Active' });
+    await makeActiveMember({ userId: active.id, clubId: club.id });
+    await makeMembership({ userId: alumni.id, clubId: club.id, status: 'ALUMNI' });
+
+    const res = await request(app)
+      .get(`/api/clubs/${club.id}/members`)
+      .query({ status: 'ALUMNI', search: 'zoe' })
+      .set('Authorization', tokenFor(admin));
+
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(1);
+    expect(res.body.items[0].user.name).toBe('Zoe Smith');
+    expect(res.body.items[0].status).toBe('ALUMNI');
+  });
+
+  it('returns empty items and total 0 when search matches nothing', async () => {
+    const admin = await makeUser({ role: 'CLUB_ADMIN' });
+    const club = await makeClub();
+    await makeOfficer({ userId: admin.id, clubId: club.id });
+    const member = await makeUser({ role: 'STUDENT', name: 'Alice Johnson' });
+    await makeActiveMember({ userId: member.id, clubId: club.id });
+
+    const res = await request(app)
+      .get(`/api/clubs/${club.id}/members`)
+      .query({ search: 'nobody-here' })
+      .set('Authorization', tokenFor(admin));
+
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(0);
+    expect(res.body.items).toHaveLength(0);
+  });
+
+  it('rejects a search longer than 25 characters', async () => {
+    const admin = await makeUser({ role: 'CLUB_ADMIN' });
+    const club = await makeClub();
+    await makeOfficer({ userId: admin.id, clubId: club.id });
+
+    const res = await request(app)
+      .get(`/api/clubs/${club.id}/members`)
+      .query({ search: 'a'.repeat(26) })
+      .set('Authorization', tokenFor(admin));
+
+    expect(res.status).toBe(400);
+  });
 });
 
 describe('PATCH /api/clubs/:clubId/members/:userId/approve', () => {

@@ -7,8 +7,8 @@ const requestJoin = asyncHandler(async (req, res) => {
 });
 
 const listMembers = asyncHandler(async (req, res) => {
-  const { status, page, limit } = req.query;
-  const result = await membershipsService.listMembers(req.params.clubId, { status, page, limit });
+  const { status, page, limit, search } = req.query;
+  const result = await membershipsService.listMembers(req.params.clubId, { status, page, limit, search });
   res.status(200).json(result);
 });
 

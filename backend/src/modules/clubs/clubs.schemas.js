@@ -26,6 +26,8 @@ const listQuery = z.object({
 const getByIdQuery = z.object({
   membersPage: z.coerce.number().int().min(1).default(1),
   membersLimit: z.coerce.number().int().min(1).max(100).default(10),
+  membersSearch: z.string().max(25, 'Search must be at most 25 characters').optional(),
+  membersStatus: z.enum(['ACTIVE', 'ALUMNI']).default('ACTIVE'),
   eventsPage: z.coerce.number().int().min(1).default(1),
   eventsLimit: z.coerce.number().int().min(1).max(100).default(5),
 });

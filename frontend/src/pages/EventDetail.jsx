@@ -21,7 +21,7 @@ export default function EventDetail() {
     return <DetailSkeleton />;
   }
 
-  if (vm.error) {
+  if (vm.error && !vm.event) {
     return (
       <div className="space-y-4">
         <BackLink to="/events" label="Back to Events" />
@@ -33,7 +33,10 @@ export default function EventDetail() {
   if (!vm.event) return null;
 
   return (
-    <div className="max-w-3xl mx-auto animate-fade-in">
+    <div
+      className={`max-w-3xl mx-auto animate-fade-in transition-opacity ${vm.refreshing ? 'opacity-60 pointer-events-none' : ''}`}
+      aria-busy={vm.refreshing}
+    >
       <BackLink to="/events" label="Back to Events" />
 
       {vm.event.bannerUrl && (

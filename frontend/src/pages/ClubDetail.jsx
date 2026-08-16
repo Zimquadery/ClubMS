@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Users, Calendar, MapPin, ImageIcon, Clock, Trash2, X } from 'lucide-react'
+import { Users, Calendar, MapPin, ImageIcon, Clock, Trash2, X, Search } from 'lucide-react'
 import BackLink from '@/components/BackLink'
 import ClubAnnouncements from '@/components/ClubAnnouncements'
 import { ImageUploadButton } from '@/components/ImageUploadButton'
@@ -34,7 +34,7 @@ export default function ClubDetail() {
     )
   }
 
-  if (vm.error) {
+  if (vm.error && !vm.club) {
     return (
       <div className="space-y-4">
         <BackLink to="/clubs" label="Back to Directory" />
@@ -181,8 +181,9 @@ export default function ClubDetail() {
             </div>
           </CardHeader>
           <CardContent>
-            {vm.events.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No upcoming events scheduled.</p>
+            <div className={vm.refreshing ? 'opacity-60 pointer-events-none transition-opacity' : 'transition-opacity'} aria-busy={vm.refreshing}>
+              {vm.events.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No upcoming events scheduled.</p>
             ) : (
               <>
                 <div className="divide-y">
@@ -225,20 +226,61 @@ export default function ClubDetail() {
                 />
               </>
             )}
+              </div>
           </CardContent>
         </Card>
 
         {vm.canViewMembers && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Users className="h-5 w-5 text-brand-primary" />
-                Members
-              </CardTitle>
+              <div className="flex items-center justify-between gap-2">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Users className="h-5 w-5 text-brand-primary" />
+                  {vm.membersStatus === 'ALUMNI' ? 'Alumni' : 'Members'}
+                </CardTitle>
+                <div role="tablist" aria-label="Member type" className="flex gap-2">
+                  <Button
+                    role="tab"
+                    aria-selected={vm.membersStatus === 'ACTIVE'}
+                    size="sm"
+                    variant={vm.membersStatus === 'ACTIVE' ? 'default' : 'outline'}
+                    className={vm.membersStatus === 'ACTIVE' ? 'bg-brand-primary hover:bg-brand-primary/90 text-white' : ''}
+                    onClick={() => { vm.setMembersStatus('ACTIVE'); vm.setMembersPage(1) }}
+                  >
+                    Members
+                  </Button>
+                  <Button
+                    role="tab"
+                    aria-selected={vm.membersStatus === 'ALUMNI'}
+                    size="sm"
+                    variant={vm.membersStatus === 'ALUMNI' ? 'default' : 'outline'}
+                    className={vm.membersStatus === 'ALUMNI' ? 'bg-brand-primary hover:bg-brand-primary/90 text-white' : ''}
+                    onClick={() => { vm.setMembersStatus('ALUMNI'); vm.setMembersPage(1) }}
+                  >
+                    Alumni
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
+              <div className="relative mb-3">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search name or email"
+                  aria-label="Search members by name or email"
+                  value={vm.membersSearch}
+                  onChange={(e) => vm.setMembersSearch(e.target.value)}
+                  maxLength={25}
+                  className="pl-8 w-48"
+                />
+              </div>
+              <div className={vm.refreshing ? 'opacity-60 pointer-events-none transition-opacity' : 'transition-opacity'} aria-busy={vm.refreshing}>
               {vm.members.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No active members yet.</p>
+                <p className="text-sm text-muted-foreground">
+                  {vm.membersStatus === 'ALUMNI'
+                    ? (vm.membersSearch ? 'No alumni found' : 'No alumni yet.')
+                    : (vm.membersSearch ? 'No members found' : 'No active members yet.')}
+                </p>
               ) : (
                 <>
                   <div className="divide-y">
@@ -258,6 +300,7 @@ export default function ClubDetail() {
                   />
                 </>
               )}
+              </div>
             </CardContent>
           </Card>
         )}

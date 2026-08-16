@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import client from '@/api/client'
 import { toast } from 'sonner'
 
 export default function useClubDetail(id, user) {
   const [club, setClub] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState('')
   const [joinLoading, setJoinLoading] = useState(false)
   const [leaveLoading, setLeaveLoading] = useState(false)
@@ -14,59 +15,73 @@ export default function useClubDetail(id, user) {
   const [deleteEventTarget, setDeleteEventTarget] = useState(null)
   const [membersPage, setMembersPage] = useState(1)
   const [eventsPage, setEventsPage] = useState(1)
+  const [membersSearch, setMembersSearch] = useState('')
+  const [debouncedMembersSearch, setDebouncedMembersSearch] = useState('')
+  const [membersStatus, setMembersStatus] = useState('ACTIVE')
   const [totalMembers, setTotalMembers] = useState(0)
   const [totalEvents, setTotalEvents] = useState(0)
+  const loadedRef = useRef(false)
+  const [prevId, setPrevId] = useState(id)
 
-  async function fetchClub() {
+  if (prevId !== id) {
+    setPrevId(id)
+    loadedRef.current = false
+    setClub(null)
+    setError('')
     setLoading(true)
+    setRefreshing(false)
+    setMembersPage(1)
+    setEventsPage(1)
+    setMembersSearch('')
+    setDebouncedMembersSearch('')
+    setMembersStatus('ACTIVE')
+  }
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedMembersSearch(membersSearch)
+      setMembersPage(1)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [membersSearch])
+
+  function buildParams() {
+    const params = { membersPage, membersLimit: 10, eventsPage, eventsLimit: 5 }
+    const q = debouncedMembersSearch.trim()
+    if (q) params.membersSearch = q
+    if (membersStatus === 'ALUMNI') params.membersStatus = membersStatus
+    return params
+  }
+
+  async function fetchClub(isCancelled = () => false) {
+    const isInitial = !loadedRef.current
+    if (isInitial) setLoading(true)
+    else setRefreshing(true)
     setError('')
     try {
-      const res = await client.get(`/clubs/${id}`, {
-        params: {
-          membersPage,
-          membersLimit: 10,
-          eventsPage,
-          eventsLimit: 5,
-        },
-      })
+      const res = await client.get(`/clubs/${id}`, { params: buildParams() })
+      if (isCancelled()) return
       setClub(res.data)
       setTotalMembers(res.data.totalMembers)
       setTotalEvents(res.data.totalEvents)
+      loadedRef.current = true
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load club')
+      if (isCancelled()) return
+      if (isInitial) setError(err.response?.data?.message || 'Failed to load club')
+      else toast.error(err.response?.data?.message || 'Failed to refresh club details')
     } finally {
-      setLoading(false)
+      if (!isCancelled()) {
+        setLoading(false)
+        setRefreshing(false)
+      }
     }
   }
 
   useEffect(() => {
     let active = true
-    async function doFetch() {
-      setLoading(true)
-      setError('')
-      try {
-        const res = await client.get(`/clubs/${id}`, {
-          params: {
-            membersPage,
-            membersLimit: 10,
-            eventsPage,
-            eventsLimit: 5,
-          },
-        })
-        if (active) {
-          setClub(res.data)
-          setTotalMembers(res.data.totalMembers)
-          setTotalEvents(res.data.totalEvents)
-        }
-      } catch (err) {
-        if (active) setError(err.response?.data?.message || 'Failed to load club')
-      } finally {
-        if (active) setLoading(false)
-      }
-    }
-    doFetch()
+    fetchClub(() => !active)
     return () => { active = false }
-  }, [id, membersPage, eventsPage])
+  }, [id, membersPage, eventsPage, debouncedMembersSearch, membersStatus])
 
   async function handleJoin() {
     setJoinLoading(true)
@@ -155,7 +170,7 @@ export default function useClubDetail(id, user) {
   }
 
   return {
-    club, loading, error,
+    club, loading, refreshing, error,
     joinLoading, leaveLoading,
     showCreateDialog, setShowCreateDialog,
     submitting, newEvent, setNewEvent,
@@ -163,6 +178,7 @@ export default function useClubDetail(id, user) {
     deleteEventTarget, setDeleteEventTarget,
     membersPage, setMembersPage, eventsPage, setEventsPage,
     totalMembers, totalEvents,
+    membersSearch, setMembersSearch, membersStatus, setMembersStatus,
     fetchClub, handleJoin, handleLeave, handleCreateEvent, handleDeleteEvent,
     memberCount, userMembership, canManageEvents, canViewMembers,
     members, events, membersTotalPages, eventsTotalPages,

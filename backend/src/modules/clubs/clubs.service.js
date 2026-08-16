@@ -3,6 +3,7 @@ const { AppError } = require('../../utils/errors');
 const { CLUB_CATEGORIES } = require('./clubs.constants');
 const { isPrivilegedRole } = require('../../utils/roles');
 const { isPrimaryHostClub } = require('../eventHosts/eventHosts.service');
+const { userSearchWhere } = require('../../utils/search');
 
 async function list({ search, category, page = 1, limit = 20 }) {
   const where = {};
@@ -25,7 +26,7 @@ async function list({ search, category, page = 1, limit = 20 }) {
   return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
 }
 
-async function getById(id, userId, { membersPage = 1, membersLimit = 10, eventsPage = 1, eventsLimit = 5, userRole } = {}) {
+async function getById(id, userId, { membersPage = 1, membersLimit = 10, eventsPage = 1, eventsLimit = 5, membersSearch, membersStatus = 'ACTIVE', userRole } = {}) {
   let userMembership = null;
   if (userId) {
     userMembership = await prisma.clubMembership.findUnique({
@@ -36,6 +37,9 @@ async function getById(id, userId, { membersPage = 1, membersLimit = 10, eventsP
 
   const includeEmail = userMembership?.role === 'OFFICER' || isPrivilegedRole(userRole);
 
+  const memberSearchWhere = userSearchWhere(membersSearch);
+  const memberListWhere = { status: membersStatus, ...(memberSearchWhere && { user: memberSearchWhere }) };
+
   const club = await prisma.club.findUnique({
     where: { id },
     include: {
@@ -45,7 +49,7 @@ async function getById(id, userId, { membersPage = 1, membersLimit = 10, eventsP
         },
       },
       memberships: {
-        where: { status: 'ACTIVE' },
+        where: memberListWhere,
         include: { user: { select: { id: true, name: true, ...(includeEmail && { email: true }) } } },
         orderBy: { createdAt: 'asc' },
         skip: (membersPage - 1) * membersLimit,
@@ -58,7 +62,7 @@ async function getById(id, userId, { membersPage = 1, membersLimit = 10, eventsP
 
   const upcomingWhere = { hosts: { some: { clubId: id } }, startTime: { gte: new Date() } };
   const [totalMembers, totalEvents, events] = await Promise.all([
-    prisma.clubMembership.count({ where: { clubId: id, status: 'ACTIVE' } }),
+    prisma.clubMembership.count({ where: { clubId: id, ...memberListWhere } }),
     prisma.event.count({ where: upcomingWhere }),
     prisma.event.findMany({
       where: upcomingWhere,

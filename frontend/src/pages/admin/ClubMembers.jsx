@@ -4,6 +4,7 @@ import client from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import {
   Dialog,
   DialogContent,
@@ -12,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Users, ArrowRightLeft, GraduationCap, Trash2, Download, ChevronUp, ChevronDown } from 'lucide-react'
+import { Users, ArrowRightLeft, GraduationCap, Trash2, Download, ChevronUp, ChevronDown, Search } from 'lucide-react'
 import BackLink from '@/components/BackLink'
 import { formatShortDate } from '@/lib/format'
 import { toast } from 'sonner'
@@ -30,6 +31,13 @@ export default function ClubMembers() {
   const tab = searchParams.get('tab') || 'active'
   const [activeMembers, setActiveMembers] = useState([])
   const [alumniMembers, setAlumniMembers] = useState([])
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300)
+    return () => clearTimeout(timer)
+  }, [search])
 
   const {
     items: fetchedMembers,
@@ -39,10 +47,13 @@ export default function ClubMembers() {
   } = usePaginatedFetch({
     fetchFn: async ({ page }) => {
       const status = tab === 'active' ? 'ACTIVE' : 'ALUMNI'
-      const res = await client.get(`/clubs/${clubId}/members`, { params: { status, page, limit: 20 } })
+      const params = { status, page, limit: 20 }
+      const q = debouncedSearch.trim()
+      if (q) params.search = q
+      const res = await client.get(`/clubs/${clubId}/members`, { params })
       return { items: res.data.items || res.data, totalPages: res.data.totalPages || 1 }
     },
-    deps: [clubId, tab],
+    deps: [clubId, tab, debouncedSearch],
     enabled: !!clubId,
   })
 
@@ -124,29 +135,44 @@ export default function ClubMembers() {
 
       <AdminClubHeader title="Club Members" subtitle="Manage members and alumni" adminClubs={adminClubs} currentClub={currentClub} clubId={clubId} onClubChange={navigateToClub} />
 
-      <div className="flex gap-2">
-        <Button
-          variant={tab === 'active' ? 'default' : 'outline'}
-          size="sm"
-          className={tab === 'active' ? 'bg-brand-primary hover:bg-brand-primary/90 text-white' : ''}
-          onClick={() => setSearchParams({ tab: 'active', page: '1' })}
-        >
-          Active Members
-        </Button>
-        <Button
-          variant={tab === 'alumni' ? 'default' : 'outline'}
-          size="sm"
-          className={tab === 'alumni' ? 'bg-brand-primary hover:bg-brand-primary/90 text-white' : ''}
-          onClick={() => setSearchParams({ tab: 'alumni', page: '1' })}
-        >
-          Alumni
-        </Button>
-      </div>
-
-      <div className="flex justify-end">
-        <Button variant="outline" size="sm" onClick={handleExport}>
-          <Download className="h-4 w-4 mr-1" /> Export CSV
-        </Button>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex gap-2">
+          <Button
+            variant={tab === 'active' ? 'default' : 'outline'}
+            size="sm"
+            className={tab === 'active' ? 'bg-brand-primary hover:bg-brand-primary/90 text-white' : ''}
+            onClick={() => setSearchParams({ tab: 'active', page: '1' })}
+          >
+            Active Members
+          </Button>
+          <Button
+            variant={tab === 'alumni' ? 'default' : 'outline'}
+            size="sm"
+            className={tab === 'alumni' ? 'bg-brand-primary hover:bg-brand-primary/90 text-white' : ''}
+            onClick={() => setSearchParams({ tab: 'alumni', page: '1' })}
+          >
+            Alumni
+          </Button>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search name or email"
+              aria-label="Search members by name or email"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                if (page > 1) setURLParam('page', '1')
+              }}
+              maxLength={25}
+              className="pl-8 w-48"
+            />
+          </div>
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <Download className="h-4 w-4 mr-1" /> Export CSV
+          </Button>
+        </div>
       </div>
 
       {(adminError || error) && (
@@ -157,7 +183,7 @@ export default function ClubMembers() {
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
             <Users className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
-            No {tab === 'active' ? 'active members' : 'alumni'}
+            No {tab === 'active' ? 'active members' : 'alumni'}{debouncedSearch ? ' found' : ''}
           </CardContent>
         </Card>
       ) : (

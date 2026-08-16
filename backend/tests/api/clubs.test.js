@@ -2,7 +2,7 @@ const request = require('supertest');
 const { createApp } = require('../../src/app');
 const { prisma } = require('../db');
 const {
-  makeUser, makeClub, makeEvent, makeActiveMember,
+  makeUser, makeClub, makeEvent, makeActiveMember, makeMembership,
   tokenFor, waitFor,
 } = require('../fixtures');
 
@@ -98,6 +98,68 @@ describe('GET /api/clubs/:id', () => {
       .get('/api/clubs/00000000-0000-0000-0000-000000000000')
       .set('Authorization', tokenFor(user));
     expect(res.status).toBe(404);
+  });
+
+  it('filters embedded members with membersSearch', async () => {
+    const member = await makeUser({ role: 'STUDENT', name: 'Alice Johnson' });
+    const other = await makeUser({ role: 'STUDENT', name: 'Bob Smith' });
+    const club = await makeClub();
+    await makeActiveMember({ userId: member.id, clubId: club.id });
+    await makeActiveMember({ userId: other.id, clubId: club.id });
+
+    const res = await request(app)
+      .get(`/api/clubs/${club.id}`)
+      .query({ membersSearch: 'ALICE' })
+      .set('Authorization', tokenFor(member));
+
+    expect(res.status).toBe(200);
+    expect(res.body.memberships).toHaveLength(1);
+    expect(res.body.memberships[0].user.name).toBe('Alice Johnson');
+    expect(res.body.totalMembers).toBe(1);
+  });
+
+  it('returns alumni when membersStatus=ALUMNI, excluding active members', async () => {
+    const viewer = await makeUser({ role: 'STUDENT' });
+    const alumni = await makeUser({ role: 'STUDENT', name: 'Zoe Alumni' });
+    const active = await makeUser({ role: 'STUDENT', name: 'Zoe Active' });
+    const club = await makeClub();
+    await makeActiveMember({ userId: viewer.id, clubId: club.id });
+    await makeMembership({ userId: alumni.id, clubId: club.id, status: 'ALUMNI' });
+    await makeActiveMember({ userId: active.id, clubId: club.id });
+
+    const res = await request(app)
+      .get(`/api/clubs/${club.id}`)
+      .query({ membersStatus: 'ALUMNI' })
+      .set('Authorization', tokenFor(viewer));
+
+    expect(res.status).toBe(200);
+    expect(res.body.memberships).toHaveLength(1);
+    expect(res.body.memberships[0].user.name).toBe('Zoe Alumni');
+    expect(res.body.totalMembers).toBe(1);
+  });
+
+  it('rejects membersStatus outside ACTIVE/ALUMNI', async () => {
+    const user = await makeUser({ role: 'STUDENT' });
+    const club = await makeClub();
+
+    const res = await request(app)
+      .get(`/api/clubs/${club.id}`)
+      .query({ membersStatus: 'PENDING' })
+      .set('Authorization', tokenFor(user));
+
+    expect(res.status).toBe(400);
+  });
+
+  it('rejects a membersSearch longer than 25 characters', async () => {
+    const user = await makeUser({ role: 'STUDENT' });
+    const club = await makeClub();
+
+    const res = await request(app)
+      .get(`/api/clubs/${club.id}`)
+      .query({ membersSearch: 'a'.repeat(26) })
+      .set('Authorization', tokenFor(user));
+
+    expect(res.status).toBe(400);
   });
 });
 

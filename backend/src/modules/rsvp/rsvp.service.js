@@ -2,6 +2,7 @@ const { prisma } = require('../../lib/prisma');
 const { AppError } = require('../../utils/errors');
 const eventHosts = require('../eventHosts/eventHosts.service');
 const { isPrivilegedRole } = require('../../utils/roles');
+const { userSearchWhere } = require('../../utils/search');
 
 async function upsert(eventId, userId, status, userRole) {
   const event = await prisma.event.findUnique({ where: { id: eventId } });
@@ -45,14 +46,8 @@ async function listByEvent(eventId, { status, page = 1, limit = 50, userId, user
 
   const where = { eventId };
   if (status) where.status = status;
-  if (search) {
-    where.user = {
-      OR: [
-        { name: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
-      ],
-    };
-  }
+  const searchWhere = userSearchWhere(search);
+  if (searchWhere) where.user = searchWhere;
 
   const skip = (page - 1) * limit;
 

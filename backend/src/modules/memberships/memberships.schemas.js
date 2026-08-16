@@ -11,6 +11,7 @@ const updateRole = z.object({
 
 const listMembersQuery = z.object({
   status: z.enum(['PENDING', 'ACTIVE', 'ALUMNI', 'REJECTED']).optional(),
+  search: z.string().max(25, 'Search must be at most 25 characters').optional(),
   ...paginatedSchema(50),
 });
 

@@ -9,7 +9,7 @@ const upsert = z.object({
 
 const listQuery = z.object({
   status: rsvpStatus.optional(),
-  search: z.string().optional(),
+  search: z.string().max(25, 'Search must be at most 25 characters').optional(),
   ...paginatedSchema(50),
 });
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import client from '@/api/client';
 import { toast } from 'sonner';
@@ -8,6 +8,7 @@ export default function useEventDetail(id, user) {
   const navigate = useNavigate();
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [editDialog, setEditDialog] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState(false);
@@ -19,38 +20,63 @@ export default function useEventDetail(id, user) {
   const [coHostDialog, setCoHostDialog] = useState(false);
   const [pendingInvites, setPendingInvites] = useState([]);
   const [coHostSubmitting, setCoHostSubmitting] = useState(false);
+  const loadedRef = useRef(false);
+  const [prevId, setPrevId] = useState(id);
 
-  async function fetchEvent() {
+  if (prevId !== id) {
+    setPrevId(id);
+    loadedRef.current = false;
+    setEvent(null);
+    setError('');
     setLoading(true);
+    setRefreshing(false);
+    setUserRsvp(null);
+    setAttendeeCount(0);
+    setPendingInvites([]);
+  }
+
+  async function fetchEvent(isCancelled = () => false) {
+    const isInitial = !loadedRef.current;
+    if (isInitial) setLoading(true);
+    else setRefreshing(true);
     setError('');
     try {
       const res = await client.get(`/events/${id}`);
+      if (isCancelled()) return;
       setEvent(res.data);
+      loadedRef.current = true;
 
       client.get(`/events/${id}/rsvp`)
-        .then(rsvpRes => setUserRsvp(rsvpRes.data))
-        .catch(() => setUserRsvp(null));
+        .then(rsvpRes => { if (!isCancelled()) setUserRsvp(rsvpRes.data); })
+        .catch(() => { if (!isCancelled()) setUserRsvp(null); });
 
       const localCanManage = (res.data.userMembership?.role === 'OFFICER'
         && res.data.userMembership?.status === 'ACTIVE') || user?.role === 'PLATFORM_ADMIN' || user?.role === 'FACULTY';
 
       if (localCanManage) {
         client.get(`/events/${id}/rsvps`, { params: { limit: 1 } })
-          .then(countRes => setAttendeeCount(countRes.data.total))
+          .then(countRes => { if (!isCancelled()) setAttendeeCount(countRes.data.total); })
           .catch(() => {});
         client.get(`/events/${id}/cohost-invites`)
-          .then(invRes => setPendingInvites(invRes.data.items || []))
-          .catch(() => setPendingInvites([]));
+          .then(invRes => { if (!isCancelled()) setPendingInvites(invRes.data.items || []); })
+          .catch(() => { if (!isCancelled()) setPendingInvites([]); });
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load event');
+      if (isCancelled()) return;
+      if (isInitial) setError(err.response?.data?.message || 'Failed to load event');
+      else toast.error(err.response?.data?.message || 'Failed to refresh event details');
     } finally {
-      setLoading(false);
+      if (!isCancelled()) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }
 
   useEffect(() => {
-    fetchEvent();
+    let active = true;
+    fetchEvent(() => !active);
+    return () => { active = false };
   }, [id]);
 
   async function handleRsvp(status) {
@@ -210,7 +236,7 @@ export default function useEventDetail(id, user) {
   }
 
   return {
-    event, loading, error,
+    event, loading, refreshing, error,
     editDialog, setEditDialog, deleteDialog, setDeleteDialog,
     submitting, form, setForm,
     userRsvp, rsvpLoading, attendeeCount,
