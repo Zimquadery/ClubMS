@@ -3,7 +3,7 @@ const { AppError } = require('../../utils/errors');
 const { isPrivilegedRole } = require('../../utils/roles');
 const { userSearchWhere } = require('../../utils/search');
 
-const USER_SELECT = { id: true, name: true, email: true };
+const USER_SELECT = { id: true, name: true, email: true, phone: true };
 
 async function updateMembershipStatus(clubId, userId, expectedStatus, newStatus) {
   const membership = await prisma.clubMembership.findUnique({
@@ -362,9 +362,9 @@ async function exportMembersCsv(clubId) {
     orderBy: { createdAt: 'asc' },
   });
 
-  const header = 'Name,Email,Role,Status,Joined Date';
+  const header = 'Name,Email,Phone,Role,Status,Joined Date';
   const rows = members.map((m) =>
-    `"${m.user.name}","${m.user.email}","${m.role}","${m.status}","${m.createdAt.toISOString()}"`
+    `"${m.user.name}","${m.user.email}","${m.user.phone}","${m.role}","${m.status}","${m.createdAt.toISOString()}"`
   );
   return [header, ...rows].join('\n');
 }

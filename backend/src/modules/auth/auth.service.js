@@ -7,7 +7,7 @@ const { AppError } = require('../../utils/errors');
 const SALT_ROUNDS = 10;
 const JWT_EXPIRY = '24h';
 
-async function register(email, password, name) {
+async function register(email, password, name, phone) {
   email = email.toLowerCase().trim();
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
@@ -17,8 +17,8 @@ async function register(email, password, name) {
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
   const user = await prisma.user.create({
-    data: { email, passwordHash, name, role: 'STUDENT' },
-    select: { id: true, email: true, name: true, role: true, createdAt: true, updatedAt: true },
+    data: { email, passwordHash, name, phone, role: 'STUDENT' },
+    select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true, updatedAt: true },
   });
 
   return user;
@@ -46,6 +46,7 @@ async function login(email, password) {
     id: user.id,
     email: user.email,
     name: user.name,
+    phone: user.phone,
     role: user.role,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
@@ -57,7 +58,7 @@ async function login(email, password) {
 async function getMe(userId) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, email: true, name: true, role: true, createdAt: true, updatedAt: true },
+    select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true, updatedAt: true },
   });
 
   if (!user) {
@@ -67,7 +68,7 @@ async function getMe(userId) {
   return user;
 }
 
-async function updateProfile(userId, { name, email }) {
+async function updateProfile(userId, { name, email, phone }) {
   if (email) {
     email = email.toLowerCase().trim();
     const existing = await prisma.user.findFirst({ where: { email, id: { not: userId } } });
@@ -79,6 +80,7 @@ async function updateProfile(userId, { name, email }) {
   const data = {};
   if (name !== undefined) data.name = name;
   if (email !== undefined) data.email = email;
+  if (phone !== undefined) data.phone = phone;
 
   if (Object.keys(data).length === 0) {
     throw new AppError('No fields to update', 400);
@@ -87,7 +89,7 @@ async function updateProfile(userId, { name, email }) {
   return prisma.user.update({
     where: { id: userId },
     data,
-    select: { id: true, email: true, name: true, role: true, createdAt: true, updatedAt: true },
+    select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true, updatedAt: true },
   });
 }
 

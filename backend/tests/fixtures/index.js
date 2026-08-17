@@ -29,8 +29,9 @@ async function makeUser(overrides = {}) {
       passwordHash,
       name: overrides.name || `Test ${email}`,
       role: overrides.role || 'STUDENT',
+      phone: overrides.phone || '01700000000',
     },
-    select: { id: true, email: true, name: true, role: true, createdAt: true, updatedAt: true },
+    select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true, updatedAt: true },
   });
   return { ...user, password };
 }

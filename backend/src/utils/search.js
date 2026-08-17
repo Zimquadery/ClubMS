@@ -5,6 +5,7 @@ function userSearchWhere(search) {
     OR: [
       { name: { contains: q, mode: 'insensitive' } },
       { email: { contains: q, mode: 'insensitive' } },
+      { phone: { contains: q, mode: 'insensitive' } },
     ],
   };
 }

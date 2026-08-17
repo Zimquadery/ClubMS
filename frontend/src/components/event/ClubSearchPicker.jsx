@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import client from '@/api/client';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
 import { Search } from 'lucide-react';
 
 export function ClubSearchPicker({ onSelect, excludeIds = [], placeholder = 'Search clubs by name...' }) {
@@ -9,7 +10,7 @@ export function ClubSearchPicker({ onSelect, excludeIds = [], placeholder = 'Sea
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  const containerRef = useRef(null);
+  const anchorRef = useRef(null);
 
   const excludeKey = excludeIds.join(',');
 
@@ -34,14 +35,6 @@ export function ClubSearchPicker({ onSelect, excludeIds = [], placeholder = 'Sea
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, excludeKey]);
 
-  useEffect(() => {
-    function handle(e) {
-      if (containerRef.current && !containerRef.current.contains(e.target)) setOpen(false);
-    }
-    document.addEventListener('mousedown', handle);
-    return () => document.removeEventListener('mousedown', handle);
-  }, []);
-
   function pick(club) {
     onSelect(club);
     setQuery('');
@@ -50,38 +43,42 @@ export function ClubSearchPicker({ onSelect, excludeIds = [], placeholder = 'Sea
   }
 
   return (
-    <div ref={containerRef} className="relative">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          value={query}
-          onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
-          onFocus={() => setOpen(true)}
-          placeholder={placeholder}
-          className="pl-9"
-        />
-      </div>
-      {open && query.trim() && (
-        <div className="absolute z-[60] mt-1 w-full rounded-md border border-input bg-background shadow-md max-h-60 overflow-y-auto">
-          {loading ? (
-            <p className="px-3 py-2 text-xs text-muted-foreground">Searching…</p>
-          ) : results.length === 0 ? (
-            <p className="px-3 py-2 text-xs text-muted-foreground">No clubs found.</p>
-          ) : (
-            results.map((club) => (
-              <button
-                type="button"
-                key={club.id}
-                onClick={() => pick(club)}
-                className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
-              >
-                <span className="font-medium truncate">{club.name}</span>
-                <Badge variant="secondary" className="text-xs flex-shrink-0">{club.category}</Badge>
-              </button>
-            ))
-          )}
+    <Popover open={open && query.trim().length > 0} onOpenChange={setOpen}>
+      <PopoverAnchor asChild>
+        <div ref={anchorRef} className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+            onFocus={() => setOpen(true)}
+            placeholder={placeholder}
+            className="pl-9"
+          />
         </div>
-      )}
-    </div>
+      </PopoverAnchor>
+      <PopoverContent
+        className="w-[var(--radix-popover-trigger-width)] p-1 max-h-[min(15rem,var(--radix-popover-content-available-height))] overflow-y-auto"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => { if (anchorRef.current?.contains(e.target)) e.preventDefault(); }}
+      >
+        {loading ? (
+          <p className="px-3 py-2 text-xs text-muted-foreground">Searching…</p>
+        ) : results.length === 0 ? (
+          <p className="px-3 py-2 text-xs text-muted-foreground">No clubs found.</p>
+        ) : (
+          results.map((club) => (
+            <button
+              type="button"
+              key={club.id}
+              onClick={() => pick(club)}
+              className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
+            >
+              <span className="font-medium truncate">{club.name}</span>
+              <Badge variant="secondary" className="text-xs flex-shrink-0">{club.category}</Badge>
+            </button>
+          ))
+        )}
+      </PopoverContent>
+    </Popover>
   );
 }

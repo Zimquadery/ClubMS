@@ -7,12 +7,12 @@ let app;
 beforeAll(() => { app = createApp(); });
 
 describe('POST /api/auth/register', () => {
-  const valid = { email: 'newuser@test.local', password: 'Password123!', name: 'New User' };
+  const valid = { email: 'newuser@test.local', password: 'Password123!', name: 'New User', phone: '01712345678' };
 
   it('returns 201 and creates the user (no password leaked)', async () => {
     const res = await request(app).post('/api/auth/register').send(valid);
     expect(res.status).toBe(201);
-    expect(res.body).toMatchObject({ email: valid.email, name: valid.name, role: 'STUDENT' });
+    expect(res.body).toMatchObject({ email: valid.email, name: valid.name, phone: valid.phone, role: 'STUDENT' });
     expect(res.body).not.toHaveProperty('passwordHash');
     expect(res.body.id).toBeDefined();
 
@@ -27,6 +27,7 @@ describe('POST /api/auth/register', () => {
       email: existing.email,
       password: 'Password123!',
       name: 'Other',
+      phone: '01711111111',
     });
     expect(res.status).toBe(409);
     expect(res.body.message).toMatch(/already registered/i);
@@ -40,16 +41,32 @@ describe('POST /api/auth/register', () => {
 
   it('returns 400 on an invalid email', async () => {
     const res = await request(app).post('/api/auth/register').send({
-      email: 'not-an-email', password: 'Password123!', name: 'X',
+      email: 'not-an-email', password: 'Password123!', name: 'X', phone: '01712345678',
     });
     expect(res.status).toBe(400);
   });
 
   it('returns 400 when password is too short', async () => {
     const res = await request(app).post('/api/auth/register').send({
-      email: 'short@test.local', password: '123', name: 'X',
+      email: 'short@test.local', password: '123', name: 'X', phone: '01712345678',
     });
     expect(res.status).toBe(400);
+  });
+
+  it('returns 400 on an invalid phone', async () => {
+    const res = await request(app).post('/api/auth/register').send({
+      email: 'badphone@test.local', password: 'Password123!', name: 'X', phone: 'call me',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/phone/i);
+  });
+
+  it('accepts a phone with a leading plus and trims whitespace', async () => {
+    const res = await request(app).post('/api/auth/register').send({
+      email: 'plusphone@test.local', password: 'Password123!', name: 'X', phone: ' +8801712345678 ',
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.phone).toBe('+8801712345678');
   });
 
   it('strips unknown fields before insert', async () => {
@@ -57,6 +74,7 @@ describe('POST /api/auth/register', () => {
       email: 'extra@test.local',
       password: 'Password123!',
       name: 'Extra',
+      phone: '01712345678',
       role: 'PLATFORM_ADMIN',
     });
     expect(res.status).toBe(201);
@@ -68,6 +86,7 @@ describe('POST /api/auth/register', () => {
       email: 'Mixed@TEST.local',
       password: 'Password123!',
       name: 'Mix',
+      phone: '01712345678',
     });
     expect(res.status).toBe(201);
     expect(res.body.email).toBe('mixed@test.local');
@@ -155,6 +174,28 @@ describe('PATCH /api/auth/profile', () => {
       .send({ name: 'Renamed', email: 'renamed@test.local' });
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ name: 'Renamed', email: 'renamed@test.local' });
+  });
+
+  it('updates phone', async () => {
+    const user = await makeUser();
+    const res = await request(app)
+      .patch('/api/auth/profile')
+      .set('Authorization', tokenFor(user))
+      .send({ phone: '+8801798765432' });
+    expect(res.status).toBe(200);
+    expect(res.body.phone).toBe('+8801798765432');
+
+    const row = await prisma.user.findUnique({ where: { id: user.id } });
+    expect(row.phone).toBe('+8801798765432');
+  });
+
+  it('returns 400 on an invalid phone', async () => {
+    const user = await makeUser();
+    const res = await request(app)
+      .patch('/api/auth/profile')
+      .set('Authorization', tokenFor(user))
+      .send({ phone: '12345' });
+    expect(res.status).toBe(400);
   });
 
   it('returns 400 when body is empty', async () => {

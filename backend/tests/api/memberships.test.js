@@ -938,6 +938,8 @@ describe('GET /api/clubs/:clubId/members/export', () => {
     const admin = await makeUser({ role: 'CLUB_ADMIN' });
     const club = await makeClub();
     await makeOfficer({ userId: admin.id, clubId: club.id });
+    const member = await makeUser({ phone: '01712345678' });
+    await makeActiveMember({ userId: member.id, clubId: club.id });
 
     const res = await request(app)
       .get(`/api/clubs/${club.id}/members/export`)
@@ -947,7 +949,8 @@ describe('GET /api/clubs/:clubId/members/export', () => {
     expect(res.headers['content-type']).toMatch(/text\/csv/);
     expect(res.headers['content-disposition']).toMatch(/attachment;\s*filename="members-/);
     expect(typeof res.text).toBe('string');
-    expect(res.text.length).toBeGreaterThan(0);
+    expect(res.text).toContain('Name,Email,Phone,Role,Status,Joined Date');
+    expect(res.text).toContain('01712345678');
   });
 });
 

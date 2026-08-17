@@ -246,8 +246,8 @@ export default function EventRsvps() {
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search name or email"
-            aria-label="Search RSVPs by name or email"
+            placeholder="Search name, email, or phone"
+            aria-label="Search RSVPs by name, email, or phone"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-8 w-48"
@@ -275,6 +275,7 @@ export default function EventRsvps() {
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium truncate">{rsvp.user?.name || 'Unknown'}</div>
                         <div className="text-sm text-muted-foreground truncate">{rsvp.user?.email}</div>
+                        <div className="text-xs text-muted-foreground truncate">{rsvp.user?.phone}</div>
                       </div>
                       <div className="flex items-center gap-3">
                         <Badge className={STATUS_BADGE_CLASS[rsvp.status]}>

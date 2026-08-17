@@ -158,8 +158,8 @@ export default function ClubMembers() {
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search name or email"
-              aria-label="Search members by name or email"
+              placeholder="Search name, email, or phone"
+              aria-label="Search members by name, email, or phone"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value)
@@ -200,6 +200,7 @@ export default function ClubMembers() {
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground">{membership.user.email}</p>
+                  <p className="text-xs text-muted-foreground">{membership.user.phone}</p>
                   <p className="text-xs text-muted-foreground mt-1">
                     Joined {formatShortDate(membership.createdAt)}
                   </p>

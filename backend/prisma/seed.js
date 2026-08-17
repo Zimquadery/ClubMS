@@ -18,31 +18,31 @@ async function main() {
   // ── Users
   const users = {};
   const userData = [
-    { email: 'admin@university.edu', name: 'Platform Admin', role: 'PLATFORM_ADMIN' },
-    { email: 'officer1@university.edu', name: 'Alice Chen', role: 'CLUB_ADMIN' },
-    { email: 'officer2@university.edu', name: 'Bob Martinez', role: 'CLUB_ADMIN' },
-    { email: 'officer3@university.edu', name: 'Carol Singh', role: 'CLUB_ADMIN' },
-    { email: 'student1@university.edu', name: 'David Kim', role: 'STUDENT' },
-    { email: 'student2@university.edu', name: 'Eva Rossi', role: 'STUDENT' },
-    { email: 'student3@university.edu', name: 'Frank Okafor', role: 'STUDENT' },
-    { email: 'student4@university.edu', name: 'Grace Liu', role: 'STUDENT' },
-    { email: 'student5@university.edu', name: 'Hassan Ali', role: 'STUDENT' },
-    { email: 'student6@university.edu', name: 'Iris Tanaka', role: 'STUDENT' },
-    { email: 'student7@university.edu', name: 'Jake Wilson', role: 'STUDENT' },
-    { email: 'student8@university.edu', name: 'Kira Petrov', role: 'CLUB_ADMIN' },
-    { email: 'student9@university.edu', name: 'Leo Nguyen', role: 'STUDENT' },
-    { email: 'student10@university.edu', name: 'Maya Johnson', role: 'STUDENT' },
-    { email: 'student11@university.edu', name: 'Noah Brown', role: 'STUDENT' },
-    { email: 'faculty1@university.edu', name: 'Dr. Sarah Palmer', role: 'FACULTY' },
-    { email: 'faculty2@university.edu', name: 'Prof. James Wright', role: 'FACULTY' },
-    { email: 'faculty3@university.edu', name: 'Dr. Emily Watson', role: 'FACULTY' },
+    { email: 'admin@university.edu', name: 'Platform Admin', role: 'PLATFORM_ADMIN', phone: '+8801710000001' },
+    { email: 'officer1@university.edu', name: 'Alice Chen', role: 'CLUB_ADMIN', phone: '+8801710000002' },
+    { email: 'officer2@university.edu', name: 'Bob Martinez', role: 'CLUB_ADMIN', phone: '+8801710000003' },
+    { email: 'officer3@university.edu', name: 'Carol Singh', role: 'CLUB_ADMIN', phone: '+8801710000004' },
+    { email: 'student1@university.edu', name: 'David Kim', role: 'STUDENT', phone: '+8801710000005' },
+    { email: 'student2@university.edu', name: 'Eva Rossi', role: 'STUDENT', phone: '+8801710000006' },
+    { email: 'student3@university.edu', name: 'Frank Okafor', role: 'STUDENT', phone: '+8801710000007' },
+    { email: 'student4@university.edu', name: 'Grace Liu', role: 'STUDENT', phone: '+8801710000008' },
+    { email: 'student5@university.edu', name: 'Hassan Ali', role: 'STUDENT', phone: '+8801710000009' },
+    { email: 'student6@university.edu', name: 'Iris Tanaka', role: 'STUDENT', phone: '+8801710000010' },
+    { email: 'student7@university.edu', name: 'Jake Wilson', role: 'STUDENT', phone: '+8801710000011' },
+    { email: 'student8@university.edu', name: 'Kira Petrov', role: 'CLUB_ADMIN', phone: '+8801710000012' },
+    { email: 'student9@university.edu', name: 'Leo Nguyen', role: 'STUDENT', phone: '+8801710000013' },
+    { email: 'student10@university.edu', name: 'Maya Johnson', role: 'STUDENT', phone: '+8801710000014' },
+    { email: 'student11@university.edu', name: 'Noah Brown', role: 'STUDENT', phone: '+8801710000015' },
+    { email: 'faculty1@university.edu', name: 'Dr. Sarah Palmer', role: 'FACULTY', phone: '+8801710000016' },
+    { email: 'faculty2@university.edu', name: 'Prof. James Wright', role: 'FACULTY', phone: '+8801710000017' },
+    { email: 'faculty3@university.edu', name: 'Dr. Emily Watson', role: 'FACULTY', phone: '+8801710000018' },
   ];
 
   for (const u of userData) {
     users[u.email] = await prisma.user.upsert({
       where: { email: u.email },
       update: {},
-      create: { email: u.email, passwordHash, name: u.name, role: u.role },
+      create: { email: u.email, passwordHash, name: u.name, role: u.role, phone: u.phone },
     });
   }
   console.log(`Created ${userData.length} users`);

@@ -44,6 +44,7 @@ export default function Profile() {
   const { user, refreshUser } = useAuth()
   const [name, setName] = useState(user?.name || '')
   const [email, setEmail] = useState(user?.email || '')
+  const [phone, setPhone] = useState(user?.phone || '')
   const [profileLoading, setProfileLoading] = useState(false)
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -54,7 +55,7 @@ export default function Profile() {
     e.preventDefault()
     setProfileLoading(true)
     try {
-      await client.patch('/auth/profile', { name, email })
+      await client.patch('/auth/profile', { name, email, phone })
       await refreshUser()
       toast.success('Profile updated')
     } catch (err) {
@@ -124,6 +125,21 @@ export default function Profile() {
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input id="email" type="email" autoComplete="email" inputMode="email" autoCapitalize="off" autoCorrect="off" spellCheck={false} value={email} onChange={(e) => setEmail(e.target.value)} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  placeholder="+8801712345678"
+                  pattern="\+?[0-9]{6,15}"
+                  title="6-15 digits, optionally starting with +"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  required
+                />
               </div>
               <Button type="submit" className="bg-brand-primary hover:bg-brand-primary/90 text-white" disabled={profileLoading}>
                 {profileLoading ? 'Saving...' : 'Save Changes'}

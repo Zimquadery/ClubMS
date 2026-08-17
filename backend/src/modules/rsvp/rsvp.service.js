@@ -54,7 +54,7 @@ async function listByEvent(eventId, { status, page = 1, limit = 50, userId, user
   const [items, total, countRows] = await Promise.all([
     prisma.eventRsvp.findMany({
       where,
-      include: { user: { select: { id: true, name: true, email: true } } },
+      include: { user: { select: { id: true, name: true, email: true, phone: true } } },
       skip,
       take: limit,
       orderBy: { createdAt: 'desc' },
@@ -90,13 +90,13 @@ async function exportRsvpsCsv(eventId, userId, userRole) {
 
   const rsvps = await prisma.eventRsvp.findMany({
     where: { eventId },
-    include: { user: { select: { id: true, name: true, email: true } } },
+    include: { user: { select: { id: true, name: true, email: true, phone: true } } },
     orderBy: { createdAt: 'desc' },
   });
 
-  const header = 'Name,Email,Status,Responded At';
+  const header = 'Name,Email,Phone,Status,Responded At';
   const rows = rsvps.map((r) =>
-    `"${r.user.name}","${r.user.email}","${r.status}","${r.createdAt.toISOString()}"`
+    `"${r.user.name}","${r.user.email}","${r.user.phone}","${r.status}","${r.createdAt.toISOString()}"`
   );
   return [header, ...rows].join('\n');
 }

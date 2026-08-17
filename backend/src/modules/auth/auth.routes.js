@@ -19,12 +19,12 @@ const router = express.Router();
  *         application/json:
  *           schema:
  *             type: object
- *             required: [name, email, password, confirmPassword]
+ *             required: [name, email, password, phone]
  *             properties:
  *               name: { type: string, minLength: 1, maxLength: 100 }
  *               email: { type: string, format: email }
  *               password: { type: string, minLength: 6 }
- *               confirmPassword: { type: string, minLength: 6 }
+ *               phone: { type: string, pattern: '^\\+?\\d{6,15}$' }
  *     responses:
  *       201:
  *         description: User registered
@@ -89,6 +89,7 @@ router.get('/me', authMiddleware, authController.getMe);
  *             properties:
  *               name: { type: string, minLength: 1, maxLength: 100 }
  *               email: { type: string, format: email }
+ *               phone: { type: string, pattern: '^\\+?\\d{6,15}$' }
  *     responses:
  *       200:
  *         description: Profile updated

@@ -22,6 +22,7 @@ function getPasswordStrength(password) {
 export default function Register() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
@@ -44,7 +45,7 @@ export default function Register() {
       return
     }
     try {
-      await register(email, password, name)
+      await register(email, password, name, phone)
       navigate('/dashboard')
     } catch (err) {
       setError(
@@ -95,6 +96,21 @@ export default function Register() {
           placeholder="you@university.edu"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="phone">Phone</Label>
+        <Input
+          id="phone"
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
+          placeholder="+8801712345678"
+          pattern="\+?[0-9]{6,15}"
+          title="6-15 digits, optionally starting with +"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
           required
         />
       </div>
