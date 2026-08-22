@@ -154,6 +154,20 @@ export default function useClubDetail(id, user) {
   const userMembership = club?.userMembership
   const canManageEvents = (userMembership?.role === 'OFFICER' && userMembership?.status === 'ACTIVE') || user?.role === 'PLATFORM_ADMIN' || user?.role === 'FACULTY'
   const canViewMembers = userMembership?.status === 'ACTIVE' || user?.role === 'PLATFORM_ADMIN' || user?.role === 'FACULTY'
+
+  const joinRuleMode = club?.joinRuleMode || 'ALL'
+  const joinDepartments = club?.joinDepartments || []
+  const userDept = user?.department?.trim().toLowerCase()
+  const deptListed = joinDepartments.some((d) => d.trim().toLowerCase() === userDept)
+  const joinBlocked = !!club && !!user && joinRuleMode !== 'ALL' && (
+    joinRuleMode === 'ALLOW' ? !userDept || !deptListed : !!userDept && deptListed
+  )
+  const joinBlockedNote = !joinBlocked ? null
+    : joinRuleMode === 'ALLOW' && !userDept
+      ? { text: 'Add your department in your profile to request joining', linkTo: '/profile' }
+      : joinRuleMode === 'ALLOW'
+        ? { text: `Only accepting members from ${joinDepartments.join(', ')}` }
+        : { text: `Not accepting members from the ${user.department} department` }
   const members = club?.memberships || []
   const events = club?.events || []
   const membersTotalPages = Math.ceil(totalMembers / 10) || 1
@@ -181,6 +195,7 @@ export default function useClubDetail(id, user) {
     membersSearch, setMembersSearch, membersStatus, setMembersStatus,
     fetchClub, handleJoin, handleLeave, handleCreateEvent, handleDeleteEvent,
     memberCount, userMembership, canManageEvents, canViewMembers,
+    joinBlocked, joinBlockedNote,
     members, events, membersTotalPages, eventsTotalPages,
   }
 }

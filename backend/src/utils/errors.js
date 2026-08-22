@@ -17,6 +17,15 @@ function errorHandler(err, _req, res, _next) {
     });
   }
 
+  // Multer errors (LIMIT_FILE_SIZE etc.) carry no statusCode and would 500
+  if (typeof err.code === 'string' && err.code.startsWith('LIMIT_')) {
+    return res.status(400).json({
+      status: 'error',
+      statusCode: 400,
+      message: 'File exceeds the 5MB size limit',
+    });
+  }
+
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
 

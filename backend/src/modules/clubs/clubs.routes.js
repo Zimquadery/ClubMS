@@ -4,7 +4,7 @@ const eventsController = require('../events/events.controller');
 const { authMiddleware } = require('../../middleware/auth');
 const { requireRole, requireClubAdmin } = require('../../middleware/rbac');
 const { validate, validateQuery } = require('../../middleware/validate');
-const { create: createSchema, update: updateSchema, listQuery: listQuerySchema, getByIdQuery: getByIdQuerySchema } = require('./clubs.schemas');
+const { create: createSchema, update: updateSchema, joinRules: joinRulesSchema, listQuery: listQuerySchema, getByIdQuery: getByIdQuerySchema } = require('./clubs.schemas');
 const { create: eventCreateSchema } = require('../events/events.schemas');
 const { auditLog } = require('../../middleware/auditLog');
 
@@ -114,6 +114,41 @@ router.post('/', authMiddleware, requireRole('PLATFORM_ADMIN'), validate(createS
  *         description: Club not found
  */
 router.patch('/:id', authMiddleware, requireRole('PLATFORM_ADMIN'), validate(updateSchema), auditLog('CLUB_UPDATE', (req) => ({ type: 'club', id: req.params.id })), clubsController.update);
+
+/**
+ * @openapi
+ * /clubs/{clubId}/join-rules:
+ *   patch:
+ *     tags: [Clubs]
+ *     summary: Update who can send join requests to a club (officer-managed)
+ *     parameters:
+ *       - in: path
+ *         name: clubId
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [joinRuleMode]
+ *             properties:
+ *               joinRuleMode: { type: string, enum: [ALL, ALLOW, BLOCK], description: 'ALL = anyone, ALLOW = only listed departments, BLOCK = all except listed departments' }
+ *               joinDepartments: { type: array, items: { type: string }, maxItems: 10, description: 'Required non-empty unless joinRuleMode is ALL' }
+ *     responses:
+ *       200:
+ *         description: Join rules updated
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Club not found
+ */
+router.patch('/:clubId/join-rules', authMiddleware, requireRole('CLUB_ADMIN'), requireClubAdmin, validate(joinRulesSchema), auditLog('CLUB_JOIN_RULES_UPDATE', (req) => ({ type: 'club', id: req.params.clubId, metadata: { joinRuleMode: req.body.joinRuleMode, joinDepartments: req.body.joinDepartments } })), clubsController.updateJoinRules);
 
 /**
  * @openapi

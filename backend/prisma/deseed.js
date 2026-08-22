@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { prisma } = require('../src/lib/prisma');
+const { prisma, disconnect } = require('../src/lib/prisma');
 
 async function main() {
   console.log('Deseeding database...');
@@ -37,11 +37,27 @@ async function main() {
   console.log('Deseeding complete!');
 }
 
-main()
-  .catch((e) => {
+async function run() {
+  let exitCode = 0;
+
+  try {
+    await main();
+  } catch (e) {
     console.error('Deseeding failed:', e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+    exitCode = 1;
+  } finally {
+    try {
+      await disconnect();
+    } catch (e) {
+      console.error('Database disconnect failed:', e);
+      exitCode = 1;
+    }
+  }
+
+  process.exitCode = exitCode;
+}
+
+run().catch((e) => {
+  console.error('Deseeding failed:', e);
+  process.exitCode = 1;
+});

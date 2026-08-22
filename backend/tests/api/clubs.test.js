@@ -2,7 +2,7 @@ const request = require('supertest');
 const { createApp } = require('../../src/app');
 const { prisma } = require('../db');
 const {
-  makeUser, makeClub, makeEvent, makeActiveMember, makeMembership,
+  makeUser, makeClub, makeEvent, makeActiveMember, makeMembership, makeOfficer,
   tokenFor, waitFor,
 } = require('../fixtures');
 
@@ -322,5 +322,115 @@ describe('GET /api/clubs/categories route ordering', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.length).toBeGreaterThan(0);
+  });
+});
+
+describe('PATCH /api/clubs/:clubId/join-rules', () => {
+  it('lets an officer update join rules and writes an audit log', async () => {
+    const officer = await makeUser({ role: 'STUDENT' });
+    const club = await makeClub();
+    await makeOfficer({ userId: officer.id, clubId: club.id });
+
+    const res = await request(app)
+      .patch(`/api/clubs/${club.id}/join-rules`)
+      .set('Authorization', tokenFor({ ...officer, role: 'CLUB_ADMIN' }))
+      .send({ joinRuleMode: 'ALLOW', joinDepartments: ['CSE', 'ECE'] });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ id: club.id, joinRuleMode: 'ALLOW', joinDepartments: ['CSE', 'ECE'] });
+
+    const row = await prisma.club.findUnique({ where: { id: club.id }, select: { joinRuleMode: true, joinDepartments: true } });
+    expect(row).toMatchObject({ joinRuleMode: 'ALLOW', joinDepartments: ['CSE', 'ECE'] });
+
+    const audit = await waitFor(() => prisma.auditLog.findFirst({ where: { action: 'CLUB_JOIN_RULES_UPDATE', targetId: club.id } }));
+    expect(audit).not.toBeNull();
+  });
+
+  it('stores an empty list when mode is ALL', async () => {
+    const officer = await makeUser({ role: 'STUDENT' });
+    const club = await makeClub({ joinRuleMode: 'BLOCK', joinDepartments: ['Agri'] });
+    await makeOfficer({ userId: officer.id, clubId: club.id });
+
+    const res = await request(app)
+      .patch(`/api/clubs/${club.id}/join-rules`)
+      .set('Authorization', tokenFor({ ...officer, role: 'CLUB_ADMIN' }))
+      .send({ joinRuleMode: 'ALL' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ joinRuleMode: 'ALL', joinDepartments: [] });
+  });
+
+  it('returns 403 for a student', async () => {
+    const student = await makeUser({ role: 'STUDENT' });
+    const club = await makeClub();
+
+    const res = await request(app)
+      .patch(`/api/clubs/${club.id}/join-rules`)
+      .set('Authorization', tokenFor(student))
+      .send({ joinRuleMode: 'ALL' });
+
+    expect(res.status).toBe(403);
+  });
+
+  it('returns 403 for an officer of a different club', async () => {
+    const outsider = await makeUser({ role: 'STUDENT' });
+    const ownClub = await makeClub();
+    await makeOfficer({ userId: outsider.id, clubId: ownClub.id });
+    const otherClub = await makeClub();
+
+    const res = await request(app)
+      .patch(`/api/clubs/${otherClub.id}/join-rules`)
+      .set('Authorization', tokenFor({ ...outsider, role: 'CLUB_ADMIN' }))
+      .send({ joinRuleMode: 'ALLOW', joinDepartments: ['CSE'] });
+
+    expect(res.status).toBe(403);
+  });
+
+  it('lets a PLATFORM_ADMIN bypass per-club checks', async () => {
+    const admin = await makeUser({ role: 'PLATFORM_ADMIN' });
+    const club = await makeClub();
+
+    const res = await request(app)
+      .patch(`/api/clubs/${club.id}/join-rules`)
+      .set('Authorization', tokenFor(admin))
+      .send({ joinRuleMode: 'BLOCK', joinDepartments: ['Agri'] });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ joinRuleMode: 'BLOCK', joinDepartments: ['Agri'] });
+  });
+
+  it('returns 400 when ALLOW has no departments', async () => {
+    const officer = await makeUser({ role: 'STUDENT' });
+    const club = await makeClub();
+    await makeOfficer({ userId: officer.id, clubId: club.id });
+
+    const res = await request(app)
+      .patch(`/api/clubs/${club.id}/join-rules`)
+      .set('Authorization', tokenFor({ ...officer, role: 'CLUB_ADMIN' }))
+      .send({ joinRuleMode: 'ALLOW', joinDepartments: [] });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 for an invalid mode', async () => {
+    const officer = await makeUser({ role: 'STUDENT' });
+    const club = await makeClub();
+    await makeOfficer({ userId: officer.id, clubId: club.id });
+
+    const res = await request(app)
+      .patch(`/api/clubs/${club.id}/join-rules`)
+      .set('Authorization', tokenFor({ ...officer, role: 'CLUB_ADMIN' }))
+      .send({ joinRuleMode: 'SOMETIMES', joinDepartments: ['CSE'] });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 404 when the club does not exist', async () => {
+    const admin = await makeUser({ role: 'PLATFORM_ADMIN' });
+    const res = await request(app)
+      .patch('/api/clubs/00000000-0000-0000-0000-000000000000/join-rules')
+      .set('Authorization', tokenFor(admin))
+      .send({ joinRuleMode: 'ALL' });
+    expect(res.status).toBe(404);
   });
 });

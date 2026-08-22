@@ -23,6 +23,7 @@ import { SkeletonReveal } from '@/components/ui/SkeletonReveal'
 import { Pagination } from '@/components/Pagination'
 import { useAdminClubSelector } from '@/hooks/useAdminClubSelector'
 import { AdminClubHeader } from '@/components/admin/AdminClubHeader'
+import { IdCardThumb } from '@/components/admin/IdCardThumb'
 import usePaginatedFetch from '@/hooks/usePaginatedFetch'
 
 export default function ClubMembers() {
@@ -158,8 +159,8 @@ export default function ClubMembers() {
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search name, email, or phone"
-              aria-label="Search members by name, email, or phone"
+              placeholder="Search name, email, phone, ID, or department"
+              aria-label="Search members by name, email, phone, student ID, or department"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value)
@@ -192,18 +193,27 @@ export default function ClubMembers() {
           {displayMembers.map((membership) => (
             <Card key={membership.id}>
               <CardContent className="p-4 flex items-center justify-between">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium">{membership.user.name}</p>
-                    {membership.role === 'OFFICER' && (
-                      <Badge variant="outline" className="text-xs">Officer</Badge>
-                    )}
+                <div className="flex flex-1 min-w-0 items-center gap-3">
+                  <IdCardThumb
+                    url={membership.user.idCardUrl}
+                    name={membership.user.name}
+                    meta={[membership.user.department, `ID ${membership.user.studentId}`].filter(Boolean).join(' · ')}
+                  />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="truncate text-sm font-medium">{membership.user.name}</p>
+                      {membership.role === 'OFFICER' && (
+                        <Badge variant="outline" className="text-xs">Officer</Badge>
+                      )}
+                    </div>
+                    <p className="truncate text-sm text-muted-foreground">{membership.user.email}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {[membership.user.department, `${membership.user.phone} · ID ${membership.user.studentId}`].filter(Boolean).join(' · ')}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Joined {formatShortDate(membership.createdAt)}
+                    </p>
                   </div>
-                  <p className="text-sm text-muted-foreground">{membership.user.email}</p>
-                  <p className="text-xs text-muted-foreground">{membership.user.phone}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Joined {formatShortDate(membership.createdAt)}
-                  </p>
                 </div>
                 {tab === 'active' && (
                   <div className="flex gap-2 ml-4">

@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import client from '@/api/client'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import { Check, X, Users, CheckSquare, XSquare } from 'lucide-react'
+import { Check, X, Users, CheckSquare, XSquare, SlidersHorizontal } from 'lucide-react'
 import BackLink from '@/components/BackLink'
-import { formatShortDate } from '@/lib/format'
+import { formatRelativeTime } from '@/lib/format'
 import { toast } from 'sonner'
 import {
   Dialog,
@@ -19,39 +20,76 @@ import { SkeletonReveal } from '@/components/ui/SkeletonReveal'
 import { Pagination } from '@/components/Pagination'
 import { useAdminClubSelector } from '@/hooks/useAdminClubSelector'
 import { AdminClubHeader } from '@/components/admin/AdminClubHeader'
+import { IdCardThumb } from '@/components/admin/IdCardThumb'
+import { JoinRulesDialog } from '@/components/club/JoinRulesDialog'
 import usePaginatedFetch from '@/hooks/usePaginatedFetch'
+
+const EXIT_MS = 200
 
 export default function PendingRequests() {
   const { clubId, adminClubs, currentClub, adminError, navigateToClub } = useAdminClubSelector((val) => `/admin/clubs/${val}/requests`)
 
   const {
     items: requests, setItems: setRequests,
-    loading, error, page, totalPages,
+    loading, error, page, totalPages, total,
     refetch: fetchRequests,
     setURLParam,
   } = usePaginatedFetch({
     fetchFn: async ({ page }) => {
       const res = await client.get(`/clubs/${clubId}/members`, { params: { status: 'PENDING', page, limit: 20 } })
-      return { items: res.data.items || res.data, totalPages: res.data.totalPages || 1 }
+      return { items: res.data.items || res.data, totalPages: res.data.totalPages || 1, total: res.data.total }
     },
     deps: [clubId],
     enabled: !!clubId,
   })
 
   const [actionLoading, setActionLoading] = useState({})
+  const [exiting, setExiting] = useState(() => new Set())
   const [rejectTarget, setRejectTarget] = useState(null)
-  const [rejecting, setRejecting] = useState(false)
   const [selected, setSelected] = useState(new Set())
   const [bulkLoading, setBulkLoading] = useState(false)
+  const [joinRule, setJoinRule] = useState(null)
+  const [rulesOpen, setRulesOpen] = useState(false)
+
+  useEffect(() => {
+    if (!clubId) return
+    let active = true
+    client.get(`/clubs/${clubId}`)
+      .then((res) => {
+        if (active) setJoinRule({ joinRuleMode: res.data.joinRuleMode, joinDepartments: res.data.joinDepartments })
+      })
+      .catch(() => {})
+    return () => { active = false }
+  }, [clubId])
+
+  function removeRow(userId) {
+    setExiting((prev) => new Set(prev).add(userId))
+    setTimeout(() => {
+      setRequests((prev) => prev.filter((r) => r.userId !== userId))
+      setSelected((prev) => {
+        const next = new Set(prev)
+        next.delete(userId)
+        return next
+      })
+      setExiting((prev) => {
+        const next = new Set(prev)
+        next.delete(userId)
+        return next
+      })
+      fetchRequests()
+    }, EXIT_MS)
+  }
 
   async function handleAction(userId, action) {
     setActionLoading((prev) => ({ ...prev, [userId]: true }))
     try {
       await client.patch(`/clubs/${clubId}/members/${userId}/${action}`)
-      setRequests((prev) => prev.filter((r) => r.userId !== userId))
+      removeRow(userId)
       toast.success(`Request ${action === 'approve' ? 'approved' : 'rejected'}`)
+      return true
     } catch (err) {
       toast.error(err.response?.data?.message || `Failed to ${action} request`)
+      return false
     } finally {
       setActionLoading((prev) => ({ ...prev, [userId]: false }))
     }
@@ -97,24 +135,35 @@ export default function PendingRequests() {
     handleBulkAction('reject', 'rejected', 'bulk reject')
   }
 
+  const ruleSummary = !joinRule || joinRule.joinRuleMode === 'ALL'
+    ? 'Open to everyone'
+    : joinRule.joinRuleMode === 'ALLOW'
+      ? `${joinRule.joinDepartments.length} department${joinRule.joinDepartments.length !== 1 ? 's' : ''} only`
+      : `${joinRule.joinDepartments.length} blocked`
+
   return (
     <>
     <div className="space-y-6">
       <BackLink to="/admin/clubs" label="Back to Clubs" />
 
-      <AdminClubHeader title="Pending Requests" subtitle="Review membership requests" adminClubs={adminClubs} currentClub={currentClub} clubId={clubId} onClubChange={navigateToClub} />
-
-      {requests.length > 0 && (
-        <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={selected.size === requests.length && requests.length > 0}
-            onChange={toggleSelectAll}
-            className="h-4 w-4 rounded border-input"
-          />
-          <span className="text-sm text-muted-foreground">Select all ({requests.length})</span>
-        </div>
-      )}
+      <AdminClubHeader
+        title="Pending Requests"
+        subtitle={`Review membership requests${total ? ` · ${total} pending` : ''}`}
+        adminClubs={adminClubs}
+        currentClub={currentClub}
+        clubId={clubId}
+        onClubChange={navigateToClub}
+        actions={
+          <>
+            <Badge variant="secondary" className="hidden whitespace-nowrap text-xs font-normal sm:inline-flex">
+              {ruleSummary}
+            </Badge>
+            <Button variant="outline" onClick={() => setRulesOpen(true)}>
+              <SlidersHorizontal className="h-4 w-4 mr-1.5" />Join Rules
+            </Button>
+          </>
+        }
+      />
 
       {(adminError || error) && (
         <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">{adminError || error}</div>
@@ -122,54 +171,89 @@ export default function PendingRequests() {
 
       {!loading && requests.length === 0 ? (
         <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
+          <CardContent className="py-12 text-center">
             <Users className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
-            No pending requests
+            <p className="text-sm font-medium">No pending requests</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              When students ask to join {currentClub?.name || 'this club'}, their requests appear here for you to review.
+            </p>
           </CardContent>
         </Card>
       ) : (
         <SkeletonReveal isLoading={loading} skeleton={<ListSkeleton rows={5} />}>
-        <div className="space-y-3">
-          {requests.map((req) => (
-            <Card key={req.id}>
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
+          <Card>
+            <CardContent className="p-0">
+              {requests.length > 0 && (
+                <div className="flex items-center gap-2.5 px-4 py-3">
                   <input
                     type="checkbox"
-                    checked={selected.has(req.userId)}
-                    onChange={() => toggleSelect(req.userId)}
+                    checked={selected.size === requests.length && requests.length > 0}
+                    onChange={toggleSelectAll}
                     className="h-4 w-4 rounded border-input"
+                    aria-label="Select all requests"
                   />
-                  <div>
-                    <p className="text-sm font-medium">{req.user.name}</p>
-                    <p className="text-sm text-muted-foreground">{req.user.email}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Requested {formatShortDate(req.createdAt)}
-                    </p>
-                  </div>
+                  <span className="text-sm text-muted-foreground">Select all ({requests.length})</span>
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    className="bg-brand-primary hover:bg-brand-primary/90 text-white"
-                    disabled={actionLoading[req.userId]}
-                    onClick={() => handleAction(req.userId, 'approve')}
-                  >
-                    <Check className="h-4 w-4 mr-1" /> Approve
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    disabled={actionLoading[req.userId]}
-                    onClick={() => setRejectTarget(req)}
-                  >
-                    <X className="h-4 w-4 mr-1" /> Reject
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              )}
+              <div className="divide-y border-t">
+                {requests.map((req) => {
+                  const rowBusy = actionLoading[req.userId] || exiting.has(req.userId)
+                  return (
+                    <div
+                      key={req.id}
+                      className={`flex items-center justify-between gap-4 px-4 py-4 ${exiting.has(req.userId) ? 't-row-exit' : ''}`}
+                    >
+                      <div className="flex min-w-0 flex-1 items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={selected.has(req.userId)}
+                          onChange={() => toggleSelect(req.userId)}
+                          className="h-4 w-4 shrink-0 rounded border-input"
+                          aria-label={`Select ${req.user.name}`}
+                        />
+                        <IdCardThumb
+                          url={req.user.idCardUrl}
+                          name={req.user.name}
+                          meta={[req.user.department, `ID ${req.user.studentId}`].filter(Boolean).join(' · ')}
+                        />
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="truncate text-sm font-medium">{req.user.name}</p>
+                            {req.user.department && (
+                              <span className="whitespace-nowrap text-xs text-muted-foreground">{req.user.department}</span>
+                            )}
+                          </div>
+                          <p className="truncate text-sm text-muted-foreground">{req.user.email}</p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            ID {req.user.studentId} · {req.user.phone} · Requested {formatRelativeTime(req.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 gap-1.5">
+                        <Button
+                          size="sm"
+                          className="min-w-[80px] bg-brand-primary hover:bg-brand-primary/90 text-white"
+                          disabled={rowBusy}
+                          onClick={() => handleAction(req.userId, 'approve')}
+                        >
+                          <Check className="h-4 w-4 mr-1" /> Approve
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="min-w-[68px] text-destructive hover:text-destructive"
+                          disabled={rowBusy}
+                          onClick={() => setRejectTarget(req)}
+                        >
+                          <X className="h-4 w-4 mr-1" /> Reject
+                        </Button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </CardContent>
+          </Card>
         </SkeletonReveal>
       )}
 
@@ -180,7 +264,7 @@ export default function PendingRequests() {
       />
     </div>
     {selected.size > 0 && (
-      <Card className="sticky bottom-4 border-brand-primary">
+      <Card className="sticky bottom-4 border-brand-primary/30">
         <CardContent className="p-3 flex items-center justify-between">
           <span className="text-sm font-medium">{selected.size} selected</span>
           <div className="flex gap-2">
@@ -213,25 +297,23 @@ export default function PendingRequests() {
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setRejectTarget(null)} disabled={rejecting}>Cancel</Button>
-          <Button variant="destructive" onClick={async () => {
-            setRejecting(true)
-            try {
-              await client.patch(`/clubs/${clubId}/members/${rejectTarget.userId}/reject`)
-              setRequests((prev) => prev.filter((r) => r.userId !== rejectTarget.userId))
-              toast.success('Request rejected')
-              setRejectTarget(null)
-            } catch (err) {
-              toast.error(err.response?.data?.message || 'Failed to reject request')
-            } finally {
-              setRejecting(false)
-            }
-          }} disabled={rejecting}>
-            {rejecting ? 'Rejecting...' : 'Reject'}
+          <Button variant="outline" onClick={() => setRejectTarget(null)} disabled={actionLoading[rejectTarget?.userId]}>Cancel</Button>
+          <Button variant="destructive" disabled={actionLoading[rejectTarget?.userId]} onClick={async () => {
+            const ok = await handleAction(rejectTarget.userId, 'reject')
+            if (ok) setRejectTarget(null)
+          }}>
+            {actionLoading[rejectTarget?.userId] ? 'Rejecting...' : 'Reject'}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    <JoinRulesDialog
+      open={rulesOpen}
+      onOpenChange={setRulesOpen}
+      clubId={clubId}
+      rule={joinRule}
+      onSaved={setJoinRule}
+    />
     </>
   )
 }

@@ -2,6 +2,7 @@ const express = require('express');
 const authController = require('./auth.controller');
 const { authMiddleware } = require('../../middleware/auth');
 const { validate } = require('../../middleware/validate');
+const { upload } = require('../../config/upload');
 const { register: registerSchema, login: loginSchema, updateProfile: updateProfileSchema, changePassword: changePasswordSchema } = require('./auth.schemas');
 
 const router = express.Router();
@@ -16,24 +17,26 @@ const router = express.Router();
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
- *             required: [name, email, password, phone]
+ *             required: [name, email, password, phone, studentId, idCard]
  *             properties:
  *               name: { type: string, minLength: 1, maxLength: 100 }
  *               email: { type: string, format: email }
  *               password: { type: string, minLength: 6 }
  *               phone: { type: string, pattern: '^\\+?\\d{6,15}$' }
+ *               studentId: { type: string, pattern: '^[0-9]{1,8}$' }
+ *               idCard: { type: string, format: binary, description: 'Student ID card photo (image, max 5MB)' }
  *     responses:
  *       201:
  *         description: User registered
  *       400:
- *         description: Validation error
+ *         description: Validation error or invalid/missing ID card image
  *       409:
- *         description: Email already exists
+ *         description: Email or student ID already exists
  */
-router.post('/register', validate(registerSchema), authController.register);
+router.post('/register', upload.single('idCard'), validate(registerSchema), authController.register);
 
 /**
  * @openapi
@@ -90,6 +93,9 @@ router.get('/me', authMiddleware, authController.getMe);
  *               name: { type: string, minLength: 1, maxLength: 100 }
  *               email: { type: string, format: email }
  *               phone: { type: string, pattern: '^\\+?\\d{6,15}$' }
+ *               studentId: { type: string, pattern: '^[0-9]{1,8}$' }
+ *               idCardUrl: { type: string, description: Upload-path-only replacement for the ID card photo }
+ *               department: { type: string, nullable: true, maxLength: 100, description: 'Free-text department (e.g. CSE, EEE); null clears it' }
  *     responses:
  *       200:
  *         description: Profile updated

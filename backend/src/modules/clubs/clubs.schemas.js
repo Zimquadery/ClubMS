@@ -17,6 +17,13 @@ const update = z.object({
   logoUrl: OPTIONAL_URL,
 });
 
+const joinRules = z.object({
+  joinRuleMode: z.enum(['ALL', 'ALLOW', 'BLOCK']),
+  joinDepartments: z.array(z.string().trim().min(1).max(100)).max(10).default([]),
+}).refine((v) => v.joinRuleMode === 'ALL' || v.joinDepartments.length > 0, {
+  message: 'Select at least one department',
+});
+
 const listQuery = z.object({
   search: z.string().max(100).optional(),
   category: z.string().max(50).optional(),
@@ -32,4 +39,4 @@ const getByIdQuery = z.object({
   eventsLimit: z.coerce.number().int().min(1).max(100).default(5),
 });
 
-module.exports = { create, update, listQuery, getByIdQuery };
+module.exports = { create, update, joinRules, listQuery, getByIdQuery };

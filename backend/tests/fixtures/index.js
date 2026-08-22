@@ -19,6 +19,7 @@ function uniqueEmail(prefix = 'user') {
 }
 
 async function makeUser(overrides = {}) {
+  counter += 1;
   const email = overrides.email || uniqueEmail(overrides.role ? overrides.role.toLowerCase() : 'user');
   const password = overrides.password || DEFAULT_PASSWORD;
   const passwordHash = overrides.passwordHash
@@ -30,8 +31,11 @@ async function makeUser(overrides = {}) {
       name: overrides.name || `Test ${email}`,
       role: overrides.role || 'STUDENT',
       phone: overrides.phone || '01700000000',
+      studentId: overrides.studentId || String(10000000 + counter),
+      idCardUrl: overrides.idCardUrl || '/uploads/Dummy_ID_card.jpg',
+      department: overrides.department !== undefined ? overrides.department : null,
     },
-    select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true, updatedAt: true },
+    select: { id: true, email: true, name: true, phone: true, studentId: true, idCardUrl: true, department: true, role: true, createdAt: true, updatedAt: true },
   });
   return { ...user, password };
 }
@@ -44,6 +48,8 @@ async function makeClub(overrides = {}) {
       description: overrides.description !== undefined ? overrides.description : 'Test club',
       category: overrides.category || 'Academic',
       logoUrl: overrides.logoUrl !== undefined ? overrides.logoUrl : null,
+      joinRuleMode: overrides.joinRuleMode || 'ALL',
+      joinDepartments: overrides.joinDepartments || [],
     },
   });
 }

@@ -41,8 +41,15 @@ export function AuthProvider({ children }) {
     return response.data;
   };
 
-  const register = async (email, password, name, phone) => {
-    await client.post('/auth/register', { email, password, name, phone });
+  const register = async ({ email, password, name, phone, studentId, idCardFile }) => {
+    const formData = new FormData();
+    formData.append('email', email);
+    formData.append('password', password);
+    formData.append('name', name);
+    formData.append('phone', phone);
+    formData.append('studentId', studentId);
+    formData.append('idCard', idCardFile);
+    await client.post('/auth/register', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
     const loginResponse = await client.post('/auth/login', { email, password });
     const { token: newToken, user: newUser } = loginResponse.data;
     localStorage.setItem('token', newToken);

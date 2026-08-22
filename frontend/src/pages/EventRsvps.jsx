@@ -10,6 +10,7 @@ import { ListSkeleton } from '@/components/ui/skeleton'
 import { SkeletonReveal } from '@/components/ui/SkeletonReveal'
 import BackLink from '@/components/BackLink'
 import { downloadBlob } from '@/lib/download'
+import { formatRelativeTime } from '@/lib/format'
 import { toast } from 'sonner'
 import { Download, Search, Users } from 'lucide-react'
 
@@ -24,19 +25,6 @@ const STATUS_BADGE_CLASS = {
   GOING: 'bg-status-green/15 text-status-green',
   MAYBE: 'bg-status-yellow/15 text-status-yellow',
   NOT_GOING: 'bg-destructive/15 text-destructive',
-}
-
-function relativeTime(dateStr) {
-  const now = Date.now()
-  const then = new Date(dateStr).getTime()
-  const diffMs = now - then
-  if (diffMs < 60000) return 'just now'
-  const mins = Math.floor(diffMs / 60000)
-  if (mins < 60) return `${mins}m ago`
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours}h ago`
-  const days = Math.floor(hours / 24)
-  return `${days}d ago`
 }
 
 export default function EventRsvps() {
@@ -282,7 +270,7 @@ export default function EventRsvps() {
                           {rsvp.status === 'NOT_GOING' ? 'Not Going' : rsvp.status.charAt(0) + rsvp.status.slice(1).toLowerCase()}
                         </Badge>
                         <span className="hidden sm:inline text-xs text-muted-foreground">
-                          {rsvp.createdAt ? relativeTime(rsvp.createdAt) : ''}
+                          {rsvp.createdAt ? formatRelativeTime(rsvp.createdAt) : ''}
                         </span>
                       </div>
                     </div>

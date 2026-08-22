@@ -1,9 +1,13 @@
 const authService = require('./auth.service');
 const { asyncHandler } = require('../../utils/asyncHandler');
+const { AppError } = require('../../utils/errors');
 
 const register = asyncHandler(async (req, res) => {
-  const { email, password, name, phone } = req.body;
-  const user = await authService.register(email, password, name, phone);
+  const { email, password, name, phone, studentId } = req.body;
+  if (!req.file) {
+    throw new AppError('ID card photo is required', 400);
+  }
+  const user = await authService.register({ email, password, name, phone, studentId, idCardBuffer: req.file.buffer });
   res.status(201).json(user);
 });
 

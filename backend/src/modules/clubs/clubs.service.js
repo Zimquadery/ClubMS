@@ -4,6 +4,7 @@ const { CLUB_CATEGORIES } = require('./clubs.constants');
 const { isPrivilegedRole } = require('../../utils/roles');
 const { isPrimaryHostClub } = require('../eventHosts/eventHosts.service');
 const { userSearchWhere } = require('../../utils/search');
+const { normalizeDepartments } = require('../../utils/departments');
 
 async function list({ search, category, page = 1, limit = 20 }) {
   const where = {};
@@ -50,7 +51,7 @@ async function getById(id, userId, { membersPage = 1, membersLimit = 10, eventsP
       },
       memberships: {
         where: memberListWhere,
-        include: { user: { select: { id: true, name: true, ...(includeEmail && { email: true }) } } },
+        include: { user: { select: { id: true, name: true, department: true, ...(includeEmail && { email: true }) } } },
         orderBy: { createdAt: 'asc' },
         skip: (membersPage - 1) * membersLimit,
         take: membersLimit,
@@ -151,6 +152,22 @@ async function update(id, { name, description, category, logoUrl }) {
   return prisma.club.update({ where: { id }, data });
 }
 
+async function updateJoinRules(clubId, { joinRuleMode, joinDepartments }) {
+  const club = await prisma.club.findUnique({ where: { id: clubId } });
+  if (!club) throw new AppError('Club not found', 404);
+
+  const departments = normalizeDepartments(joinDepartments);
+
+  if (joinRuleMode !== 'ALL' && departments.length === 0) {
+    throw new AppError('Select at least one department', 400);
+  }
+
+  return prisma.club.update({
+    where: { id: clubId },
+    data: { joinRuleMode, joinDepartments: joinRuleMode === 'ALL' ? [] : departments },
+  });
+}
+
 async function deleteClub(id) {
   const club = await prisma.club.findUnique({ where: { id } });
   if (!club) throw new AppError('Club not found', 404);
@@ -167,4 +184,4 @@ function getCategories() {
   return CLUB_CATEGORIES;
 }
 
-module.exports = { list, getById, create, update, deleteClub, getCategories };
+module.exports = { list, getById, create, update, updateJoinRules, deleteClub, getCategories };

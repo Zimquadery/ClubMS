@@ -136,6 +136,9 @@
   .t-modal-overlay {
     animation: none !important;
   }
+  .t-row-exit {
+    animation: none !important;
+  }
   ::view-transition-old(root),
   ::view-transition-new(root) {
     animation: none !important;
@@ -201,6 +204,17 @@
 }
 .t-modal[data-state="closed"] {
   animation: contentHide 187ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* ── List row exit (state change: approved/rejected item leaves the queue) ── */
+@keyframes rowExit {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.98); }
+}
+
+.t-row-exit {
+  animation: rowExit 200ms var(--ease-out-quart) forwards;
+  pointer-events: none;
 }
 
 /* ── Menu dropdown (transitions.dev) ──────────────────────────────

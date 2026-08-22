@@ -24,4 +24,12 @@ const prisma = baseClient.$extends({
   query: { $allOperations: retryReadsOnTransient },
 });
 
-module.exports = { prisma };
+async function disconnect() {
+  try {
+    await prisma.$disconnect();
+  } finally {
+    await pool.end();
+  }
+}
+
+module.exports = { prisma, disconnect };

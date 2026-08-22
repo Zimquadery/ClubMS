@@ -201,7 +201,7 @@ describe('GET /api/events/:id/rsvps/export', () => {
     const club = await makeClub();
     await makeOfficer({ userId: officer.id, clubId: club.id });
     const event = await makeEvent({ primaryClubId: club.id, creatorUserId: officer.id });
-    const m = await makeUser({ role: 'STUDENT', phone: '01798765432' });
+    const m = await makeUser({ role: 'STUDENT', phone: '01798765432', studentId: '21987654' });
     await makeRsvp({ eventId: event.id, userId: m.id, status: 'GOING' });
 
     const res = await request(app)
@@ -211,7 +211,8 @@ describe('GET /api/events/:id/rsvps/export', () => {
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toMatch(/text\/csv/);
     expect(res.headers['content-disposition']).toMatch(/attachment;\s*filename="rsvps-/);
-    expect(res.text).toContain('Name,Email,Phone,Status,Responded At');
+    expect(res.text).toContain('Name,Email,Phone,Student ID,Status,Responded At');
     expect(res.text).toContain('01798765432');
+    expect(res.text).toContain('21987654');
   });
 });

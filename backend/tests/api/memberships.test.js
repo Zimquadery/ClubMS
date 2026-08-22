@@ -77,6 +77,118 @@ describe('POST /api/clubs/:clubId/join', () => {
   });
 });
 
+describe('POST /api/clubs/:clubId/join — department join rules', () => {
+  it('ALLOW mode: lets a user of a listed department join', async () => {
+    const student = await makeUser({ role: 'STUDENT', department: 'CSE' });
+    const club = await makeClub({ joinRuleMode: 'ALLOW', joinDepartments: ['CSE', 'ECE'] });
+
+    const res = await request(app)
+      .post(`/api/clubs/${club.id}/join`)
+      .set('Authorization', tokenFor(student));
+
+    expect(res.status).toBe(201);
+    expect(res.body.status).toBe('PENDING');
+  });
+
+  it('ALLOW mode: matches department case-insensitively', async () => {
+    const student = await makeUser({ role: 'STUDENT', department: 'cse' });
+    const club = await makeClub({ joinRuleMode: 'ALLOW', joinDepartments: ['CSE'] });
+
+    const res = await request(app)
+      .post(`/api/clubs/${club.id}/join`)
+      .set('Authorization', tokenFor(student));
+
+    expect(res.status).toBe(201);
+  });
+
+  it('ALLOW mode: rejects a user of an unlisted department with 403', async () => {
+    const student = await makeUser({ role: 'STUDENT', department: 'EEE' });
+    const club = await makeClub({ joinRuleMode: 'ALLOW', joinDepartments: ['CSE', 'ECE'] });
+
+    const res = await request(app)
+      .post(`/api/clubs/${club.id}/join`)
+      .set('Authorization', tokenFor(student));
+
+    expect(res.status).toBe(403);
+    const count = await prisma.clubMembership.count({ where: { userId: student.id, clubId: club.id } });
+    expect(count).toBe(0);
+  });
+
+  it('ALLOW mode: rejects a user without a department with 403', async () => {
+    const student = await makeUser({ role: 'STUDENT', department: null });
+    const club = await makeClub({ joinRuleMode: 'ALLOW', joinDepartments: ['CSE'] });
+
+    const res = await request(app)
+      .post(`/api/clubs/${club.id}/join`)
+      .set('Authorization', tokenFor(student));
+
+    expect(res.status).toBe(403);
+  });
+
+  it('ALLOW mode: blocks REJECTED re-apply and keeps the row REJECTED', async () => {
+    const student = await makeUser({ role: 'STUDENT', department: 'EEE' });
+    const club = await makeClub({ joinRuleMode: 'ALLOW', joinDepartments: ['CSE'] });
+    await makeMembership({ userId: student.id, clubId: club.id, status: 'REJECTED' });
+
+    const res = await request(app)
+      .post(`/api/clubs/${club.id}/join`)
+      .set('Authorization', tokenFor(student));
+
+    expect(res.status).toBe(403);
+    const row = await prisma.clubMembership.findUnique({
+      where: { userId_clubId: { userId: student.id, clubId: club.id } },
+      select: { status: true },
+    });
+    expect(row.status).toBe('REJECTED');
+  });
+
+  it('existing ACTIVE membership wins over a blocking rule (409, not 403)', async () => {
+    const student = await makeUser({ role: 'STUDENT', department: 'EEE' });
+    const club = await makeClub({ joinRuleMode: 'ALLOW', joinDepartments: ['CSE'] });
+    await makeActiveMember({ userId: student.id, clubId: club.id });
+
+    const res = await request(app)
+      .post(`/api/clubs/${club.id}/join`)
+      .set('Authorization', tokenFor(student));
+
+    expect(res.status).toBe(409);
+  });
+
+  it('BLOCK mode: rejects a user of a listed department with 403', async () => {
+    const student = await makeUser({ role: 'STUDENT', department: 'Agri' });
+    const club = await makeClub({ joinRuleMode: 'BLOCK', joinDepartments: ['Agri'] });
+
+    const res = await request(app)
+      .post(`/api/clubs/${club.id}/join`)
+      .set('Authorization', tokenFor(student));
+
+    expect(res.status).toBe(403);
+    expect(res.body.message).toContain('Agri');
+  });
+
+  it('BLOCK mode: lets a user of an unlisted department join', async () => {
+    const student = await makeUser({ role: 'STUDENT', department: 'EEE' });
+    const club = await makeClub({ joinRuleMode: 'BLOCK', joinDepartments: ['Agri'] });
+
+    const res = await request(app)
+      .post(`/api/clubs/${club.id}/join`)
+      .set('Authorization', tokenFor(student));
+
+    expect(res.status).toBe(201);
+  });
+
+  it('BLOCK mode: lets a user without a department join', async () => {
+    const student = await makeUser({ role: 'STUDENT', department: null });
+    const club = await makeClub({ joinRuleMode: 'BLOCK', joinDepartments: ['Agri'] });
+
+    const res = await request(app)
+      .post(`/api/clubs/${club.id}/join`)
+      .set('Authorization', tokenFor(student));
+
+    expect(res.status).toBe(201);
+  });
+});
+
 describe('POST /api/clubs/:clubId/leave', () => {
   it('deletes an ACTIVE MEMBER membership', async () => {
     const student = await makeUser({ role: 'STUDENT' });
@@ -938,7 +1050,7 @@ describe('GET /api/clubs/:clubId/members/export', () => {
     const admin = await makeUser({ role: 'CLUB_ADMIN' });
     const club = await makeClub();
     await makeOfficer({ userId: admin.id, clubId: club.id });
-    const member = await makeUser({ phone: '01712345678' });
+    const member = await makeUser({ phone: '01712345678', studentId: '21234567', department: 'CSE' });
     await makeActiveMember({ userId: member.id, clubId: club.id });
 
     const res = await request(app)
@@ -949,8 +1061,10 @@ describe('GET /api/clubs/:clubId/members/export', () => {
     expect(res.headers['content-type']).toMatch(/text\/csv/);
     expect(res.headers['content-disposition']).toMatch(/attachment;\s*filename="members-/);
     expect(typeof res.text).toBe('string');
-    expect(res.text).toContain('Name,Email,Phone,Role,Status,Joined Date');
+    expect(res.text).toContain('Name,Email,Phone,Student ID,Department,Role,Status,Joined Date');
     expect(res.text).toContain('01712345678');
+    expect(res.text).toContain('21234567');
+    expect(res.text).toContain('"CSE"');
   });
 });
 

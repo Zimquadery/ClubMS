@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { RouteErrorBoundary } from '@/components/ErrorBoundary'
+import { getInitials } from '@/lib/initials'
 import { LayoutDashboard, Users, Calendar, LogOut, Shield, Menu, X, UserCircle, ClipboardList, Sun, Moon, Monitor, MapPin } from 'lucide-react'
 
 const THEME_ICONS = { light: Sun, dark: Moon, system: Monitor }
@@ -54,9 +55,7 @@ export function Layout() {
     setTheme(next)
   }
 
-  const initials = user?.name
-    ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-    : '?'
+  const initials = getInitials(user?.name)
 
   const linkClass = ({ isActive }) =>
     `flex items-center gap-1.5 px-2 py-1.5 rounded-md text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${isActive ? 'text-foreground font-medium bg-accent' : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'}`

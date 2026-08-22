@@ -1,12 +1,25 @@
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { UserPlus, Shield, GraduationCap } from 'lucide-react'
+import { UserPlus, Shield, GraduationCap, Lock } from 'lucide-react'
 
-export default function MembershipAction({ userMembership, user, joinLoading, leaveLoading, onJoin, onLeave, clubId }) {
+export default function MembershipAction({ userMembership, user, joinLoading, leaveLoading, onJoin, onLeave, clubId, joinBlocked = false, joinBlockedNote = null }) {
   const navigate = useNavigate()
 
   if (!user) return null
+
+  const blockedNotice = joinBlocked && joinBlockedNote ? (
+    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      <Lock className="h-3.5 w-3.5 shrink-0" />
+      {joinBlockedNote.linkTo ? (
+        <Link to={joinBlockedNote.linkTo} className="underline underline-offset-2 hover:text-foreground">
+          {joinBlockedNote.text}
+        </Link>
+      ) : (
+        <span>{joinBlockedNote.text}</span>
+      )}
+    </div>
+  ) : null
 
   const adminButtons = (
     <div className="flex gap-2">
@@ -54,6 +67,7 @@ export default function MembershipAction({ userMembership, user, joinLoading, le
   }
 
   if (userMembership?.status === 'REJECTED') {
+    if (joinBlocked) return blockedNotice
     if (user?.role === 'STUDENT' || user?.role === 'FACULTY') {
       return (
         <Button
@@ -70,6 +84,7 @@ export default function MembershipAction({ userMembership, user, joinLoading, le
   }
 
   if (user?.role === 'STUDENT' || user?.role === 'FACULTY') {
+    if (joinBlocked) return blockedNotice
     return (
       <Button
         className="bg-brand-primary hover:bg-brand-primary/90 text-white"

@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { toast } from 'sonner'
 import { User, Lock } from 'lucide-react'
+import { ImageUploadButton } from '@/components/ImageUploadButton'
+import { getInitials } from '@/lib/initials'
 
 function getPasswordStrength(password) {
   if (!password) return { label: '', color: '' }
@@ -24,15 +26,6 @@ function getPasswordStrength(password) {
   return { label: 'Strong', color: 'bg-status-green' }
 }
 
-function getInitials(name) {
-  return name
-    ?.split(' ')
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2) || '?'
-}
-
 const roleLabels = {
   PLATFORM_ADMIN: 'Platform Admin',
   CLUB_ADMIN: 'Club Admin',
@@ -45,6 +38,9 @@ export default function Profile() {
   const [name, setName] = useState(user?.name || '')
   const [email, setEmail] = useState(user?.email || '')
   const [phone, setPhone] = useState(user?.phone || '')
+  const [studentId, setStudentId] = useState(user?.studentId || '')
+  const [department, setDepartment] = useState(user?.department || '')
+  const [idCardUrl, setIdCardUrl] = useState(user?.idCardUrl || '')
   const [profileLoading, setProfileLoading] = useState(false)
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -55,7 +51,7 @@ export default function Profile() {
     e.preventDefault()
     setProfileLoading(true)
     try {
-      await client.patch('/auth/profile', { name, email, phone })
+      await client.patch('/auth/profile', { name, email, phone, studentId, department: department.trim() || null, idCardUrl })
       await refreshUser()
       toast.success('Profile updated')
     } catch (err) {
@@ -140,6 +136,55 @@ export default function Profile() {
                   onChange={(e) => setPhone(e.target.value)}
                   required
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="studentId">Student ID</Label>
+                <Input
+                  id="studentId"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  placeholder="21190001"
+                  pattern="[0-9]{1,8}"
+                  maxLength={8}
+                  title="1-8 digits"
+                  value={studentId}
+                  onChange={(e) => setStudentId(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="department">Department</Label>
+                <Input
+                  id="department"
+                  type="text"
+                  autoComplete="organization"
+                  placeholder="e.g. CSE, EEE, ECE, Agri"
+                  maxLength={100}
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">Optional — shown next to your name on member lists</p>
+              </div>
+              <div className="space-y-2">
+                <Label>Student ID Card</Label>
+                <div className="flex items-center gap-2">
+                  {idCardUrl && (
+                    <a
+                      href={idCardUrl}
+                      target="_blank"
+                      rel="noopener"
+                      className="text-sm text-brand-primary underline-offset-4 hover:underline"
+                    >
+                      View ID card
+                    </a>
+                  )}
+                  <ImageUploadButton label="Upload new ID card" onUploadComplete={setIdCardUrl} />
+                </div>
+                {idCardUrl !== (user?.idCardUrl || '') && (
+                  <p className="text-xs text-status-yellow">New card uploaded — click Save Changes to apply</p>
+                )}
+                <p className="text-xs text-muted-foreground">JPEG, PNG, GIF, or WebP — max 5MB</p>
               </div>
               <Button type="submit" className="bg-brand-primary hover:bg-brand-primary/90 text-white" disabled={profileLoading}>
                 {profileLoading ? 'Saving...' : 'Save Changes'}

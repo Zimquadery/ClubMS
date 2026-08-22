@@ -23,6 +23,8 @@ export default function Register() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
+  const [studentId, setStudentId] = useState('')
+  const [idCard, setIdCard] = useState(null)
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
@@ -44,8 +46,18 @@ export default function Register() {
       setLoading(false)
       return
     }
+    if (!idCard) {
+      setError('ID card photo is required')
+      setLoading(false)
+      return
+    }
+    if (idCard.size > 5 * 1024 * 1024) {
+      setError('ID card image must be under 5MB')
+      setLoading(false)
+      return
+    }
     try {
-      await register(email, password, name, phone)
+      await register({ email, password, name, phone, studentId, idCardFile: idCard })
       navigate('/dashboard')
     } catch (err) {
       setError(
@@ -113,6 +125,36 @@ export default function Register() {
           onChange={(e) => setPhone(e.target.value)}
           required
         />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="studentId">Student ID</Label>
+        <Input
+          id="studentId"
+          type="text"
+          inputMode="numeric"
+          autoComplete="off"
+          placeholder="21190001"
+          pattern="[0-9]{1,8}"
+          maxLength={8}
+          title="1-8 digits"
+          value={studentId}
+          onChange={(e) => setStudentId(e.target.value)}
+          required
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="idCard">Student ID Card Photo</Label>
+        <label className="flex items-center justify-center rounded-md text-sm font-medium h-9 px-3 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground cursor-pointer transition">
+          {idCard ? idCard.name : 'Choose an image (max 5MB)'}
+          <input
+            id="idCard"
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => setIdCard(e.target.files[0] || null)}
+          />
+        </label>
+        <p className="text-xs text-muted-foreground">A photo of your student ID card is required to register</p>
       </div>
       <div className="space-y-2">
         <Label htmlFor="password">Password</Label>

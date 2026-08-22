@@ -78,6 +78,8 @@ export default function ClubDetail() {
               onJoin={vm.handleJoin}
               onLeave={vm.handleLeave}
               clubId={id}
+              joinBlocked={vm.joinBlocked}
+              joinBlockedNote={vm.joinBlockedNote}
             />
           </div>
         </div>
@@ -266,8 +268,8 @@ export default function ClubDetail() {
               <div className="relative mb-3">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search name or email"
-                  aria-label="Search members by name or email"
+                  placeholder="Search name or department"
+                  aria-label="Search members by name or department"
                   value={vm.membersSearch}
                   onChange={(e) => vm.setMembersSearch(e.target.value)}
                   maxLength={25}
@@ -286,7 +288,12 @@ export default function ClubDetail() {
                   <div className="divide-y">
                     {vm.members.map((membership) => (
                       <div key={membership.id} className="flex items-center justify-between text-sm py-2 first:pt-0 last:pb-0">
-                        <span className="font-medium">{membership.user.name}</span>
+                        <span className="flex items-center gap-2 min-w-0">
+                          <span className="font-medium truncate">{membership.user.name}</span>
+                          {membership.user.department && (
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">{membership.user.department}</span>
+                          )}
+                        </span>
                         {membership.role === 'OFFICER' && (
                           <Badge variant="outline" className="text-xs">Officer</Badge>
                         )}

@@ -1,5 +1,7 @@
 require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
 
+const fs = require('fs');
+const path = require('path');
 const { PrismaClient } = require('@prisma/client');
 const { PrismaPg } = require('@prisma/adapter-pg');
 const bcrypt = require('bcryptjs');
@@ -9,40 +11,48 @@ const prisma = new PrismaClient({ adapter });
 
 const DAY = 24 * 60 * 60 * 1000;
 const HOUR = 60 * 60 * 1000;
+const ID_CARD_URL = '/uploads/Dummy_ID_card.jpg';
 
 async function main() {
   console.log('Seeding database...');
+
+  const uploadsDir = path.join(__dirname, '../uploads');
+  fs.mkdirSync(uploadsDir, { recursive: true });
+  const idCardPath = path.join(uploadsDir, 'Dummy_ID_card.jpg');
+  if (!fs.existsSync(idCardPath)) {
+    fs.copyFileSync(path.join(__dirname, 'seed-assets/Dummy_ID_card.jpg'), idCardPath);
+  }
 
   const passwordHash = await bcrypt.hash('password123', 10);
 
   // ── Users
   const users = {};
   const userData = [
-    { email: 'admin@university.edu', name: 'Platform Admin', role: 'PLATFORM_ADMIN', phone: '+8801710000001' },
-    { email: 'officer1@university.edu', name: 'Alice Chen', role: 'CLUB_ADMIN', phone: '+8801710000002' },
-    { email: 'officer2@university.edu', name: 'Bob Martinez', role: 'CLUB_ADMIN', phone: '+8801710000003' },
-    { email: 'officer3@university.edu', name: 'Carol Singh', role: 'CLUB_ADMIN', phone: '+8801710000004' },
-    { email: 'student1@university.edu', name: 'David Kim', role: 'STUDENT', phone: '+8801710000005' },
-    { email: 'student2@university.edu', name: 'Eva Rossi', role: 'STUDENT', phone: '+8801710000006' },
-    { email: 'student3@university.edu', name: 'Frank Okafor', role: 'STUDENT', phone: '+8801710000007' },
-    { email: 'student4@university.edu', name: 'Grace Liu', role: 'STUDENT', phone: '+8801710000008' },
-    { email: 'student5@university.edu', name: 'Hassan Ali', role: 'STUDENT', phone: '+8801710000009' },
-    { email: 'student6@university.edu', name: 'Iris Tanaka', role: 'STUDENT', phone: '+8801710000010' },
-    { email: 'student7@university.edu', name: 'Jake Wilson', role: 'STUDENT', phone: '+8801710000011' },
-    { email: 'student8@university.edu', name: 'Kira Petrov', role: 'CLUB_ADMIN', phone: '+8801710000012' },
-    { email: 'student9@university.edu', name: 'Leo Nguyen', role: 'STUDENT', phone: '+8801710000013' },
-    { email: 'student10@university.edu', name: 'Maya Johnson', role: 'STUDENT', phone: '+8801710000014' },
-    { email: 'student11@university.edu', name: 'Noah Brown', role: 'STUDENT', phone: '+8801710000015' },
-    { email: 'faculty1@university.edu', name: 'Dr. Sarah Palmer', role: 'FACULTY', phone: '+8801710000016' },
-    { email: 'faculty2@university.edu', name: 'Prof. James Wright', role: 'FACULTY', phone: '+8801710000017' },
-    { email: 'faculty3@university.edu', name: 'Dr. Emily Watson', role: 'FACULTY', phone: '+8801710000018' },
+    { email: 'admin@university.edu', name: 'Platform Admin', role: 'PLATFORM_ADMIN', phone: '+8801710000001', studentId: '21190001', department: 'CSE' },
+    { email: 'officer1@university.edu', name: 'Alice Chen', role: 'CLUB_ADMIN', phone: '+8801710000002', studentId: '21190002', department: 'CSE' },
+    { email: 'officer2@university.edu', name: 'Bob Martinez', role: 'CLUB_ADMIN', phone: '+8801710000003', studentId: '21190003', department: 'EEE' },
+    { email: 'officer3@university.edu', name: 'Carol Singh', role: 'CLUB_ADMIN', phone: '+8801710000004', studentId: '21190004', department: 'ECE' },
+    { email: 'student1@university.edu', name: 'David Kim', role: 'STUDENT', phone: '+8801710000005', studentId: '21190005', department: 'CSE' },
+    { email: 'student2@university.edu', name: 'Eva Rossi', role: 'STUDENT', phone: '+8801710000006', studentId: '21190006', department: 'EEE' },
+    { email: 'student3@university.edu', name: 'Frank Okafor', role: 'STUDENT', phone: '+8801710000007', studentId: '21190007', department: 'ECE' },
+    { email: 'student4@university.edu', name: 'Grace Liu', role: 'STUDENT', phone: '+8801710000008', studentId: '21190008', department: 'Agri' },
+    { email: 'student5@university.edu', name: 'Hassan Ali', role: 'STUDENT', phone: '+8801710000009', studentId: '21190009', department: 'CSE' },
+    { email: 'student6@university.edu', name: 'Iris Tanaka', role: 'STUDENT', phone: '+8801710000010', studentId: '21190010', department: 'EEE' },
+    { email: 'student7@university.edu', name: 'Jake Wilson', role: 'STUDENT', phone: '+8801710000011', studentId: '21190011', department: 'ECE' },
+    { email: 'student8@university.edu', name: 'Kira Petrov', role: 'CLUB_ADMIN', phone: '+8801710000012', studentId: '21190012', department: 'Agri' },
+    { email: 'student9@university.edu', name: 'Leo Nguyen', role: 'STUDENT', phone: '+8801710000013', studentId: '21190013', department: 'CSE' },
+    { email: 'student10@university.edu', name: 'Maya Johnson', role: 'STUDENT', phone: '+8801710000014', studentId: '21190014', department: 'EEE' },
+    { email: 'student11@university.edu', name: 'Noah Brown', role: 'STUDENT', phone: '+8801710000015', studentId: '21190015', department: 'ECE' },
+    { email: 'faculty1@university.edu', name: 'Dr. Sarah Palmer', role: 'FACULTY', phone: '+8801710000016', studentId: '21190016', department: 'CSE' },
+    { email: 'faculty2@university.edu', name: 'Prof. James Wright', role: 'FACULTY', phone: '+8801710000017', studentId: '21190017', department: 'Agri' },
+    { email: 'faculty3@university.edu', name: 'Dr. Emily Watson', role: 'FACULTY', phone: '+8801710000018', studentId: '21190018', department: null },
   ];
 
   for (const u of userData) {
     users[u.email] = await prisma.user.upsert({
       where: { email: u.email },
       update: {},
-      create: { email: u.email, passwordHash, name: u.name, role: u.role, phone: u.phone },
+      create: { email: u.email, passwordHash, name: u.name, role: u.role, phone: u.phone, studentId: u.studentId, idCardUrl: ID_CARD_URL, department: u.department ?? null },
     });
   }
   console.log(`Created ${userData.length} users`);
@@ -75,12 +85,12 @@ async function main() {
   }
 
   const clubsData = [
-    { name: 'Coding Club', description: 'Learn and practice programming together', category: 'Technology', logoUrl: '/uploads/logo-coding.png' },
+    { name: 'Programmers Arena', description: 'Learn and practice programming together', category: 'Technology', logoUrl: '/uploads/logo-coding.png' },
     { name: 'Basketball Team', description: 'Competitive basketball for all skill levels', category: 'Sports', logoUrl: '/uploads/logo-basketball.png' },
     { name: 'Drama Society', description: 'Theatre productions and acting workshops', category: 'Arts' },
-    { name: 'Science Olympiad', description: 'Academic competition and research group', category: 'Academic', logoUrl: '/uploads/logo-science.png' },
-    { name: 'Cultural Exchange', description: null, category: 'Cultural' },
-    { name: 'Volunteer Corps', description: 'Community service and outreach programs', category: 'Community' },
+    { name: 'HSTU Research Society', description: 'Academic competition and research group', category: 'Academic', logoUrl: '/uploads/logo-science.png', joinRuleMode: 'ALLOW', joinDepartments: ['CSE', 'ECE'] },
+    { name: 'Arko', description: null, category: 'Cultural', joinRuleMode: 'BLOCK', joinDepartments: ['Agri'] },
+    { name: 'Red Crescent', description: 'Community service and volunteering programs', category: 'Community' },
   ];
 
   const clubs = {};
@@ -90,12 +100,12 @@ async function main() {
     console.log(`Created club: ${club.name}`);
   }
 
-  const cc = clubs['Coding Club'];
+  const cc = clubs['Programmers Arena'];
   const bt = clubs['Basketball Team'];
   const ds = clubs['Drama Society'];
-  const so = clubs['Science Olympiad'];
-  const ce = clubs['Cultural Exchange'];
-  const vc = clubs['Volunteer Corps'];
+  const so = clubs['HSTU Research Society'];
+  const ce = clubs['Arko'];
+  const vc = clubs['Red Crescent'];
 
   // ── Memberships
   const mem = (userId, clubId, status, role) => ({ userId, clubId, status, role });

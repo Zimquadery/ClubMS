@@ -5,17 +5,23 @@ import { X } from 'lucide-react'
 
 const MAX = 10
 
-function normalize(tag) {
-  return tag.trim().toLowerCase()
-}
-
-export function TagInput({ value, onChange, idPrefix = 'tags', label = 'Tags', disabled = false }) {
+export function TagInput({
+  value,
+  onChange,
+  idPrefix = 'tags',
+  label = 'Tags',
+  disabled = false,
+  normalize = (s) => s.trim().toLowerCase(),
+  hint,
+  placeholder = 'Type a tag and press Enter',
+  maxLength = 30,
+}) {
   const [draft, setDraft] = useState('')
   const atMax = value.length >= MAX
 
   function commit(raw) {
     const tag = normalize(raw)
-    if (!tag || value.includes(tag) || tag.includes(',')) {
+    if (!tag || tag.includes(',') || value.some((t) => t.toLowerCase() === tag.toLowerCase())) {
       setDraft('')
       return
     }
@@ -39,7 +45,7 @@ export function TagInput({ value, onChange, idPrefix = 'tags', label = 'Tags', d
   return (
     <div className="space-y-2">
       <Label htmlFor={`${idPrefix}-input`}>{label}</Label>
-      <p className="text-xs text-muted-foreground">Optional. Add up to {MAX} keywords to help people find this event.</p>
+      <p className="text-xs text-muted-foreground">{hint ?? `Optional. Add up to ${MAX} keywords to help people find this event.`}</p>
       {value.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {value.map((tag) => (
@@ -58,12 +64,12 @@ export function TagInput({ value, onChange, idPrefix = 'tags', label = 'Tags', d
       {!atMax && (
         <Input
           id={`${idPrefix}-input`}
-          placeholder="Type a tag and press Enter"
+          placeholder={placeholder}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={disabled}
-          maxLength={30}
+          maxLength={maxLength}
         />
       )}
     </div>

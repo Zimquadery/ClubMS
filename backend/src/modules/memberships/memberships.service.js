@@ -3,7 +3,7 @@ const { AppError } = require('../../utils/errors');
 const { isPrivilegedRole } = require('../../utils/roles');
 const { userSearchWhere } = require('../../utils/search');
 
-const USER_SELECT = { id: true, name: true, email: true, phone: true };
+const USER_SELECT = { id: true, name: true, email: true, phone: true, studentId: true, idCardUrl: true, department: true };
 
 async function updateMembershipStatus(clubId, userId, expectedStatus, newStatus) {
   const membership = await prisma.clubMembership.findUnique({
@@ -34,13 +34,31 @@ async function requestJoin(clubId, userId) {
     if (existing.status === 'ACTIVE') throw new AppError('You are already a member of this club', 409);
     if (existing.status === 'PENDING') throw new AppError('You already have a pending request for this club', 409);
     if (existing.status === 'ALUMNI') throw new AppError('You are an alumni of this club', 409);
-    if (existing.status === 'REJECTED') {
-      return prisma.clubMembership.update({
-        where: { userId_clubId: { userId, clubId } },
-        data: { status: 'PENDING' },
-        include: { user: { select: USER_SELECT } },
-      });
+  }
+
+  if (club.joinRuleMode !== 'ALL') {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { department: true },
+    });
+    const dept = user?.department?.trim().toLowerCase();
+    const listed = club.joinDepartments.map((d) => d.trim().toLowerCase());
+    const matches = dept && listed.includes(dept);
+
+    if (club.joinRuleMode === 'ALLOW') {
+      if (!dept) throw new AppError('This club only accepts join requests from specific departments. Add your department in your profile to request joining.', 403);
+      if (!matches) throw new AppError(`This club only accepts join requests from: ${club.joinDepartments.join(', ')}.`, 403);
+    } else if (matches) {
+      throw new AppError(`This club is not accepting join requests from the ${user.department} department.`, 403);
     }
+  }
+
+  if (existing) {
+    return prisma.clubMembership.update({
+      where: { userId_clubId: { userId, clubId } },
+      data: { status: 'PENDING' },
+      include: { user: { select: USER_SELECT } },
+    });
   }
 
   return prisma.clubMembership.create({
@@ -362,9 +380,9 @@ async function exportMembersCsv(clubId) {
     orderBy: { createdAt: 'asc' },
   });
 
-  const header = 'Name,Email,Phone,Role,Status,Joined Date';
+  const header = 'Name,Email,Phone,Student ID,Department,Role,Status,Joined Date';
   const rows = members.map((m) =>
-    `"${m.user.name}","${m.user.email}","${m.user.phone}","${m.role}","${m.status}","${m.createdAt.toISOString()}"`
+    `"${m.user.name}","${m.user.email}","${m.user.phone}","${m.user.studentId}","${m.user.department ?? ''}","${m.role}","${m.status}","${m.createdAt.toISOString()}"`
   );
   return [header, ...rows].join('\n');
 }

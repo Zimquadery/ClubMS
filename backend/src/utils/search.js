@@ -6,6 +6,8 @@ function userSearchWhere(search) {
       { name: { contains: q, mode: 'insensitive' } },
       { email: { contains: q, mode: 'insensitive' } },
       { phone: { contains: q, mode: 'insensitive' } },
+      { studentId: { contains: q, mode: 'insensitive' } },
+      { department: { contains: q, mode: 'insensitive' } },
     ],
   };
 }
