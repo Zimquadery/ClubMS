@@ -36,7 +36,9 @@ async function getById(id, userId, { membersPage = 1, membersLimit = 10, eventsP
     });
   }
 
-  const includeEmail = userMembership?.role === 'OFFICER' || isPrivilegedRole(userRole);
+  const isActive = userMembership?.status === 'ACTIVE';
+  const canViewRoster = isActive || isPrivilegedRole(userRole);
+  const canViewContact = (isActive && userMembership?.role === 'OFFICER') || isPrivilegedRole(userRole);
 
   const memberSearchWhere = userSearchWhere(membersSearch);
   const memberListWhere = { status: membersStatus, ...(memberSearchWhere && { user: memberSearchWhere }) };
@@ -49,13 +51,25 @@ async function getById(id, userId, { membersPage = 1, membersLimit = 10, eventsP
           memberships: { where: { status: 'ACTIVE' } },
         },
       },
-      memberships: {
-        where: memberListWhere,
-        include: { user: { select: { id: true, name: true, department: true, ...(includeEmail && { email: true }) } } },
-        orderBy: { createdAt: 'asc' },
-        skip: (membersPage - 1) * membersLimit,
-        take: membersLimit,
-      },
+      memberships: canViewRoster
+        ? {
+            where: memberListWhere,
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  department: true,
+                  studentId: true,
+                  ...(canViewContact && { email: true, phone: true }),
+                },
+              },
+            },
+            orderBy: { createdAt: 'asc' },
+            skip: (membersPage - 1) * membersLimit,
+            take: membersLimit,
+          }
+        : false,
     },
   });
 
@@ -89,7 +103,7 @@ async function getById(id, userId, { membersPage = 1, membersLimit = 10, eventsP
   return { ...club, totalMembers, totalEvents };
 }
 
-async function create({ name, description, category, logoUrl, adminUserId }) {
+async function create({ name, description, rules, category, logoUrl, adminUserId }) {
   const existing = await prisma.club.findFirst({ where: { name } });
   if (existing) throw new AppError('A club with this name already exists', 409);
 
@@ -100,6 +114,7 @@ async function create({ name, description, category, logoUrl, adminUserId }) {
   const clubData = {
     name,
     description: description || null,
+    rules: rules || null,
     category,
     logoUrl: logoUrl || null,
   };
@@ -128,7 +143,7 @@ async function create({ name, description, category, logoUrl, adminUserId }) {
   return result;
 }
 
-async function update(id, { name, description, category, logoUrl }) {
+async function update(id, { name, description, rules, category, logoUrl }) {
   const club = await prisma.club.findUnique({ where: { id } });
   if (!club) throw new AppError('Club not found', 404);
 
@@ -139,6 +154,7 @@ async function update(id, { name, description, category, logoUrl }) {
     data.name = name;
   }
   if (description !== undefined) data.description = description || null;
+  if (rules !== undefined) data.rules = rules || null;
   if (category !== undefined) {
     if (!CLUB_CATEGORIES.includes(category)) {
       throw new AppError(`Invalid category. Must be one of: ${CLUB_CATEGORIES.join(', ')}`, 400);
@@ -150,6 +166,18 @@ async function update(id, { name, description, category, logoUrl }) {
   if (Object.keys(data).length === 0) throw new AppError('No fields to update', 400);
 
   return prisma.club.update({ where: { id }, data });
+}
+
+async function updateProfile(clubId, { description, rules } = {}) {
+  const club = await prisma.club.findUnique({ where: { id: clubId } });
+  if (!club) throw new AppError('Club not found', 404);
+
+  const data = {};
+  if (description !== undefined) data.description = description || null;
+  if (rules !== undefined) data.rules = rules || null;
+  if (Object.keys(data).length === 0) throw new AppError('No fields to update', 400);
+
+  return prisma.club.update({ where: { id: clubId }, data });
 }
 
 async function updateJoinRules(clubId, { joinRuleMode, joinDepartments }) {
@@ -184,4 +212,4 @@ function getCategories() {
   return CLUB_CATEGORIES;
 }
 
-module.exports = { list, getById, create, update, updateJoinRules, deleteClub, getCategories };
+module.exports = { list, getById, create, update, updateProfile, updateJoinRules, deleteClub, getCategories };

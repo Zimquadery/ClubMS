@@ -12,7 +12,7 @@ function handleParseResult(result, next) {
 
 function validate(schema) {
   return (req, res, next) => {
-    const result = schema.safeParse(req.body);
+    const result = schema.safeParse(req.body ?? {});
     if (handleParseResult(result, next)) {
       req.body = result.data;
       next();

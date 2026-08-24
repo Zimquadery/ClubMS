@@ -3,7 +3,7 @@ const membershipsController = require('./memberships.controller');
 const { authMiddleware } = require('../../middleware/auth');
 const { requireRole, requireClubAdmin } = require('../../middleware/rbac');
 const { validate, validateQuery } = require('../../middleware/validate');
-const { transferAdmin: transferAdminSchema, listMembersQuery, bulkAction: bulkActionSchema, updateRole: updateRoleSchema } = require('./memberships.schemas');
+const { join: joinSchema, transferAdmin: transferAdminSchema, listMembersQuery, bulkAction: bulkActionSchema, updateRole: updateRoleSchema } = require('./memberships.schemas');
 const { auditLog } = require('../../middleware/auditLog');
 
 const router = express.Router();
@@ -19,15 +19,25 @@ const router = express.Router();
  *         name: clubId
  *         required: true
  *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               agreedToRules: { type: boolean, description: 'Required (true) when the club has rules' }
  *     responses:
- *       200:
+ *       201:
  *         description: Join request submitted
+ *       400:
+ *         description: Club rules agreement missing
  *       401:
  *         description: Unauthorized
  *       409:
  *         description: Already a member or pending
  */
-router.post('/:clubId/join', authMiddleware, requireRole('STUDENT'), membershipsController.requestJoin);
+router.post('/:clubId/join', authMiddleware, requireRole('STUDENT'), validate(joinSchema), membershipsController.requestJoin);
 
 /**
  * @openapi

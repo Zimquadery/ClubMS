@@ -5,6 +5,7 @@ const { CLUB_CATEGORIES } = require('./clubs.constants');
 const create = z.object({
   name: z.string().min(1, 'Name is required').max(100),
   description: z.string().max(1000).optional(),
+  rules: z.string().max(4000).optional(),
   category: z.enum(CLUB_CATEGORIES, { message: `Category must be one of: ${CLUB_CATEGORIES.join(', ')}` }),
   logoUrl: OPTIONAL_URL,
   adminUserId: z.string().uuid().optional(),
@@ -13,8 +14,14 @@ const create = z.object({
 const update = z.object({
   name: z.string().min(1).max(100).optional(),
   description: z.string().max(1000).optional().or(z.literal('')),
+  rules: z.string().max(4000).optional().or(z.literal('')),
   category: z.enum(CLUB_CATEGORIES, { message: `Category must be one of: ${CLUB_CATEGORIES.join(', ')}` }).optional(),
   logoUrl: OPTIONAL_URL,
+});
+
+const profile = z.object({
+  description: z.string().max(1000).optional().or(z.literal('')),
+  rules: z.string().max(4000).optional().or(z.literal('')),
 });
 
 const joinRules = z.object({
@@ -39,4 +46,4 @@ const getByIdQuery = z.object({
   eventsLimit: z.coerce.number().int().min(1).max(100).default(5),
 });
 
-module.exports = { create, update, joinRules, listQuery, getByIdQuery };
+module.exports = { create, update, profile, joinRules, listQuery, getByIdQuery };

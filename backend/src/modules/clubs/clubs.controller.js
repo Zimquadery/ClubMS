@@ -33,6 +33,11 @@ const updateJoinRules = asyncHandler(async (req, res) => {
   res.status(200).json(club);
 });
 
+const updateProfile = asyncHandler(async (req, res) => {
+  const club = await clubsService.updateProfile(req.params.clubId, req.body);
+  res.status(200).json(club);
+});
+
 const deleteClub = asyncHandler(async (req, res) => {
   const result = await clubsService.deleteClub(req.params.id);
   res.status(200).json(result);
@@ -43,4 +48,4 @@ const getCategories = asyncHandler(async (_req, res) => {
   res.status(200).json(categories);
 });
 
-module.exports = { list, getById, create, update, updateJoinRules, deleteClub, getCategories };
+module.exports = { list, getById, create, update, updateProfile, updateJoinRules, deleteClub, getCategories };

@@ -42,7 +42,7 @@ export default function ClubMembers() {
 
   const {
     items: fetchedMembers,
-    loading, error, page, totalPages,
+    loading, error, page, totalPages, total,
     refetch: fetchMembers,
     setURLParam,
   } = usePaginatedFetch({
@@ -52,7 +52,7 @@ export default function ClubMembers() {
       const q = debouncedSearch.trim()
       if (q) params.search = q
       const res = await client.get(`/clubs/${clubId}/members`, { params })
-      return { items: res.data.items || res.data, totalPages: res.data.totalPages || 1 }
+      return { items: res.data.items || res.data, totalPages: res.data.totalPages || 1, total: res.data.total }
     },
     deps: [clubId, tab, debouncedSearch],
     enabled: !!clubId,
@@ -134,11 +134,20 @@ export default function ClubMembers() {
     <div className="space-y-6">
       <BackLink to="/admin/clubs" label="Back to Clubs" />
 
-      <AdminClubHeader title="Club Members" subtitle="Manage members and alumni" adminClubs={adminClubs} currentClub={currentClub} clubId={clubId} onClubChange={navigateToClub} />
+      <AdminClubHeader
+        title="Club Members"
+        subtitle={`Manage members and alumni${total ? ` · ${total} ${tab === 'active' ? 'active' : 'alumni'}` : ''}`}
+        adminClubs={adminClubs}
+        currentClub={currentClub}
+        clubId={clubId}
+        onClubChange={navigateToClub}
+      />
 
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex gap-2">
+        <div role="tablist" aria-label="Member type" className="flex gap-2">
           <Button
+            role="tab"
+            aria-selected={tab === 'active'}
             variant={tab === 'active' ? 'default' : 'outline'}
             size="sm"
             className={tab === 'active' ? 'bg-brand-primary hover:bg-brand-primary/90 text-white' : ''}
@@ -147,6 +156,8 @@ export default function ClubMembers() {
             Active Members
           </Button>
           <Button
+            role="tab"
+            aria-selected={tab === 'alumni'}
             variant={tab === 'alumni' ? 'default' : 'outline'}
             size="sm"
             className={tab === 'alumni' ? 'bg-brand-primary hover:bg-brand-primary/90 text-white' : ''}
@@ -182,70 +193,81 @@ export default function ClubMembers() {
 
       {!loading && displayMembers.length === 0 ? (
         <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
+          <CardContent className="py-12 text-center">
             <Users className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
-            No {tab === 'active' ? 'active members' : 'alumni'}{debouncedSearch ? ' found' : ''}
+            <p className="text-sm font-medium">
+              {debouncedSearch ? 'No matches found' : tab === 'active' ? 'No active members yet' : 'No alumni yet'}
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {debouncedSearch
+                ? 'Try a different name, email, phone, ID, or department.'
+                : tab === 'active'
+                  ? 'Members you approve from pending requests will appear here.'
+                  : 'Members you set as alumni will appear here.'}
+            </p>
           </CardContent>
         </Card>
       ) : (
         <SkeletonReveal isLoading={loading} skeleton={<ListSkeleton rows={5} />}>
-        <div className="space-y-3">
-          {displayMembers.map((membership) => (
-            <Card key={membership.id}>
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="flex flex-1 min-w-0 items-center gap-3">
-                  <IdCardThumb
-                    url={membership.user.idCardUrl}
-                    name={membership.user.name}
-                    meta={[membership.user.department, `ID ${membership.user.studentId}`].filter(Boolean).join(' · ')}
-                  />
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="truncate text-sm font-medium">{membership.user.name}</p>
-                      {membership.role === 'OFFICER' && (
-                        <Badge variant="outline" className="text-xs">Officer</Badge>
-                      )}
+          <Card>
+            <CardContent className="p-0">
+              <div className="divide-y">
+                {displayMembers.map((membership) => (
+                  <div key={membership.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-4">
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                      <IdCardThumb
+                        url={membership.user.idCardUrl}
+                        name={membership.user.name}
+                        meta={[membership.user.department, `ID ${membership.user.studentId}`].filter(Boolean).join(' · ')}
+                      />
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="truncate text-sm font-medium">{membership.user.name}</p>
+                          {membership.role === 'OFFICER' && (
+                            <Badge variant="outline" className="text-xs">Officer</Badge>
+                          )}
+                        </div>
+                        <p className="truncate text-sm text-muted-foreground">{membership.user.email}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {[membership.user.department, `${membership.user.phone} · ID ${membership.user.studentId}`].filter(Boolean).join(' · ')}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Joined {formatShortDate(membership.createdAt)}
+                        </p>
+                      </div>
                     </div>
-                    <p className="truncate text-sm text-muted-foreground">{membership.user.email}</p>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {[membership.user.department, `${membership.user.phone} · ID ${membership.user.studentId}`].filter(Boolean).join(' · ')}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Joined {formatShortDate(membership.createdAt)}
-                    </p>
-                  </div>
-                </div>
-                {tab === 'active' && (
-                  <div className="flex gap-2 ml-4">
-                    {membership.role !== 'OFFICER' && (
-                      <Button variant="outline" size="sm" onClick={() => handlePromote(membership)}>
-                        <ChevronUp className="h-4 w-4 mr-1" /> Promote
-                      </Button>
-                    )}
-                    {membership.role === 'OFFICER' && (
-                      <Button variant="outline" size="sm" onClick={() => handleDemote(membership)}>
-                        <ChevronDown className="h-4 w-4 mr-1" /> Demote
-                      </Button>
-                    )}
-                    {membership.role !== 'OFFICER' && (
-                      <>
-                        <Button variant="outline" size="sm" onClick={() => setAlumniTarget(membership)}>
-                          <GraduationCap className="h-4 w-4 mr-1" /> Set Alumni
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => setTransferTarget(membership)}>
-                          <ArrowRightLeft className="h-4 w-4 mr-1" /> Transfer Admin
-                        </Button>
-                        <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => setRemoveTarget(membership)}>
-                          <Trash2 className="h-4 w-4 mr-1" /> Remove
-                        </Button>
-                      </>
+                    {tab === 'active' && (
+                      <div className="flex shrink-0 flex-wrap gap-1.5">
+                        {membership.role !== 'OFFICER' && (
+                          <Button variant="ghost" size="sm" className="min-w-[84px]" onClick={() => handlePromote(membership)}>
+                            <ChevronUp className="h-4 w-4 mr-1" /> Promote
+                          </Button>
+                        )}
+                        {membership.role === 'OFFICER' && (
+                          <Button variant="ghost" size="sm" className="min-w-[84px]" onClick={() => handleDemote(membership)}>
+                            <ChevronDown className="h-4 w-4 mr-1" /> Demote
+                          </Button>
+                        )}
+                        {membership.role !== 'OFFICER' && (
+                          <>
+                            <Button variant="ghost" size="sm" className="min-w-[92px]" onClick={() => setAlumniTarget(membership)}>
+                              <GraduationCap className="h-4 w-4 mr-1" /> Set Alumni
+                            </Button>
+                            <Button variant="ghost" size="sm" className="min-w-[118px]" onClick={() => setTransferTarget(membership)}>
+                              <ArrowRightLeft className="h-4 w-4 mr-1" /> Transfer Admin
+                            </Button>
+                            <Button variant="ghost" size="sm" className="min-w-[84px] text-destructive hover:text-destructive" onClick={() => setRemoveTarget(membership)}>
+                              <Trash2 className="h-4 w-4 mr-1" /> Remove
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     )}
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </SkeletonReveal>
       )}
 

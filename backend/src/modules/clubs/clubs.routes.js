@@ -4,7 +4,7 @@ const eventsController = require('../events/events.controller');
 const { authMiddleware } = require('../../middleware/auth');
 const { requireRole, requireClubAdmin } = require('../../middleware/rbac');
 const { validate, validateQuery } = require('../../middleware/validate');
-const { create: createSchema, update: updateSchema, joinRules: joinRulesSchema, listQuery: listQuerySchema, getByIdQuery: getByIdQuerySchema } = require('./clubs.schemas');
+const { create: createSchema, update: updateSchema, profile: profileSchema, joinRules: joinRulesSchema, listQuery: listQuerySchema, getByIdQuery: getByIdQuerySchema } = require('./clubs.schemas');
 const { create: eventCreateSchema } = require('../events/events.schemas');
 const { auditLog } = require('../../middleware/auditLog');
 
@@ -149,6 +149,40 @@ router.patch('/:id', authMiddleware, requireRole('PLATFORM_ADMIN'), validate(upd
  *         description: Club not found
  */
 router.patch('/:clubId/join-rules', authMiddleware, requireRole('CLUB_ADMIN'), requireClubAdmin, validate(joinRulesSchema), auditLog('CLUB_JOIN_RULES_UPDATE', (req) => ({ type: 'club', id: req.params.clubId, metadata: { joinRuleMode: req.body.joinRuleMode, joinDepartments: req.body.joinDepartments } })), clubsController.updateJoinRules);
+
+/**
+ * @openapi
+ * /clubs/{clubId}/profile:
+ *   patch:
+ *     tags: [Clubs]
+ *     summary: Update club description and rules (officer-managed)
+ *     parameters:
+ *       - in: path
+ *         name: clubId
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               description: { type: string, maxLength: 1000, description: 'Empty string clears' }
+ *               rules: { type: string, maxLength: 4000, description: 'Disclosed separately; joiners must agree. Empty string clears' }
+ *     responses:
+ *       200:
+ *         description: Club profile updated
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Club not found
+ */
+router.patch('/:clubId/profile', authMiddleware, requireRole('CLUB_ADMIN'), requireClubAdmin, validate(profileSchema), auditLog('CLUB_PROFILE_UPDATE', (req) => ({ type: 'club', id: req.params.clubId, metadata: { fields: Object.keys(req.body) } })), clubsController.updateProfile);
 
 /**
  * @openapi

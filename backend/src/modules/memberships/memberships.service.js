@@ -22,7 +22,7 @@ async function updateMembershipStatus(clubId, userId, expectedStatus, newStatus)
   });
 }
 
-async function requestJoin(clubId, userId) {
+async function requestJoin(clubId, userId, { agreedToRules } = {}) {
   const club = await prisma.club.findUnique({ where: { id: clubId } });
   if (!club) throw new AppError('Club not found', 404);
 
@@ -51,6 +51,10 @@ async function requestJoin(clubId, userId) {
     } else if (matches) {
       throw new AppError(`This club is not accepting join requests from the ${user.department} department.`, 403);
     }
+  }
+
+  if (club.rules?.trim() && !agreedToRules) {
+    throw new AppError('You must agree to the club rules to join this club', 400);
   }
 
   if (existing) {

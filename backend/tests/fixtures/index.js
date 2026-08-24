@@ -50,6 +50,7 @@ async function makeClub(overrides = {}) {
       logoUrl: overrides.logoUrl !== undefined ? overrides.logoUrl : null,
       joinRuleMode: overrides.joinRuleMode || 'ALL',
       joinDepartments: overrides.joinDepartments || [],
+      rules: overrides.rules !== undefined ? overrides.rules : null,
     },
   });
 }

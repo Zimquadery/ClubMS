@@ -1,6 +1,10 @@
 const { z } = require('zod');
 const { PAGINATION, paginatedSchema } = require('../../middleware/validate');
 
+const join = z.object({
+  agreedToRules: z.boolean().optional(),
+});
+
 const transferAdmin = z.object({
   newAdminId: z.string().uuid('Invalid user ID'),
 });
@@ -19,4 +23,4 @@ const bulkAction = z.object({
   userIds: z.array(z.string().uuid('Invalid user ID')).min(1, 'At least one user ID is required').max(100),
 });
 
-module.exports = { transferAdmin, updateRole, listMembersQuery, bulkAction };
+module.exports = { join, transferAdmin, updateRole, listMembersQuery, bulkAction };

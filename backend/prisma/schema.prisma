@@ -55,6 +55,7 @@ model Club {
   id              String   @id @default(uuid())
   name            String   @unique
   description     String?
+  rules           String?
   category        String
   logoUrl         String?
   joinRuleMode    String   @default("ALL") // ALL | ALLOW | BLOCK

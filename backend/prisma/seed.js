@@ -84,13 +84,45 @@ async function main() {
     return;
   }
 
+  // Every club carries rules so the join-agreement flow is demoable everywhere.
+  const ccRules = [
+    '1. Attend weekly code review sessions.',
+    '2. Treat all members with respect.',
+    '3. No sharing of assignment solutions.',
+  ].join('\n');
+  const btRules = [
+    '1. Attend at least two practices per week.',
+    '2. Bring your own jersey on game days.',
+    '3. Notify the captain before missing a match.',
+  ].join('\n');
+  const dsRules = [
+    '1. Attend rehearsals unless you have an approved absence.',
+    '2. Memorize your lines before the table read deadline.',
+    '3. Respect the director\'s casting and staging decisions.',
+  ].join('\n');
+  const soRules = [
+    '1. Uphold academic integrity in every competition.',
+    '2. Attend the weekly study sessions for your track.',
+    '3. Share lab equipment and clean up after sessions.',
+  ].join('\n');
+  const ceRules = [
+    '1. Participate in at least one cultural event per semester.',
+    '2. Respect every culture represented in the club.',
+    '3. Help set up and tear down for festivals you attend.',
+  ].join('\n');
+  const vcRules = [
+    '1. Complete at least one volunteer shift per month.',
+    '2. Wear the volunteer vest at all official drives.',
+    '3. Represent the club respectfully in the community.',
+  ].join('\n');
+
   const clubsData = [
-    { name: 'Programmers Arena', description: 'Learn and practice programming together', category: 'Technology', logoUrl: '/uploads/logo-coding.png' },
-    { name: 'Basketball Team', description: 'Competitive basketball for all skill levels', category: 'Sports', logoUrl: '/uploads/logo-basketball.png' },
-    { name: 'Drama Society', description: 'Theatre productions and acting workshops', category: 'Arts' },
-    { name: 'HSTU Research Society', description: 'Academic competition and research group', category: 'Academic', logoUrl: '/uploads/logo-science.png', joinRuleMode: 'ALLOW', joinDepartments: ['CSE', 'ECE'] },
-    { name: 'Arko', description: null, category: 'Cultural', joinRuleMode: 'BLOCK', joinDepartments: ['Agri'] },
-    { name: 'Red Crescent', description: 'Community service and volunteering programs', category: 'Community' },
+    { name: 'Programmers Arena', description: 'Learn and practice programming together', category: 'Technology', logoUrl: '/uploads/logo-coding.png', rules: ccRules },
+    { name: 'Basketball Team', description: 'Competitive basketball for all skill levels', category: 'Sports', logoUrl: '/uploads/logo-basketball.png', rules: btRules },
+    { name: 'Drama Society', description: 'Theatre productions and acting workshops', category: 'Arts', rules: dsRules },
+    { name: 'HSTU Research Society', description: 'Academic competition and research group', category: 'Academic', logoUrl: '/uploads/logo-science.png', joinRuleMode: 'ALLOW', joinDepartments: ['CSE', 'ECE'], rules: soRules },
+    { name: 'Arko', description: null, category: 'Cultural', joinRuleMode: 'BLOCK', joinDepartments: ['Agri'], rules: ceRules },
+    { name: 'Red Crescent', description: 'Community service and volunteering programs', category: 'Community', rules: vcRules },
   ];
 
   const clubs = {};

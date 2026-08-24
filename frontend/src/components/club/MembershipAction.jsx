@@ -1,10 +1,13 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { UserPlus, Shield, GraduationCap, Lock } from 'lucide-react'
+import { JoinAgreementDialog } from '@/components/club/JoinAgreementDialog'
 
-export default function MembershipAction({ userMembership, user, joinLoading, leaveLoading, onJoin, onLeave, clubId, joinBlocked = false, joinBlockedNote = null }) {
+export default function MembershipAction({ userMembership, user, joinLoading, leaveLoading, onJoin, onLeave, clubId, joinBlocked = false, joinBlockedNote = null, rules = null }) {
   const navigate = useNavigate()
+  const [agreementOpen, setAgreementOpen] = useState(false)
 
   if (!user) return null
 
@@ -32,8 +35,17 @@ export default function MembershipAction({ userMembership, user, joinLoading, le
     </div>
   )
 
+  const hasRules = !!rules?.trim()
+  const requestJoin = () => (hasRules ? setAgreementOpen(true) : onJoin())
+  const confirmJoin = async () => {
+    await onJoin()
+    setAgreementOpen(false)
+  }
+
+  let content = null
+
   if (userMembership?.status === 'ACTIVE') {
-    return (
+    content = (
       <div className="flex items-center gap-2">
         <Badge className="bg-status-green/15 text-status-green">
           <Shield className="h-3 w-3 mr-1" />
@@ -48,58 +60,60 @@ export default function MembershipAction({ userMembership, user, joinLoading, le
         ) : null}
       </div>
     )
-  }
-
-  if (userMembership?.status === 'PENDING') {
-    return (
+  } else if (userMembership?.status === 'PENDING') {
+    content = (
       <Badge variant="secondary" className="bg-status-yellow/15 text-status-yellow">
         Request Pending
       </Badge>
     )
-  }
-
-  if (userMembership?.status === 'ALUMNI') {
-    return (
+  } else if (userMembership?.status === 'ALUMNI') {
+    content = (
       <Badge variant="secondary" className="bg-brand-primary/10 text-brand-primary">
         <GraduationCap className="h-3 w-3 mr-1" /> Alumni
       </Badge>
     )
-  }
-
-  if (userMembership?.status === 'REJECTED') {
-    if (joinBlocked) return blockedNotice
-    if (user?.role === 'STUDENT' || user?.role === 'FACULTY') {
-      return (
+  } else if (userMembership?.status === 'REJECTED') {
+    if (joinBlocked) {
+      content = blockedNotice
+    } else if (user?.role === 'STUDENT' || user?.role === 'FACULTY') {
+      content = (
         <Button
           className="bg-brand-primary hover:bg-brand-primary/90 text-white"
           disabled={joinLoading}
-          onClick={onJoin}
+          onClick={requestJoin}
         >
           <UserPlus className="h-4 w-4 mr-2" />
           {joinLoading ? 'Requesting...' : 'Re-apply'}
         </Button>
       )
     }
-    return null
-  }
-
-  if (user?.role === 'STUDENT' || user?.role === 'FACULTY') {
-    if (joinBlocked) return blockedNotice
-    return (
+  } else if (user?.role === 'STUDENT' || user?.role === 'FACULTY') {
+    content = joinBlocked ? blockedNotice : (
       <Button
         className="bg-brand-primary hover:bg-brand-primary/90 text-white"
         disabled={joinLoading}
-        onClick={onJoin}
+        onClick={requestJoin}
       >
         <UserPlus className="h-4 w-4 mr-2" />
         {joinLoading ? 'Requesting...' : 'Join Club'}
       </Button>
     )
+  } else if (user?.role === 'PLATFORM_ADMIN') {
+    content = adminButtons
   }
 
-  if (user?.role === 'PLATFORM_ADMIN') {
-    return adminButtons
-  }
-
-  return null
+  return (
+    <>
+      {content}
+      {hasRules && (
+        <JoinAgreementDialog
+          open={agreementOpen}
+          onOpenChange={setAgreementOpen}
+          rules={rules}
+          submitting={joinLoading}
+          onConfirm={confirmJoin}
+        />
+      )}
+    </>
+  )
 }

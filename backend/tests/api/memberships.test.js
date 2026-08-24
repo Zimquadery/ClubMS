@@ -77,6 +77,102 @@ describe('POST /api/clubs/:clubId/join', () => {
   });
 });
 
+describe('POST /api/clubs/:clubId/join — club rules agreement', () => {
+  it('returns 400 and creates no row when the club has rules and no agreement', async () => {
+    const student = await makeUser({ role: 'STUDENT' });
+    const club = await makeClub({ rules: '1. Attend meetings.' });
+
+    const res = await request(app)
+      .post(`/api/clubs/${club.id}/join`)
+      .set('Authorization', tokenFor(student));
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('You must agree to the club rules to join this club');
+
+    const count = await prisma.clubMembership.count({ where: { userId: student.id, clubId: club.id } });
+    expect(count).toBe(0);
+  });
+
+  it('returns 400 for an explicit agreedToRules: false', async () => {
+    const student = await makeUser({ role: 'STUDENT' });
+    const club = await makeClub({ rules: '1. Attend meetings.' });
+
+    const res = await request(app)
+      .post(`/api/clubs/${club.id}/join`)
+      .set('Authorization', tokenFor(student))
+      .send({ agreedToRules: false });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('creates a PENDING membership when agreedToRules is true', async () => {
+    const student = await makeUser({ role: 'STUDENT' });
+    const club = await makeClub({ rules: '1. Attend meetings.' });
+
+    const res = await request(app)
+      .post(`/api/clubs/${club.id}/join`)
+      .set('Authorization', tokenFor(student))
+      .send({ agreedToRules: true });
+
+    expect(res.status).toBe(201);
+    expect(res.body).toMatchObject({ userId: student.id, clubId: club.id, status: 'PENDING' });
+  });
+
+  it('whitespace-only rules do not gate the join', async () => {
+    const student = await makeUser({ role: 'STUDENT' });
+    const club = await makeClub({ rules: '   ' });
+
+    const res = await request(app)
+      .post(`/api/clubs/${club.id}/join`)
+      .set('Authorization', tokenFor(student));
+
+    expect(res.status).toBe(201);
+  });
+
+  it('gates REJECTED re-apply: stays REJECTED without agreement', async () => {
+    const student = await makeUser({ role: 'STUDENT' });
+    const club = await makeClub({ rules: '1. Attend meetings.' });
+    await makeMembership({ userId: student.id, clubId: club.id, status: 'REJECTED' });
+
+    const res = await request(app)
+      .post(`/api/clubs/${club.id}/join`)
+      .set('Authorization', tokenFor(student));
+
+    expect(res.status).toBe(400);
+    const row = await prisma.clubMembership.findUnique({
+      where: { userId_clubId: { userId: student.id, clubId: club.id } },
+      select: { status: true },
+    });
+    expect(row.status).toBe('REJECTED');
+  });
+
+  it('lets REJECTED re-apply through with agreement', async () => {
+    const student = await makeUser({ role: 'STUDENT' });
+    const club = await makeClub({ rules: '1. Attend meetings.' });
+    await makeMembership({ userId: student.id, clubId: club.id, status: 'REJECTED' });
+
+    const res = await request(app)
+      .post(`/api/clubs/${club.id}/join`)
+      .set('Authorization', tokenFor(student))
+      .send({ agreedToRules: true });
+
+    expect(res.status).toBe(201);
+    expect(res.body.status).toBe('PENDING');
+  });
+
+  it('409 membership checks take precedence over the rules gate', async () => {
+    const student = await makeUser({ role: 'STUDENT' });
+    const club = await makeClub({ rules: '1. Attend meetings.' });
+    await makeActiveMember({ userId: student.id, clubId: club.id });
+
+    const res = await request(app)
+      .post(`/api/clubs/${club.id}/join`)
+      .set('Authorization', tokenFor(student));
+
+    expect(res.status).toBe(409);
+  });
+});
+
 describe('POST /api/clubs/:clubId/join — department join rules', () => {
   it('ALLOW mode: lets a user of a listed department join', async () => {
     const student = await makeUser({ role: 'STUDENT', department: 'CSE' });

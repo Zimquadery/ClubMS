@@ -161,6 +161,92 @@ describe('GET /api/clubs/:id', () => {
 
     expect(res.status).toBe(400);
   });
+
+  it('exposes studentId but not email/phone to an active member', async () => {
+    const viewer = await makeUser({ role: 'STUDENT' });
+    const member = await makeUser({ role: 'STUDENT', name: 'Roster Mate', studentId: '2211450' });
+    const club = await makeClub();
+    await makeActiveMember({ userId: viewer.id, clubId: club.id });
+    await makeActiveMember({ userId: member.id, clubId: club.id });
+
+    const res = await request(app)
+      .get(`/api/clubs/${club.id}`)
+      .set('Authorization', tokenFor(viewer));
+
+    expect(res.status).toBe(200);
+    const row = res.body.memberships.find((m) => m.user.id === member.id);
+    expect(row.user.studentId).toBe('2211450');
+    expect(row.user).not.toHaveProperty('email');
+    expect(row.user).not.toHaveProperty('phone');
+    expect(row.user).not.toHaveProperty('idCardUrl');
+  });
+
+  it('exposes email and phone to an active officer', async () => {
+    const officer = await makeUser({ role: 'STUDENT' });
+    const member = await makeUser({ role: 'STUDENT', email: 'mate@test.local', phone: '01711111111' });
+    const club = await makeClub();
+    await makeOfficer({ userId: officer.id, clubId: club.id });
+    await makeActiveMember({ userId: member.id, clubId: club.id });
+
+    const res = await request(app)
+      .get(`/api/clubs/${club.id}`)
+      .set('Authorization', tokenFor(officer));
+
+    expect(res.status).toBe(200);
+    const row = res.body.memberships.find((m) => m.user.id === member.id);
+    expect(row.user.email).toBe('mate@test.local');
+    expect(row.user.phone).toBe('01711111111');
+    expect(row.user).not.toHaveProperty('idCardUrl');
+  });
+
+  it('withholds the roster from non-members and pending viewers but keeps the count', async () => {
+    const outsider = await makeUser({ role: 'STUDENT' });
+    const pending = await makeUser({ role: 'STUDENT' });
+    const member = await makeUser({ role: 'STUDENT', name: 'Hidden Member' });
+    const club = await makeClub();
+    await makeActiveMember({ userId: member.id, clubId: club.id });
+    await makeMembership({ userId: pending.id, clubId: club.id, status: 'PENDING' });
+
+    for (const viewer of [outsider, pending]) {
+      const res = await request(app)
+        .get(`/api/clubs/${club.id}`)
+        .set('Authorization', tokenFor(viewer));
+
+      expect(res.status).toBe(200);
+      expect(res.body.memberships ?? []).toHaveLength(0);
+      expect(res.body.totalMembers).toBe(1);
+    }
+  });
+
+  it('exposes contact fields to FACULTY (privileged bypass)', async () => {
+    const faculty = await makeUser({ role: 'FACULTY' });
+    const member = await makeUser({ role: 'STUDENT', name: 'Faculty Sees' });
+    const club = await makeClub();
+    await makeActiveMember({ userId: member.id, clubId: club.id });
+
+    const res = await request(app)
+      .get(`/api/clubs/${club.id}`)
+      .set('Authorization', tokenFor(faculty));
+
+    expect(res.status).toBe(200);
+    expect(res.body.memberships[0].user).toHaveProperty('email');
+    expect(res.body.memberships[0].user).toHaveProperty('phone');
+    expect(res.body.memberships[0].user).toHaveProperty('studentId');
+  });
+
+  it('withholds the roster from an alumni-status officer membership (requires ACTIVE)', async () => {
+    const alumniOfficer = await makeUser({ role: 'CLUB_ADMIN' });
+    const club = await makeClub();
+    await makeMembership({ userId: alumniOfficer.id, clubId: club.id, status: 'ALUMNI', role: 'OFFICER' });
+
+    const res = await request(app)
+      .get(`/api/clubs/${club.id}`)
+      .set('Authorization', tokenFor(alumniOfficer));
+
+    expect(res.status).toBe(200);
+    expect(res.body.memberships ?? []).toHaveLength(0);
+    expect(res.body.userMembership.status).toBe('ALUMNI');
+  });
 });
 
 describe('POST /api/clubs', () => {
@@ -432,5 +518,142 @@ describe('PATCH /api/clubs/:clubId/join-rules', () => {
       .set('Authorization', tokenFor(admin))
       .send({ joinRuleMode: 'ALL' });
     expect(res.status).toBe(404);
+  });
+});
+
+describe('PATCH /api/clubs/:clubId/profile', () => {
+  it('lets an officer update description and rules and writes an audit log', async () => {
+    const officer = await makeUser({ role: 'STUDENT' });
+    const club = await makeClub();
+    await makeOfficer({ userId: officer.id, clubId: club.id });
+
+    const res = await request(app)
+      .patch(`/api/clubs/${club.id}/profile`)
+      .set('Authorization', tokenFor({ ...officer, role: 'CLUB_ADMIN' }))
+      .send({ description: 'We build robots.', rules: '1. Attend weekly meetings.' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ id: club.id, description: 'We build robots.', rules: '1. Attend weekly meetings.' });
+
+    const row = await prisma.club.findUnique({ where: { id: club.id }, select: { description: true, rules: true } });
+    expect(row).toMatchObject({ description: 'We build robots.', rules: '1. Attend weekly meetings.' });
+
+    const audit = await waitFor(() => prisma.auditLog.findFirst({ where: { action: 'CLUB_PROFILE_UPDATE', targetId: club.id } }));
+    expect(audit).not.toBeNull();
+  });
+
+  it('partial update: sending only description leaves rules untouched', async () => {
+    const officer = await makeUser({ role: 'STUDENT' });
+    const club = await makeClub({ rules: 'Existing rules' });
+    await makeOfficer({ userId: officer.id, clubId: club.id });
+
+    const res = await request(app)
+      .patch(`/api/clubs/${club.id}/profile`)
+      .set('Authorization', tokenFor({ ...officer, role: 'CLUB_ADMIN' }))
+      .send({ description: 'New description only' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ description: 'New description only', rules: 'Existing rules' });
+  });
+
+  it('empty strings clear both fields to null', async () => {
+    const officer = await makeUser({ role: 'STUDENT' });
+    const club = await makeClub({ description: 'Old', rules: 'Old rules' });
+    await makeOfficer({ userId: officer.id, clubId: club.id });
+
+    const res = await request(app)
+      .patch(`/api/clubs/${club.id}/profile`)
+      .set('Authorization', tokenFor({ ...officer, role: 'CLUB_ADMIN' }))
+      .send({ description: '', rules: '' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.description).toBeNull();
+    expect(res.body.rules).toBeNull();
+  });
+
+  it('returns 400 when no updatable fields are sent', async () => {
+    const officer = await makeUser({ role: 'STUDENT' });
+    const club = await makeClub();
+    await makeOfficer({ userId: officer.id, clubId: club.id });
+
+    const res = await request(app)
+      .patch(`/api/clubs/${club.id}/profile`)
+      .set('Authorization', tokenFor({ ...officer, role: 'CLUB_ADMIN' }))
+      .send({});
+
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 when rules exceed 4000 characters', async () => {
+    const officer = await makeUser({ role: 'STUDENT' });
+    const club = await makeClub();
+    await makeOfficer({ userId: officer.id, clubId: club.id });
+
+    const res = await request(app)
+      .patch(`/api/clubs/${club.id}/profile`)
+      .set('Authorization', tokenFor({ ...officer, role: 'CLUB_ADMIN' }))
+      .send({ rules: 'x'.repeat(4001) });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 403 for a student', async () => {
+    const student = await makeUser({ role: 'STUDENT' });
+    const club = await makeClub();
+
+    const res = await request(app)
+      .patch(`/api/clubs/${club.id}/profile`)
+      .set('Authorization', tokenFor(student))
+      .send({ description: 'Nope' });
+
+    expect(res.status).toBe(403);
+  });
+
+  it('returns 403 for an officer of a different club', async () => {
+    const outsider = await makeUser({ role: 'STUDENT' });
+    const ownClub = await makeClub();
+    await makeOfficer({ userId: outsider.id, clubId: ownClub.id });
+    const otherClub = await makeClub();
+
+    const res = await request(app)
+      .patch(`/api/clubs/${otherClub.id}/profile`)
+      .set('Authorization', tokenFor({ ...outsider, role: 'CLUB_ADMIN' }))
+      .send({ description: 'Nope' });
+
+    expect(res.status).toBe(403);
+  });
+
+  it('lets a PLATFORM_ADMIN bypass per-club checks', async () => {
+    const admin = await makeUser({ role: 'PLATFORM_ADMIN' });
+    const club = await makeClub();
+
+    const res = await request(app)
+      .patch(`/api/clubs/${club.id}/profile`)
+      .set('Authorization', tokenFor(admin))
+      .send({ rules: 'Admin-set rules' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ rules: 'Admin-set rules' });
+  });
+
+  it('returns 404 when the club does not exist', async () => {
+    const admin = await makeUser({ role: 'PLATFORM_ADMIN' });
+    const res = await request(app)
+      .patch('/api/clubs/00000000-0000-0000-0000-000000000000/profile')
+      .set('Authorization', tokenFor(admin))
+      .send({ description: 'x' });
+    expect(res.status).toBe(404);
+  });
+
+  it('GET /api/clubs/:id exposes rules to a non-member (public disclosure)', async () => {
+    const viewer = await makeUser({ role: 'STUDENT' });
+    const club = await makeClub({ rules: 'Public rules text' });
+
+    const res = await request(app)
+      .get(`/api/clubs/${club.id}`)
+      .set('Authorization', tokenFor(viewer));
+
+    expect(res.status).toBe(200);
+    expect(res.body.rules).toBe('Public rules text');
   });
 });

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { Badge } from '@/components/ui/badge'
@@ -7,7 +8,8 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Users, Calendar, MapPin, ImageIcon, Clock, Trash2, X, Search } from 'lucide-react'
+import { Users, Calendar, MapPin, ImageIcon, Clock, Trash2, X, Search, ScrollText, Pencil, ChevronRight } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import BackLink from '@/components/BackLink'
 import ClubAnnouncements from '@/components/ClubAnnouncements'
 import { ImageUploadButton } from '@/components/ImageUploadButton'
@@ -20,11 +22,17 @@ import { DetailSkeleton } from '@/components/ui/skeleton'
 import { Pagination } from '@/components/Pagination'
 import useClubDetail from '@/hooks/useClubDetail'
 import MembershipAction from '@/components/club/MembershipAction'
+import MemberDetailDialog from '@/components/club/MemberDetailDialog'
+import { EditClubProfileDialog } from '@/components/club/EditClubProfileDialog'
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible'
 
 export default function ClubDetail() {
   const { id } = useParams()
   const { user } = useAuth()
   const vm = useClubDetail(id, user)
+  const [memberTarget, setMemberTarget] = useState(null)
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [rulesOpen, setRulesOpen] = useState(false)
 
   if (vm.loading) {
     return (
@@ -63,7 +71,7 @@ export default function ClubDetail() {
             <Badge variant="secondary">{vm.club.category}</Badge>
           </div>
           {vm.club.description && (
-            <p className="text-sm text-muted-foreground mt-2">{vm.club.description}</p>
+            <p className="text-sm text-muted-foreground mt-2 whitespace-pre-wrap">{vm.club.description}</p>
           )}
           <div className="flex flex-wrap items-center gap-3 mt-4">
             <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -80,10 +88,44 @@ export default function ClubDetail() {
               clubId={id}
               joinBlocked={vm.joinBlocked}
               joinBlockedNote={vm.joinBlockedNote}
+              rules={vm.club.rules}
             />
+            {vm.canManageEvents && (
+              <Button variant="outline" size="sm" onClick={() => setProfileOpen(true)}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Edit Club
+              </Button>
+            )}
           </div>
         </div>
       </div>
+
+      {vm.club.rules && (
+        <Collapsible open={rulesOpen} onOpenChange={setRulesOpen} className="mt-6">
+          <Card>
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                className="flex w-full items-center justify-between gap-2 rounded-xl p-6 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <ScrollText className="h-5 w-5 text-brand-primary" />
+                  Club Rules
+                </CardTitle>
+                <ChevronRight
+                  aria-hidden="true"
+                  className={cn('h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ease-out-quart', rulesOpen && 'rotate-90')}
+                />
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="t-collapsible-content">
+              <CardContent className="pt-0">
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">{vm.club.rules}</p>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+      )}
 
       {(vm.userMembership?.status === 'ACTIVE' || user?.role === 'PLATFORM_ADMIN' || user?.role === 'FACULTY') && (
         <ClubAnnouncements clubId={vm.club.id} userMembership={vm.userMembership} user={user} />
@@ -287,17 +329,24 @@ export default function ClubDetail() {
                 <>
                   <div className="divide-y">
                     {vm.members.map((membership) => (
-                      <div key={membership.id} className="flex items-center justify-between text-sm py-2 first:pt-0 last:pb-0">
-                        <span className="flex items-center gap-2 min-w-0">
-                          <span className="font-medium truncate">{membership.user.name}</span>
+                      <button
+                        key={membership.id}
+                        type="button"
+                        aria-haspopup="dialog"
+                        aria-label={`View ${membership.user.name}'s info`}
+                        onClick={() => setMemberTarget(membership)}
+                        className="-mx-2 flex w-full items-center justify-between gap-2 rounded-md px-2 py-2 text-left text-sm transition-colors first:pt-0 last:pb-0 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      >
+                        <span className="flex min-w-0 items-center gap-2">
+                          <span className="truncate font-medium">{membership.user.name}</span>
                           {membership.user.department && (
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">{membership.user.department}</span>
+                            <span className="whitespace-nowrap text-xs text-muted-foreground">{membership.user.department}</span>
                           )}
                         </span>
                         {membership.role === 'OFFICER' && (
                           <Badge variant="outline" className="text-xs">Officer</Badge>
                         )}
-                      </div>
+                      </button>
                     ))}
                   </div>
                   <Pagination
@@ -326,6 +375,13 @@ export default function ClubDetail() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <MemberDetailDialog member={memberTarget} onOpenChange={() => setMemberTarget(null)} />
+      <EditClubProfileDialog
+        open={profileOpen}
+        onOpenChange={setProfileOpen}
+        club={vm.club}
+        onSaved={() => vm.fetchClub()}
+      />
 
     </div>
   )

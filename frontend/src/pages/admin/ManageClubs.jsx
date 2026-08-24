@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Plus, Trash2, Users, UserCheck, ClipboardList, Pencil } from 'lucide-react'
+import { Textarea } from '@/components/ui/textarea'
 import { Link } from 'react-router-dom'
 import { CLUB_CATEGORIES } from '@/lib/constants'
 import { toast } from 'sonner'
@@ -67,6 +68,17 @@ function ClubFormFields({ form, setForm, uploading, onUpload, error, idPrefix })
           value={form.description}
           onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
           placeholder="A brief description of the club"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={`${idPrefix}rules`}>Rules</Label>
+        <Textarea
+          id={`${idPrefix}rules`}
+          rows={5}
+          maxLength={4000}
+          value={form.rules}
+          onChange={(e) => setForm((f) => ({ ...f, rules: e.target.value }))}
+          placeholder="Shown separately; joiners must agree before joining. Leave empty if none"
         />
       </div>
       <div className="space-y-2">
@@ -115,13 +127,13 @@ export default function ManageClubs() {
   })
 
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [form, setForm] = useState({ name: '', description: '', category: '', logoUrl: '' })
+  const [form, setForm] = useState({ name: '', description: '', rules: '', category: '', logoUrl: '' })
   const [formError, setFormError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleting, setDeleting] = useState(false)
   const [editTarget, setEditTarget] = useState(null)
-  const [editForm, setEditForm] = useState({ name: '', description: '', category: '', logoUrl: '' })
+  const [editForm, setEditForm] = useState({ name: '', description: '', rules: '', category: '', logoUrl: '' })
   const [editError, setEditError] = useState('')
   const [editing, setEditing] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -163,7 +175,7 @@ export default function ManageClubs() {
 
   function openEdit(club) {
     setEditTarget(club)
-    setEditForm({ name: club.name, description: club.description || '', category: club.category, logoUrl: club.logoUrl || '' })
+    setEditForm({ name: club.name, description: club.description || '', rules: club.rules || '', category: club.category, logoUrl: club.logoUrl || '' })
     setEditError('')
   }
 

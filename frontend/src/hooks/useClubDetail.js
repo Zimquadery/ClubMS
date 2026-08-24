@@ -86,7 +86,7 @@ export default function useClubDetail(id, user) {
   async function handleJoin() {
     setJoinLoading(true)
     try {
-      await client.post(`/clubs/${id}/join`)
+      await client.post(`/clubs/${id}/join`, { agreedToRules: true })
       await fetchClub()
       toast.success('Join request submitted!')
     } catch (err) {
