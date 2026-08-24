@@ -1,32 +1,21 @@
 import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
+import { usePageTitle } from '@/hooks/usePageTitle'
 import client from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { PasswordInput } from '@/components/ui/password-input'
+import { PasswordStrength } from '@/components/ui/password-strength'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { toast } from 'sonner'
-import { User, Lock } from 'lucide-react'
+import { User, Lock, ImagePlus, Loader2 } from 'lucide-react'
 import { ImageUploadButton } from '@/components/ImageUploadButton'
 import { getInitials } from '@/lib/initials'
 import { BANGLADESH_DISTRICTS } from '@/lib/constants'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-
-function getPasswordStrength(password) {
-  if (!password) return { label: '', color: '' }
-  let score = 0
-  if (password.length >= 6) score++
-  if (password.length >= 10) score++
-  if (/[A-Z]/.test(password)) score++
-  if (/[0-9]/.test(password)) score++
-  if (/[^A-Za-z0-9]/.test(password)) score++
-  if (score <= 1) return { label: 'Weak', color: 'bg-destructive' }
-  if (score <= 3) return { label: 'Fair', color: 'bg-status-yellow' }
-  return { label: 'Strong', color: 'bg-status-green' }
-}
 
 const roleLabels = {
   PLATFORM_ADMIN: 'Platform Admin',
@@ -49,6 +38,17 @@ export default function Profile() {
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [passwordLoading, setPasswordLoading] = useState(false)
+
+  usePageTitle(`Profile · ${import.meta.env.VITE_UNIVERSITY_NAME || 'ClubMS'}`)
+
+  const isDirty =
+    name !== (user?.name || '') ||
+    email !== (user?.email || '') ||
+    phone !== (user?.phone || '') ||
+    studentId !== (user?.studentId || '') ||
+    (department.trim() || null) !== (user?.department || null) ||
+    (homeDistrict || null) !== (user?.homeDistrict || null) ||
+    idCardUrl !== (user?.idCardUrl || '')
 
   async function handleProfileUpdate(e) {
     e.preventDefault()
@@ -116,98 +116,116 @@ export default function Profile() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleProfileUpdate} className="space-y-3">
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input id="name" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} required />
+            <form onSubmit={handleProfileUpdate} className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input id="name" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" type="email" autoComplete="email" inputMode="email" autoCapitalize="off" autoCorrect="off" spellCheck={false} value={email} onChange={(e) => setEmail(e.target.value)} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    placeholder="+8801712345678"
+                    pattern="\+?[0-9]{6,15}"
+                    title="6-15 digits, optionally starting with +"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="studentId">Student ID</Label>
+                  <Input
+                    id="studentId"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    placeholder="21190001"
+                    pattern="[0-9]{1,8}"
+                    maxLength={8}
+                    title="1-8 digits"
+                    value={studentId}
+                    onChange={(e) => setStudentId(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="department">Department</Label>
+                  <Input
+                    id="department"
+                    type="text"
+                    autoComplete="organization"
+                    placeholder="e.g. CSE, EEE, ECE, Agri"
+                    maxLength={100}
+                    value={department}
+                    onChange={(e) => setDepartment(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">Optional — shown next to your name on member lists</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="homeDistrict">Home District</Label>
+                  <Select value={homeDistrict || 'none'} onValueChange={(v) => setHomeDistrict(v === 'none' ? '' : v)}>
+                    <SelectTrigger id="homeDistrict" className="w-full">
+                      <SelectValue placeholder="Select your district" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Not specified</SelectItem>
+                      {homeDistrict && !BANGLADESH_DISTRICTS.includes(homeDistrict) && (
+                        <SelectItem value={homeDistrict}>{homeDistrict}</SelectItem>
+                      )}
+                      {BANGLADESH_DISTRICTS.map((district) => (
+                        <SelectItem key={district} value={district}>{district}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Optional — shown alongside your department on member lists</p>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" autoComplete="email" inputMode="email" autoCapitalize="off" autoCorrect="off" spellCheck={false} value={email} onChange={(e) => setEmail(e.target.value)} required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel"
-                  placeholder="+8801712345678"
-                  pattern="\+?[0-9]{6,15}"
-                  title="6-15 digits, optionally starting with +"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="studentId">Student ID</Label>
-                <Input
-                  id="studentId"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="off"
-                  placeholder="21190001"
-                  pattern="[0-9]{1,8}"
-                  maxLength={8}
-                  title="1-8 digits"
-                  value={studentId}
-                  onChange={(e) => setStudentId(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="department">Department</Label>
-                <Input
-                  id="department"
-                  type="text"
-                  autoComplete="organization"
-                  placeholder="e.g. CSE, EEE, ECE, Agri"
-                  maxLength={100}
-                  value={department}
-                  onChange={(e) => setDepartment(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">Optional — shown next to your name on member lists</p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="homeDistrict">Home District</Label>
-                <Select value={homeDistrict || 'none'} onValueChange={(v) => setHomeDistrict(v === 'none' ? '' : v)}>
-                  <SelectTrigger id="homeDistrict">
-                    <SelectValue placeholder="Select your district" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Not specified</SelectItem>
-                    {homeDistrict && !BANGLADESH_DISTRICTS.includes(homeDistrict) && (
-                      <SelectItem value={homeDistrict}>{homeDistrict}</SelectItem>
-                    )}
-                    {BANGLADESH_DISTRICTS.map((district) => (
-                      <SelectItem key={district} value={district}>{district}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">Optional — shown alongside your department on member lists</p>
-              </div>
-              <div className="space-y-2">
+              <div className="space-y-2 border-t pt-4">
                 <Label>Student ID Card</Label>
-                <div className="flex items-center gap-2">
-                  {idCardUrl && (
-                    <a
-                      href={idCardUrl}
-                      target="_blank"
-                      rel="noopener"
-                      className="text-sm text-brand-primary underline-offset-4 hover:underline"
-                    >
-                      View ID card
-                    </a>
+                <div className="flex items-center gap-3 rounded-lg border p-2">
+                  {idCardUrl ? (
+                    <img src={idCardUrl} alt="ID card" className="h-12 w-20 rounded-md border object-cover" />
+                  ) : (
+                    <div className="flex h-12 w-20 items-center justify-center rounded-md border bg-muted">
+                      <ImagePlus className="h-5 w-5 text-muted-foreground" />
+                    </div>
                   )}
-                  <ImageUploadButton label="Upload new ID card" onUploadComplete={setIdCardUrl} />
+                  <div className="min-w-0 flex-1">
+                    {idCardUrl ? (
+                      <a
+                        href={idCardUrl}
+                        target="_blank"
+                        rel="noopener"
+                        className="text-sm text-brand-primary underline-offset-4 hover:underline"
+                      >
+                        View current card
+                      </a>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">No ID card uploaded</span>
+                    )}
+                    <p className="mt-0.5 text-xs text-muted-foreground">JPEG, PNG, GIF, or WebP — max 5MB</p>
+                  </div>
+                  <ImageUploadButton label={idCardUrl ? 'Upload new' : 'Upload ID card'} onUploadComplete={setIdCardUrl} />
                 </div>
                 {idCardUrl !== (user?.idCardUrl || '') && (
                   <p className="text-xs text-status-yellow">New card uploaded — click Save Changes to apply</p>
                 )}
-                <p className="text-xs text-muted-foreground">JPEG, PNG, GIF, or WebP — max 5MB</p>
               </div>
-              <Button type="submit" className="bg-brand-primary hover:bg-brand-primary/90 text-white" disabled={profileLoading}>
+              <Button
+                type="submit"
+                className="bg-brand-primary hover:bg-brand-primary/90 text-white"
+                disabled={profileLoading || !isDirty}
+              >
+                {profileLoading && <Loader2 className="h-4 w-4 animate-spin" />}
                 {profileLoading ? 'Saving...' : 'Save Changes'}
               </Button>
             </form>
@@ -231,28 +249,17 @@ export default function Profile() {
                 <Label htmlFor="newPassword">New Password</Label>
                 <PasswordInput id="newPassword" autoComplete="new-password" autoCapitalize="off" autoCorrect="off" spellCheck={false} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={6} />
               </div>
-              {newPassword && (
-                <div className="space-y-1">
-                  <div className="flex gap-1">
-                    {[1, 2, 3].map((level) => (
-                      <div
-                        key={level}
-                        className={`h-1 flex-1 rounded-full ${
-                          getPasswordStrength(newPassword).label === 'Weak' && level <= 1 ? getPasswordStrength(newPassword).color :
-                          getPasswordStrength(newPassword).label === 'Fair' && level <= 2 ? getPasswordStrength(newPassword).color :
-                          getPasswordStrength(newPassword).label === 'Strong' ? getPasswordStrength(newPassword).color : 'bg-border'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <p className="text-xs text-muted-foreground">{getPasswordStrength(newPassword).label}</p>
-                </div>
-              )}
+              <PasswordStrength password={newPassword} />
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm New Password</Label>
                 <PasswordInput id="confirmPassword" autoComplete="new-password" autoCapitalize="off" autoCorrect="off" spellCheck={false} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={6} />
               </div>
-              <Button type="submit" className="bg-brand-primary hover:bg-brand-primary/90 text-white" disabled={passwordLoading}>
+              <Button
+                type="submit"
+                className="bg-brand-primary hover:bg-brand-primary/90 text-white"
+                disabled={passwordLoading}
+              >
+                {passwordLoading && <Loader2 className="h-4 w-4 animate-spin" />}
                 {passwordLoading ? 'Changing...' : 'Change Password'}
               </Button>
             </form>

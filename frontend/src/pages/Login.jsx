@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
+import { usePageTitle } from '@/hooks/usePageTitle'
 import { Input } from '@/components/ui/input'
 import { PasswordInput } from '@/components/ui/password-input'
 import { Label } from '@/components/ui/label'
@@ -11,8 +12,10 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const { login } = useAuth()
+  const { user, login } = useAuth()
   const navigate = useNavigate()
+
+  usePageTitle(`Sign in · ${import.meta.env.VITE_UNIVERSITY_NAME || 'ClubMS'}`)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -32,6 +35,10 @@ export default function Login() {
     }
   }
 
+  if (user) {
+    return <Navigate to="/dashboard" replace />
+  }
+
   return (
     <AuthLayout
       description="Sign in to your account"
@@ -43,7 +50,6 @@ export default function Login() {
       linkText="Don't have an account?"
       linkTo="/register"
       linkLabel="Register"
-      LinkComponent={Link}
     >
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
@@ -51,6 +57,7 @@ export default function Login() {
           id="email"
           type="email"
           autoComplete="email"
+          autoFocus
           inputMode="email"
           autoCapitalize="off"
           autoCorrect="off"

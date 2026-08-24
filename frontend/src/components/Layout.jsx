@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
-import { useTheme } from '@/context/ThemeContext'
 import { Button } from '@/components/ui/button'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,32 +14,10 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { RouteErrorBoundary } from '@/components/ErrorBoundary'
 import { getInitials } from '@/lib/initials'
-import { LayoutDashboard, Users, Calendar, LogOut, Shield, Menu, X, UserCircle, ClipboardList, Sun, Moon, Monitor, MapPin } from 'lucide-react'
-
-const THEME_ICONS = { light: Sun, dark: Moon, system: Monitor }
-const THEME_ORDER = ['light', 'dark', 'system']
-
-function ThemeToggleIcon({ theme }) {
-  return (
-    <div className="relative h-4 w-4">
-      {THEME_ORDER.map((key) => {
-        const Icon = THEME_ICONS[key]
-        const active = theme === key
-        return (
-          <Icon
-            key={key}
-            className="absolute inset-0 h-4 w-4 transition-[opacity,transform] duration-200 ease-out-quart"
-            style={{ opacity: active ? 1 : 0, transform: active ? 'rotate(0deg) scale(1)' : 'rotate(-90deg) scale(0.6)' }}
-          />
-        )
-      })}
-    </div>
-  )
-}
+import { LayoutDashboard, Users, Calendar, LogOut, Shield, Menu, X, UserCircle, ClipboardList, MapPin } from 'lucide-react'
 
 export function Layout() {
   const { user, logout } = useAuth()
-  const { theme, setTheme } = useTheme()
   const navigate = useNavigate()
   const universityName = import.meta.env.VITE_UNIVERSITY_NAME || 'ClubMS'
   const logoUrl = import.meta.env.VITE_LOGO_URL
@@ -48,11 +26,6 @@ export function Layout() {
   const handleLogout = () => {
     logout()
     navigate('/login')
-  }
-
-  const cycleTheme = () => {
-    const next = theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light'
-    setTheme(next)
   }
 
   const initials = getInitials(user?.name)
@@ -118,14 +91,7 @@ export function Layout() {
             )}
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={cycleTheme}
-              aria-label={`Switch theme, currently ${theme}`}
-            >
-              <ThemeToggleIcon theme={theme} />
-            </Button>
+            <ThemeToggle />
             {user && (
               <>
                 <Button
