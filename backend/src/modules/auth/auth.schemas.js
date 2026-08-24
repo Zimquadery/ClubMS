@@ -23,6 +23,7 @@ const updateProfile = z.object({
   studentId: studentIdField.optional(),
   idCardUrl: z.string().max(500).regex(/^\/uploads\/[^\s]+$/, 'ID card must be an uploaded image').optional(),
   department: z.string().trim().min(1, 'Department cannot be empty').max(100, 'Department must be at most 100 characters').nullable().optional(),
+  homeDistrict: z.string().trim().min(1, 'Home district cannot be empty').max(100, 'Home district must be at most 100 characters').nullable().optional(),
 });
 
 const changePassword = z.object({

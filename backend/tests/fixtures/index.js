@@ -34,8 +34,9 @@ async function makeUser(overrides = {}) {
       studentId: overrides.studentId || String(10000000 + counter),
       idCardUrl: overrides.idCardUrl || '/uploads/Dummy_ID_card.jpg',
       department: overrides.department !== undefined ? overrides.department : null,
+      homeDistrict: overrides.homeDistrict !== undefined ? overrides.homeDistrict : null,
     },
-    select: { id: true, email: true, name: true, phone: true, studentId: true, idCardUrl: true, department: true, role: true, createdAt: true, updatedAt: true },
+    select: { id: true, email: true, name: true, phone: true, studentId: true, idCardUrl: true, department: true, homeDistrict: true, role: true, createdAt: true, updatedAt: true },
   });
   return { ...user, password };
 }

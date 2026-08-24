@@ -170,8 +170,8 @@ export default function ClubMembers() {
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search name, email, phone, ID, or department"
-              aria-label="Search members by name, email, phone, student ID, or department"
+              placeholder="Search name, email, phone, ID, department, or district"
+              aria-label="Search members by name, email, phone, student ID, department, or district"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value)
@@ -200,7 +200,7 @@ export default function ClubMembers() {
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
               {debouncedSearch
-                ? 'Try a different name, email, phone, ID, or department.'
+                ? 'Try a different name, email, phone, ID, department, or district.'
                 : tab === 'active'
                   ? 'Members you approve from pending requests will appear here.'
                   : 'Members you set as alumni will appear here.'}
@@ -218,7 +218,7 @@ export default function ClubMembers() {
                       <IdCardThumb
                         url={membership.user.idCardUrl}
                         name={membership.user.name}
-                        meta={[membership.user.department, `ID ${membership.user.studentId}`].filter(Boolean).join(' · ')}
+                        meta={[membership.user.department, membership.user.homeDistrict, `ID ${membership.user.studentId}`].filter(Boolean).join(' · ')}
                       />
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
@@ -229,7 +229,7 @@ export default function ClubMembers() {
                         </div>
                         <p className="truncate text-sm text-muted-foreground">{membership.user.email}</p>
                         <p className="truncate text-xs text-muted-foreground">
-                          {[membership.user.department, `${membership.user.phone} · ID ${membership.user.studentId}`].filter(Boolean).join(' · ')}
+                          {[membership.user.department, membership.user.homeDistrict, `${membership.user.phone} · ID ${membership.user.studentId}`].filter(Boolean).join(' · ')}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
                           Joined {formatShortDate(membership.createdAt)}

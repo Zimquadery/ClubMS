@@ -96,6 +96,7 @@ router.get('/me', authMiddleware, authController.getMe);
  *               studentId: { type: string, pattern: '^[0-9]{1,8}$' }
  *               idCardUrl: { type: string, description: Upload-path-only replacement for the ID card photo }
  *               department: { type: string, nullable: true, maxLength: 100, description: 'Free-text department (e.g. CSE, EEE); null clears it' }
+ *               homeDistrict: { type: string, nullable: true, maxLength: 100, description: 'Free-text home district; null clears it' }
  *     responses:
  *       200:
  *         description: Profile updated

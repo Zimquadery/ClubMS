@@ -12,6 +12,8 @@ import { toast } from 'sonner'
 import { User, Lock } from 'lucide-react'
 import { ImageUploadButton } from '@/components/ImageUploadButton'
 import { getInitials } from '@/lib/initials'
+import { BANGLADESH_DISTRICTS } from '@/lib/constants'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 function getPasswordStrength(password) {
   if (!password) return { label: '', color: '' }
@@ -40,6 +42,7 @@ export default function Profile() {
   const [phone, setPhone] = useState(user?.phone || '')
   const [studentId, setStudentId] = useState(user?.studentId || '')
   const [department, setDepartment] = useState(user?.department || '')
+  const [homeDistrict, setHomeDistrict] = useState(user?.homeDistrict || '')
   const [idCardUrl, setIdCardUrl] = useState(user?.idCardUrl || '')
   const [profileLoading, setProfileLoading] = useState(false)
   const [currentPassword, setCurrentPassword] = useState('')
@@ -51,7 +54,7 @@ export default function Profile() {
     e.preventDefault()
     setProfileLoading(true)
     try {
-      await client.patch('/auth/profile', { name, email, phone, studentId, department: department.trim() || null, idCardUrl })
+      await client.patch('/auth/profile', { name, email, phone, studentId, department: department.trim() || null, homeDistrict: homeDistrict || null, idCardUrl })
       await refreshUser()
       toast.success('Profile updated')
     } catch (err) {
@@ -165,6 +168,24 @@ export default function Profile() {
                   onChange={(e) => setDepartment(e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground">Optional — shown next to your name on member lists</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="homeDistrict">Home District</Label>
+                <Select value={homeDistrict || 'none'} onValueChange={(v) => setHomeDistrict(v === 'none' ? '' : v)}>
+                  <SelectTrigger id="homeDistrict">
+                    <SelectValue placeholder="Select your district" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Not specified</SelectItem>
+                    {homeDistrict && !BANGLADESH_DISTRICTS.includes(homeDistrict) && (
+                      <SelectItem value={homeDistrict}>{homeDistrict}</SelectItem>
+                    )}
+                    {BANGLADESH_DISTRICTS.map((district) => (
+                      <SelectItem key={district} value={district}>{district}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">Optional — shown alongside your department on member lists</p>
               </div>
               <div className="space-y-2">
                 <Label>Student ID Card</Label>

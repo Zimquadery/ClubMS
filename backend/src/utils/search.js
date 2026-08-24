@@ -8,6 +8,7 @@ function userSearchWhere(search) {
       { phone: { contains: q, mode: 'insensitive' } },
       { studentId: { contains: q, mode: 'insensitive' } },
       { department: { contains: q, mode: 'insensitive' } },
+      { homeDistrict: { contains: q, mode: 'insensitive' } },
     ],
   };
 }

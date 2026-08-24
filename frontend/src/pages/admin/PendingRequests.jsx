@@ -214,13 +214,15 @@ export default function PendingRequests() {
                         <IdCardThumb
                           url={req.user.idCardUrl}
                           name={req.user.name}
-                          meta={[req.user.department, `ID ${req.user.studentId}`].filter(Boolean).join(' · ')}
+                          meta={[req.user.department, req.user.homeDistrict, `ID ${req.user.studentId}`].filter(Boolean).join(' · ')}
                         />
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
                             <p className="truncate text-sm font-medium">{req.user.name}</p>
-                            {req.user.department && (
-                              <span className="whitespace-nowrap text-xs text-muted-foreground">{req.user.department}</span>
+                            {(req.user.department || req.user.homeDistrict) && (
+                              <span className="whitespace-nowrap text-xs text-muted-foreground">
+                                {[req.user.department, req.user.homeDistrict].filter(Boolean).join(' · ')}
+                              </span>
                             )}
                           </div>
                           <p className="truncate text-sm text-muted-foreground">{req.user.email}</p>

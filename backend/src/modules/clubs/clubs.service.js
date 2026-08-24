@@ -60,6 +60,7 @@ async function getById(id, userId, { membersPage = 1, membersLimit = 10, eventsP
                   id: true,
                   name: true,
                   department: true,
+                  homeDistrict: true,
                   studentId: true,
                   ...(canViewContact && { email: true, phone: true }),
                 },

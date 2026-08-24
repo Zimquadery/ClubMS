@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Calendar, Check, Copy, GraduationCap, IdCard, Mail, Phone } from 'lucide-react'
+import { Calendar, Check, Copy, GraduationCap, IdCard, Mail, MapPin, Phone } from 'lucide-react'
 import { formatShortDate } from '@/lib/format'
 
 function InfoRow({ icon: Icon, label, value }) {
@@ -109,6 +109,7 @@ export default function MemberDetailDialog({ member, onOpenChange }) {
         <div className="space-y-4">
           <div className="divide-y">
             <InfoRow icon={GraduationCap} label="Department" value={user?.department} />
+            <InfoRow icon={MapPin} label="Home District" value={user?.homeDistrict} />
             <InfoRow icon={IdCard} label="Student ID" value={user?.studentId} />
             <InfoRow icon={Calendar} label="Joined" value={member ? formatShortDate(member.createdAt) : null} />
           </div>

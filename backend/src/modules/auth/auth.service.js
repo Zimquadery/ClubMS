@@ -25,7 +25,7 @@ async function register({ email, password, name, phone, studentId, idCardBuffer 
 
   const user = await prisma.user.create({
     data: { email, passwordHash, name, phone, studentId, idCardUrl, role: 'STUDENT' },
-    select: { id: true, email: true, name: true, phone: true, studentId: true, idCardUrl: true, department: true, role: true, createdAt: true, updatedAt: true },
+    select: { id: true, email: true, name: true, phone: true, studentId: true, idCardUrl: true, department: true, homeDistrict: true, role: true, createdAt: true, updatedAt: true },
   });
 
   return user;
@@ -57,6 +57,7 @@ async function login(email, password) {
     studentId: user.studentId,
     idCardUrl: user.idCardUrl,
     department: user.department,
+    homeDistrict: user.homeDistrict,
     role: user.role,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
@@ -68,7 +69,7 @@ async function login(email, password) {
 async function getMe(userId) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, email: true, name: true, phone: true, studentId: true, idCardUrl: true, department: true, role: true, createdAt: true, updatedAt: true },
+    select: { id: true, email: true, name: true, phone: true, studentId: true, idCardUrl: true, department: true, homeDistrict: true, role: true, createdAt: true, updatedAt: true },
   });
 
   if (!user) {
@@ -78,7 +79,7 @@ async function getMe(userId) {
   return user;
 }
 
-async function updateProfile(userId, { name, email, phone, studentId, idCardUrl, department }) {
+async function updateProfile(userId, { name, email, phone, studentId, idCardUrl, department, homeDistrict }) {
   if (email) {
     email = email.toLowerCase().trim();
     const existing = await prisma.user.findFirst({ where: { email, id: { not: userId } } });
@@ -101,6 +102,7 @@ async function updateProfile(userId, { name, email, phone, studentId, idCardUrl,
   if (studentId !== undefined) data.studentId = studentId;
   if (idCardUrl !== undefined) data.idCardUrl = idCardUrl;
   if (department !== undefined) data.department = department;
+  if (homeDistrict !== undefined) data.homeDistrict = homeDistrict;
 
   if (Object.keys(data).length === 0) {
     throw new AppError('No fields to update', 400);
@@ -109,7 +111,7 @@ async function updateProfile(userId, { name, email, phone, studentId, idCardUrl,
   return prisma.user.update({
     where: { id: userId },
     data,
-    select: { id: true, email: true, name: true, phone: true, studentId: true, idCardUrl: true, department: true, role: true, createdAt: true, updatedAt: true },
+    select: { id: true, email: true, name: true, phone: true, studentId: true, idCardUrl: true, department: true, homeDistrict: true, role: true, createdAt: true, updatedAt: true },
   });
 }
 

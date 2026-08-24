@@ -329,6 +329,47 @@ describe('PATCH /api/auth/profile', () => {
     expect(oversize.status).toBe(400);
   });
 
+  it('sets the home district', async () => {
+    const user = await makeUser();
+    const res = await request(app)
+      .patch('/api/auth/profile')
+      .set('Authorization', tokenFor(user))
+      .send({ homeDistrict: 'Dhaka' });
+    expect(res.status).toBe(200);
+    expect(res.body.homeDistrict).toBe('Dhaka');
+
+    const row = await prisma.user.findUnique({ where: { id: user.id } });
+    expect(row.homeDistrict).toBe('Dhaka');
+  });
+
+  it('clears the home district with null', async () => {
+    const user = await makeUser({ homeDistrict: 'Cumilla' });
+    const res = await request(app)
+      .patch('/api/auth/profile')
+      .set('Authorization', tokenFor(user))
+      .send({ homeDistrict: null });
+    expect(res.status).toBe(200);
+    expect(res.body.homeDistrict).toBeNull();
+
+    const row = await prisma.user.findUnique({ where: { id: user.id } });
+    expect(row.homeDistrict).toBeNull();
+  });
+
+  it('returns 400 on an empty or oversized home district', async () => {
+    const user = await makeUser();
+    const empty = await request(app)
+      .patch('/api/auth/profile')
+      .set('Authorization', tokenFor(user))
+      .send({ homeDistrict: '   ' });
+    expect(empty.status).toBe(400);
+
+    const oversize = await request(app)
+      .patch('/api/auth/profile')
+      .set('Authorization', tokenFor(user))
+      .send({ homeDistrict: 'x'.repeat(101) });
+    expect(oversize.status).toBe(400);
+  });
+
   it('returns 400 when body is empty', async () => {
     const user = await makeUser();
     const res = await request(app)

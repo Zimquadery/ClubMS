@@ -3,7 +3,7 @@ const { AppError } = require('../../utils/errors');
 const { isPrivilegedRole } = require('../../utils/roles');
 const { userSearchWhere } = require('../../utils/search');
 
-const USER_SELECT = { id: true, name: true, email: true, phone: true, studentId: true, idCardUrl: true, department: true };
+const USER_SELECT = { id: true, name: true, email: true, phone: true, studentId: true, idCardUrl: true, department: true, homeDistrict: true };
 
 async function updateMembershipStatus(clubId, userId, expectedStatus, newStatus) {
   const membership = await prisma.clubMembership.findUnique({
@@ -384,9 +384,9 @@ async function exportMembersCsv(clubId) {
     orderBy: { createdAt: 'asc' },
   });
 
-  const header = 'Name,Email,Phone,Student ID,Department,Role,Status,Joined Date';
+  const header = 'Name,Email,Phone,Student ID,Department,Home District,Role,Status,Joined Date';
   const rows = members.map((m) =>
-    `"${m.user.name}","${m.user.email}","${m.user.phone}","${m.user.studentId}","${m.user.department ?? ''}","${m.role}","${m.status}","${m.createdAt.toISOString()}"`
+    `"${m.user.name}","${m.user.email}","${m.user.phone}","${m.user.studentId}","${m.user.department ?? ''}","${m.user.homeDistrict ?? ''}","${m.role}","${m.status}","${m.createdAt.toISOString()}"`
   );
   return [header, ...rows].join('\n');
 }
