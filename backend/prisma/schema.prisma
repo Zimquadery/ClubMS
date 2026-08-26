@@ -89,6 +89,7 @@ model ClubMembership {
   clubId    String
   status    MembershipStatus @default(PENDING)
   role      MemberRole       @default(MEMBER)
+  position  String?
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
 

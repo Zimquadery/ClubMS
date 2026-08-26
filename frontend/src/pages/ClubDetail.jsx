@@ -342,6 +342,9 @@ export default function ClubDetail() {
                           {membership.user.department && (
                             <span className="whitespace-nowrap text-xs text-muted-foreground">{membership.user.department}</span>
                           )}
+                          {membership.position && (
+                            <span className="whitespace-nowrap text-xs font-medium text-brand-primary">{membership.position}</span>
+                          )}
                         </span>
                         {membership.role === 'OFFICER' && (
                           <Badge variant="outline" className="text-xs">Officer</Badge>

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Dialog,
   DialogContent,
@@ -13,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Users, ArrowRightLeft, GraduationCap, Trash2, Download, ChevronUp, ChevronDown, Search } from 'lucide-react'
+import { Users, ArrowRightLeft, GraduationCap, Trash2, Download, ChevronUp, ChevronDown, Search, Pencil } from 'lucide-react'
 import BackLink from '@/components/BackLink'
 import { formatShortDate } from '@/lib/format'
 import { toast } from 'sonner'
@@ -69,6 +70,28 @@ export default function ClubMembers() {
   const [removing, setRemoving] = useState(false)
   const [alumniTarget, setAlumniTarget] = useState(null)
   const [settingAlumni, setSettingAlumni] = useState(false)
+  const [positionTarget, setPositionTarget] = useState(null)
+  const [position, setPosition] = useState('')
+  const [savingPosition, setSavingPosition] = useState(false)
+
+  function openPositionEditor(membership) {
+    setPositionTarget(membership)
+    setPosition(membership.position || '')
+  }
+
+  async function handlePositionSave() {
+    setSavingPosition(true)
+    try {
+      await client.patch(`/clubs/${clubId}/members/${positionTarget.userId}/position`, { position })
+      toast.success('Position updated')
+      setPositionTarget(null)
+      await fetchMembers()
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update position')
+    } finally {
+      setSavingPosition(false)
+    }
+  }
 
   async function handleTransfer() {
     if (!transferTarget) return
@@ -231,6 +254,7 @@ export default function ClubMembers() {
                         <p className="truncate text-xs text-muted-foreground">
                           {[membership.user.department, membership.user.homeDistrict, `${membership.user.phone} · ID ${membership.user.studentId}`].filter(Boolean).join(' · ')}
                         </p>
+                        {membership.position && <p className="truncate text-xs font-medium text-brand-primary">{membership.position}</p>}
                         <p className="text-xs text-muted-foreground mt-1">
                           Joined {formatShortDate(membership.createdAt)}
                         </p>
@@ -238,6 +262,9 @@ export default function ClubMembers() {
                     </div>
                     {tab === 'active' && (
                       <div className="flex shrink-0 flex-wrap gap-1.5">
+                        <Button variant="ghost" size="sm" className="min-w-[92px]" onClick={() => openPositionEditor(membership)}>
+                          <Pencil className="h-4 w-4 mr-1" /> Position
+                        </Button>
                         {membership.role !== 'OFFICER' && (
                           <Button variant="ghost" size="sm" className="min-w-[84px]" onClick={() => handlePromote(membership)}>
                             <ChevronUp className="h-4 w-4 mr-1" /> Promote
@@ -347,6 +374,22 @@ export default function ClubMembers() {
             <Button variant="destructive" onClick={handleRemove} disabled={removing}>
               {removing ? 'Removing...' : 'Remove'}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!positionTarget} onOpenChange={(open) => !open && setPositionTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Member Position</DialogTitle>
+            <DialogDescription>Set the position for <strong>{positionTarget?.user?.name}</strong> in {currentClub?.name}.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="edit-member-position">Position</Label>
+            <Input id="edit-member-position" value={position} onChange={(e) => setPosition(e.target.value)} maxLength={100} placeholder="Leave empty to clear" autoFocus />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPositionTarget(null)} disabled={savingPosition}>Cancel</Button>
+            <Button className="bg-brand-primary hover:bg-brand-primary/90 text-white" onClick={handlePositionSave} disabled={savingPosition}>{savingPosition ? 'Saving...' : 'Save Position'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

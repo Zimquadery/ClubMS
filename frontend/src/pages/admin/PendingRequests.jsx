@@ -3,6 +3,8 @@ import client from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Check, X, Users, CheckSquare, XSquare, SlidersHorizontal } from 'lucide-react'
 import BackLink from '@/components/BackLink'
 import { formatRelativeTime } from '@/lib/format'
@@ -50,6 +52,8 @@ export default function PendingRequests() {
   const [bulkLoading, setBulkLoading] = useState(false)
   const [joinRule, setJoinRule] = useState(null)
   const [rulesOpen, setRulesOpen] = useState(false)
+  const [approveTarget, setApproveTarget] = useState(null)
+  const [position, setPosition] = useState('')
 
   useEffect(() => {
     if (!clubId) return
@@ -80,10 +84,10 @@ export default function PendingRequests() {
     }, EXIT_MS)
   }
 
-  async function handleAction(userId, action) {
+  async function handleAction(userId, action, body) {
     setActionLoading((prev) => ({ ...prev, [userId]: true }))
     try {
-      await client.patch(`/clubs/${clubId}/members/${userId}/${action}`)
+      await client.patch(`/clubs/${clubId}/members/${userId}/${action}`, body)
       removeRow(userId)
       toast.success(`Request ${action === 'approve' ? 'approved' : 'rejected'}`)
       return true
@@ -133,6 +137,11 @@ export default function PendingRequests() {
 
   function handleBulkReject() {
     handleBulkAction('reject', 'rejected', 'bulk reject')
+  }
+
+  function openApprove(req) {
+    setApproveTarget(req)
+    setPosition('')
   }
 
   const ruleSummary = !joinRule || joinRule.joinRuleMode === 'ALL'
@@ -236,7 +245,7 @@ export default function PendingRequests() {
                           size="sm"
                           className="min-w-[80px] bg-brand-primary hover:bg-brand-primary/90 text-white"
                           disabled={rowBusy}
-                          onClick={() => handleAction(req.userId, 'approve')}
+                          onClick={() => openApprove(req)}
                         >
                           <Check className="h-4 w-4 mr-1" /> Approve
                         </Button>
@@ -305,6 +314,27 @@ export default function PendingRequests() {
             if (ok) setRejectTarget(null)
           }}>
             {actionLoading[rejectTarget?.userId] ? 'Rejecting...' : 'Reject'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    <Dialog open={!!approveTarget} onOpenChange={(open) => !open && setApproveTarget(null)}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Approve Membership Request</DialogTitle>
+          <DialogDescription>Assign an optional club position to <strong>{approveTarget?.user?.name}</strong>.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-2">
+          <Label htmlFor="member-position">Position</Label>
+          <Input id="member-position" value={position} onChange={(e) => setPosition(e.target.value)} maxLength={100} placeholder="e.g. Treasurer" autoFocus />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setApproveTarget(null)} disabled={actionLoading[approveTarget?.userId]}>Cancel</Button>
+          <Button className="bg-brand-primary hover:bg-brand-primary/90 text-white" disabled={actionLoading[approveTarget?.userId]} onClick={async () => {
+            const ok = await handleAction(approveTarget.userId, 'approve', { position })
+            if (ok) setApproveTarget(null)
+          }}>
+            {actionLoading[approveTarget?.userId] ? 'Approving...' : 'Approve'}
           </Button>
         </DialogFooter>
       </DialogContent>

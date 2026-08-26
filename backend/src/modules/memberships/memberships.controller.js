@@ -13,7 +13,12 @@ const listMembers = asyncHandler(async (req, res) => {
 });
 
 const approve = asyncHandler(async (req, res) => {
-  const membership = await membershipsService.approve(req.params.clubId, req.params.userId);
+  const membership = await membershipsService.approve(req.params.clubId, req.params.userId, req.body);
+  res.status(200).json(membership);
+});
+
+const updatePosition = asyncHandler(async (req, res) => {
+  const membership = await membershipsService.updatePosition(req.params.clubId, req.params.userId, req.body.position);
   res.status(200).json(membership);
 });
 
@@ -86,4 +91,4 @@ const updateUserRole = asyncHandler(async (req, res) => {
   res.status(200).json(user);
 });
 
-module.exports = { requestJoin, listMembers, approve, reject, setAlumni, transferAdmin, leaveClub, removeMember, getAdminClubs, getMyClubs, promoteMember, demoteMember, bulkApprove, bulkReject, exportMembers, updateUserRole };
+module.exports = { requestJoin, listMembers, approve, updatePosition, reject, setAlumni, transferAdmin, leaveClub, removeMember, getAdminClubs, getMyClubs, promoteMember, demoteMember, bulkApprove, bulkReject, exportMembers, updateUserRole };

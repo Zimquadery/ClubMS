@@ -3,10 +3,14 @@ const membershipsController = require('./memberships.controller');
 const { authMiddleware } = require('../../middleware/auth');
 const { requireRole, requireClubAdmin } = require('../../middleware/rbac');
 const { validate, validateQuery } = require('../../middleware/validate');
-const { join: joinSchema, transferAdmin: transferAdminSchema, listMembersQuery, bulkAction: bulkActionSchema, updateRole: updateRoleSchema } = require('./memberships.schemas');
+const { join: joinSchema, approve: approveSchema, position: positionSchema, transferAdmin: transferAdminSchema, listMembersQuery, bulkAction: bulkActionSchema, updateRole: updateRoleSchema } = require('./memberships.schemas');
 const { auditLog } = require('../../middleware/auditLog');
 
 const router = express.Router();
+const requirePositionManager = (req, res, next) => {
+	if (req.user?.role === 'CLUB_ADMIN' || req.user?.role === 'PLATFORM_ADMIN') return next();
+	return res.status(403).json({ message: 'Forbidden' });
+};
 
 /**
  * @openapi
@@ -253,7 +257,9 @@ router.patch('/:clubId/members/:userId/demote', authMiddleware, requireRole('CLU
  *       404:
  *         description: Membership not found
  */
-router.patch('/:clubId/members/:userId/approve', authMiddleware, requireRole('CLUB_ADMIN'), requireClubAdmin, auditLog('MEMBERSHIP_APPROVE', (req) => ({ type: 'membership', id: req.params.userId, metadata: { clubId: req.params.clubId } })), membershipsController.approve);
+router.patch('/:clubId/members/:userId/approve', authMiddleware, requireRole('CLUB_ADMIN'), requirePositionManager, requireClubAdmin, validate(approveSchema), auditLog('MEMBERSHIP_APPROVE', (req) => ({ type: 'membership', id: req.params.userId, metadata: { clubId: req.params.clubId, position: req.body.position ?? null } })), membershipsController.approve);
+
+router.patch('/:clubId/members/:userId/position', authMiddleware, requireRole('CLUB_ADMIN'), requirePositionManager, requireClubAdmin, validate(positionSchema), auditLog('MEMBERSHIP_POSITION_UPDATE', (req) => ({ type: 'membership', id: req.params.userId, metadata: { clubId: req.params.clubId, position: req.body.position } })), membershipsController.updatePosition);
 
 /**
  * @openapi

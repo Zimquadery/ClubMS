@@ -109,6 +109,7 @@ export default function MemberDetailDialog({ member, onOpenChange }) {
         <div className="space-y-4">
           <div className="divide-y">
             <InfoRow icon={GraduationCap} label="Department" value={user?.department} />
+            <InfoRow icon={GraduationCap} label="Position" value={member?.position} />
             <InfoRow icon={MapPin} label="Home District" value={user?.homeDistrict} />
             <InfoRow icon={IdCard} label="Student ID" value={user?.studentId} />
             <InfoRow icon={Calendar} label="Joined" value={member ? formatShortDate(member.createdAt) : null} />

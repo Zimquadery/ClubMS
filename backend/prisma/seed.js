@@ -140,12 +140,12 @@ async function main() {
   const vc = clubs['Red Crescent'];
 
   // ── Memberships
-  const mem = (userId, clubId, status, role) => ({ userId, clubId, status, role });
+  const mem = (userId, clubId, status, role, position = null) => ({ userId, clubId, status, role, position });
 
   const memberships = [
     // Coding Club — rich membership
     mem(officer1.id, cc.id, 'ACTIVE', 'OFFICER'),
-    mem(s1.id, cc.id, 'ACTIVE', 'MEMBER'),
+    mem(s1.id, cc.id, 'ACTIVE', 'MEMBER', 'IT Secretary'),
     mem(s2.id, cc.id, 'PENDING', 'MEMBER'),
     mem(s5.id, cc.id, 'ACTIVE', 'MEMBER'),
     mem(s6.id, cc.id, 'ACTIVE', 'MEMBER'),
@@ -153,13 +153,13 @@ async function main() {
 
     // Basketball Team
     mem(officer2.id, bt.id, 'ACTIVE', 'OFFICER'),
-    mem(s3.id, bt.id, 'ACTIVE', 'MEMBER'),
+    mem(s3.id, bt.id, 'ACTIVE', 'MEMBER', 'Treasurer'),
     mem(s7.id, bt.id, 'ACTIVE', 'MEMBER'),
     mem(s4.id, bt.id, 'PENDING', 'MEMBER'),
     mem(s10.id, bt.id, 'ALUMNI', 'MEMBER'),
 
     // Drama Society
-    mem(s4.id, ds.id, 'ALUMNI', 'MEMBER'),
+    mem(s4.id, ds.id, 'ALUMNI', 'MEMBER', 'General Secretary'),
     mem(s8.id, ds.id, 'ACTIVE', 'OFFICER'),
     mem(s11.id, ds.id, 'ACTIVE', 'MEMBER'),
     mem(s1.id, ds.id, 'PENDING', 'MEMBER'),
