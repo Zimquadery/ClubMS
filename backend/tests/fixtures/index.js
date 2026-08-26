@@ -56,9 +56,9 @@ async function makeClub(overrides = {}) {
   });
 }
 
-async function makeMembership({ userId, clubId, status = 'PENDING', role = 'MEMBER' }) {
+async function makeMembership({ userId, clubId, status = 'PENDING', role = 'MEMBER', position = null }) {
   return prisma.clubMembership.create({
-    data: { userId, clubId, status, role },
+    data: { userId, clubId, status, role, position },
   });
 }
 
@@ -69,9 +69,9 @@ async function makeOfficer({ userId, clubId }) {
   });
 }
 
-async function makeActiveMember({ userId, clubId, role = 'MEMBER' }) {
+async function makeActiveMember({ userId, clubId, role = 'MEMBER', position = null }) {
   return prisma.clubMembership.create({
-    data: { userId, clubId, status: 'ACTIVE', role },
+    data: { userId, clubId, status: 'ACTIVE', role, position },
   });
 }
 

@@ -159,14 +159,13 @@ function YourClubsCard({ clubs, loading }) {
             <div className="divide-y">
               {clubs.map((club) => (
                 <div key={club.id} className="flex items-center justify-between py-2 first:pt-0 last:pb-0">
-                  <div className="flex items-center gap-2">
-                    <Link to={`/clubs/${club.id}`} className="text-sm font-medium hover:underline">
-                      {club.name}
-                    </Link>
-                    <Badge variant="secondary" className="text-xs">{club.category}</Badge>
-                    {club.membershipStatus === 'PENDING' && (
-                      <Badge variant="outline" className="text-xs text-status-yellow border-status-yellow">Pending</Badge>
-                    )}
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Link to={`/clubs/${club.id}`} className="text-sm font-medium hover:underline">{club.name}</Link>
+                      <Badge variant="secondary" className="text-xs">{club.category}</Badge>
+                      {club.membershipStatus === 'PENDING' && <Badge variant="outline" className="text-xs text-status-yellow border-status-yellow">Pending</Badge>}
+                    </div>
+                    {club.position && <p className="text-xs font-medium text-brand-primary">{club.position}</p>}
                   </div>
                   {club.announcementCount > 0 && (
                     <Badge variant="secondary" className="text-xs">

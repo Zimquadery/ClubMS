@@ -5,7 +5,7 @@ const { userSearchWhere } = require('../../utils/search');
 
 const USER_SELECT = { id: true, name: true, email: true, phone: true, studentId: true, idCardUrl: true, department: true, homeDistrict: true };
 
-async function updateMembershipStatus(clubId, userId, expectedStatus, newStatus) {
+async function updateMembershipStatus(clubId, userId, expectedStatus, newStatus, data = {}) {
   const membership = await prisma.clubMembership.findUnique({
     where: { userId_clubId: { userId, clubId } },
   });
@@ -17,7 +17,7 @@ async function updateMembershipStatus(clubId, userId, expectedStatus, newStatus)
 
   return prisma.clubMembership.update({
     where: { userId_clubId: { userId, clubId } },
-    data: { status: newStatus },
+    data: { status: newStatus, ...data },
     include: { user: { select: USER_SELECT } },
   });
 }
@@ -93,8 +93,21 @@ async function listMembers(clubId, { status, page = 1, limit = 50, search } = {}
   return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
 }
 
-async function approve(clubId, userId) {
-  return updateMembershipStatus(clubId, userId, 'PENDING', 'ACTIVE');
+async function approve(clubId, userId, { position: memberPosition } = {}) {
+  return updateMembershipStatus(clubId, userId, 'PENDING', 'ACTIVE', { position: memberPosition ?? null });
+}
+
+async function updatePosition(clubId, userId, memberPosition) {
+  const membership = await prisma.clubMembership.findUnique({
+    where: { userId_clubId: { userId, clubId } },
+  });
+  if (!membership) throw new AppError('Membership not found', 404);
+
+  return prisma.clubMembership.update({
+    where: { userId_clubId: { userId, clubId } },
+    data: { position: memberPosition },
+    include: { user: { select: USER_SELECT } },
+  });
 }
 
 async function reject(clubId, userId) {
@@ -285,6 +298,7 @@ async function getMyClubs(userId) {
     announcementCount: m.club._count.announcements,
     membershipStatus: m.status,
     membershipRole: m.role,
+    position: m.status === 'ACTIVE' ? m.position : null,
   }));
 }
 
@@ -409,4 +423,4 @@ async function updateUserRole(userId, newRole) {
   });
 }
 
-module.exports = { requestJoin, listMembers, approve, reject, setAlumni, transferAdmin, leaveClub, removeMember, isClubAdmin, getAdminClubs, getMyClubs, promoteMember, demoteMember, bulkApprove, bulkReject, exportMembersCsv, isActiveMember, updateUserRole };
+module.exports = { requestJoin, listMembers, approve, updatePosition, reject, setAlumni, transferAdmin, leaveClub, removeMember, isClubAdmin, getAdminClubs, getMyClubs, promoteMember, demoteMember, bulkApprove, bulkReject, exportMembersCsv, isActiveMember, updateUserRole };

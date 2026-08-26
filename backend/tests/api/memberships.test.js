@@ -502,6 +502,22 @@ describe('PATCH /api/clubs/:clubId/members/:userId/approve', () => {
     expect(res.body.status).toBe('ACTIVE');
   });
 
+  it('normalizes and stores a club-specific position', async () => {
+    const admin = await makeUser({ role: 'CLUB_ADMIN' });
+    const club = await makeClub();
+    await makeOfficer({ userId: admin.id, clubId: club.id });
+    const pending = await makeUser({ role: 'STUDENT' });
+    await makeMembership({ userId: pending.id, clubId: club.id });
+
+    const res = await request(app)
+      .patch(`/api/clubs/${club.id}/members/${pending.id}/approve`)
+      .set('Authorization', tokenFor(admin))
+      .send({ position: '  IT Secretary  ' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.position).toBe('IT Secretary');
+  });
+
   it('emits an audit log', async () => {
     const admin = await makeUser({ role: 'CLUB_ADMIN' });
     const club = await makeClub();
@@ -518,6 +534,69 @@ describe('PATCH /api/clubs/:clubId/members/:userId/approve', () => {
     );
     expect(audit).toBeTruthy();
     expect(audit.actorId).toBe(admin.id);
+  });
+});
+
+describe('PATCH /api/clubs/:clubId/members/:userId/position', () => {
+  it('updates only the membership in the managed club', async () => {
+    const admin = await makeUser({ role: 'CLUB_ADMIN' });
+    const member = await makeUser({ role: 'STUDENT' });
+    const club = await makeClub();
+    await makeOfficer({ userId: admin.id, clubId: club.id });
+    await makeActiveMember({ userId: member.id, clubId: club.id, position: 'Member' });
+
+    const res = await request(app)
+      .patch(`/api/clubs/${club.id}/members/${member.id}/position`)
+      .set('Authorization', tokenFor(admin))
+      .send({ position: '  Treasurer ' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.position).toBe('Treasurer');
+  });
+
+  it('blocks students and clears whitespace-only positions', async () => {
+    const admin = await makeUser({ role: 'CLUB_ADMIN' });
+    const member = await makeUser({ role: 'STUDENT' });
+    const club = await makeClub();
+    await makeOfficer({ userId: admin.id, clubId: club.id });
+    await makeActiveMember({ userId: member.id, clubId: club.id, position: 'Treasurer' });
+
+    const forbidden = await request(app)
+      .patch(`/api/clubs/${club.id}/members/${member.id}/position`)
+      .set('Authorization', tokenFor(member))
+      .send({ position: 'President' });
+    expect(forbidden.status).toBe(403);
+
+    const cleared = await request(app)
+      .patch(`/api/clubs/${club.id}/members/${member.id}/position`)
+      .set('Authorization', tokenFor(admin))
+      .send({ position: '   ' });
+    expect(cleared.status).toBe(200);
+    expect(cleared.body.position).toBeNull();
+  });
+
+  it('keeps positions isolated by club and allows platform admins across clubs', async () => {
+    const platformAdmin = await makeUser({ role: 'PLATFORM_ADMIN' });
+    const member = await makeUser({ role: 'STUDENT' });
+    const clubOne = await makeClub();
+    const clubTwo = await makeClub();
+    await makeActiveMember({ userId: member.id, clubId: clubOne.id, position: 'IT Secretary' });
+    await makeActiveMember({ userId: member.id, clubId: clubTwo.id, position: 'Treasurer' });
+
+    const res = await request(app)
+      .patch(`/api/clubs/${clubTwo.id}/members/${member.id}/position`)
+      .set('Authorization', tokenFor(platformAdmin))
+      .send({ position: 'Vice President' });
+    expect(res.status).toBe(200);
+
+    const clubOneView = await request(app)
+      .get(`/api/clubs/${clubOne.id}`)
+      .set('Authorization', tokenFor(member));
+    const clubTwoView = await request(app)
+      .get(`/api/clubs/${clubTwo.id}`)
+      .set('Authorization', tokenFor(member));
+    expect(clubOneView.body.memberships.find((membership) => membership.userId === member.id).position).toBe('IT Secretary');
+    expect(clubTwoView.body.memberships.find((membership) => membership.userId === member.id).position).toBe('Vice President');
   });
 });
 
@@ -1209,6 +1288,19 @@ describe('GET /api/memberships/my-clubs and /my-admin-clubs', () => {
     expect(ids).toContain(c1.id);
     expect(ids).toContain(c2.id);
     expect(ids).not.toContain(otherClub.id);
+  });
+
+  it('returns each active club position from its own membership', async () => {
+    const user = await makeUser({ role: 'STUDENT' });
+    const c1 = await makeClub();
+    const c2 = await makeClub();
+    await makeActiveMember({ userId: user.id, clubId: c1.id, position: 'IT Secretary' });
+    await makeActiveMember({ userId: user.id, clubId: c2.id, position: 'Treasurer' });
+
+    const res = await request(app).get('/api/memberships/my-clubs').set('Authorization', tokenFor(user));
+    expect(res.status).toBe(200);
+    expect(res.body.find((club) => club.id === c1.id).position).toBe('IT Secretary');
+    expect(res.body.find((club) => club.id === c2.id).position).toBe('Treasurer');
   });
 
   it('my-admin-clubs returns clubs where the user is OFFICER', async () => {

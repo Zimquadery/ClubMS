@@ -40,6 +40,8 @@ All accounts use the same password: **`password123`**
 - 1 PENDING membership (student2 → Coding Club)
 - 1 ALUMNI membership (student4 → Drama Society)
 
+Sample positions include IT Secretary (student1 → Programmers Arena), Treasurer (student3 → Basketball Team), and General Secretary (student4 → Drama Society). Positions are stored per club membership.
+
 **Events (5):**
 - Hackathon 2025, Weekly Code Review (Coding Club)
 - Tryouts (Basketball Team)
