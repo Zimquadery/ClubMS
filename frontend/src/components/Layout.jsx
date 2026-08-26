@@ -82,7 +82,7 @@ export function Layout() {
               {logoUrl && (
                 <img src={logoUrl} alt="Logo" className="h-8 w-8 object-contain" />
               )}
-              <span className="text-base">{universityName}</span>
+              <span className="text-base">HSTU</span>
             </Link>
             {user && (
               <nav className="hidden md:flex items-center gap-0.5 text-sm">
