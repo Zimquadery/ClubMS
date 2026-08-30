@@ -1,0 +1,26 @@
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {1.1}{\ignorespaces Conceptual positioning of ClubMS between manual coordination methods and commercial SaaS platforms}}{2}{figure.caption.5}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {3.1}{\ignorespaces System context diagram showing ClubMS's principal actors}}{16}{figure.caption.12}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {4.1}{\ignorespaces Detailed system architecture: client tier, containerized frontend/backend/data tiers, and the backend's layered request pipeline}}{18}{figure.caption.14}%
+\contentsline {figure}{\numberline {4.2}{\ignorespaces Simplified entity-relationship diagram of the core ClubMS data model}}{19}{figure.caption.16}%
+\contentsline {figure}{\numberline {4.3}{\ignorespaces Login and authenticated request sequence}}{22}{figure.caption.19}%
+\contentsline {figure}{\numberline {4.4}{\ignorespaces Role inheritance hierarchy}}{22}{figure.caption.20}%
+\contentsline {figure}{\numberline {4.5}{\ignorespaces Co-host invitation lifecycle}}{24}{figure.caption.22}%
+\contentsline {figure}{\numberline {4.6}{\ignorespaces Docker Compose deployment topology}}{26}{figure.caption.25}%
+\contentsline {figure}{\numberline {4.7}{\ignorespaces Continuous integration pipeline (GitHub Actions)}}{26}{figure.caption.26}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {5.1}{\ignorespaces Registration form with student ID and ID-card upload}}{27}{figure.caption.27}%
+\contentsline {figure}{\numberline {5.2}{\ignorespaces Student dashboard: joined clubs and upcoming events}}{28}{figure.caption.28}%
+\contentsline {figure}{\numberline {5.3}{\ignorespaces Club admin dashboard: managed clubs, pending requests, and co-host invites}}{28}{figure.caption.29}%
+\contentsline {figure}{\numberline {5.4}{\ignorespaces Platform admin dashboard: platform-wide statistics and Manage Clubs access}}{29}{figure.caption.30}%
+\contentsline {figure}{\numberline {5.5}{\ignorespaces Club directory: browsable list of all clubs}}{29}{figure.caption.31}%
+\contentsline {figure}{\numberline {5.6}{\ignorespaces Club detail page showing roster, announcements, and published rules (member view)}}{30}{figure.caption.32}%
+\contentsline {figure}{\numberline {5.7}{\ignorespaces Member management: roles, promote/demote, CSV export}}{31}{figure.caption.33}%
+\contentsline {figure}{\numberline {5.8}{\ignorespaces Event listing: all upcoming club events}}{32}{figure.caption.34}%
+\contentsline {figure}{\numberline {5.9}{\ignorespaces Event detail page with RSVP controls and attendee count}}{32}{figure.caption.35}%
+\contentsline {figure}{\numberline {5.10}{\ignorespaces Admin: Manage Clubs page}}{33}{figure.caption.36}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }

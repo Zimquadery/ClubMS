@@ -1,0 +1,24 @@
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {2.1}{\ignorespaces Bibliographic summary of related club/society management systems}}{5}{table.caption.6}%
+\contentsline {table}{\numberline {2.2}{\ignorespaces Feature comparison between related systems and ClubMS}}{8}{table.caption.7}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {3.1}{\ignorespaces System roles and their primary concerns}}{9}{table.caption.8}%
+\contentsline {table}{\numberline {3.2}{\ignorespaces Club officers consulted during requirements gathering}}{10}{table.caption.9}%
+\contentsline {table}{\numberline {3.3}{\ignorespaces Problems reported by club officers and the corresponding ClubMS solution}}{11}{table.caption.10}%
+\contentsline {table}{\numberline {3.4}{\ignorespaces Functional requirements}}{13}{table.3.4}%
+\contentsline {table}{\numberline {3.5}{\ignorespaces Non-functional requirements}}{15}{table.caption.11}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {4.1}{\ignorespaces Development phases and timeline}}{17}{table.caption.13}%
+\contentsline {table}{\numberline {4.2}{\ignorespaces Technology stack summary}}{19}{table.caption.15}%
+\contentsline {table}{\numberline {4.3}{\ignorespaces Core data model entities}}{20}{table.caption.17}%
+\contentsline {table}{\numberline {4.4}{\ignorespaces Representative API endpoints}}{21}{table.caption.18}%
+\contentsline {table}{\numberline {4.5}{\ignorespaces Role inheritance map}}{23}{table.caption.21}%
+\contentsline {table}{\numberline {4.6}{\ignorespaces Implemented security measures}}{25}{table.caption.23}%
+\contentsline {table}{\numberline {4.7}{\ignorespaces Automated test suite composition}}{26}{table.caption.24}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {6.1}{\ignorespaces Illustrative development effort and cost estimate (Bangladeshi Taka)}}{34}{table.caption.37}%
+\contentsline {table}{\numberline {6.2}{\ignorespaces Illustrative recurring cost comparison (order-of-magnitude estimates)}}{35}{table.caption.38}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {7.1}{\ignorespaces Limitations mapped to recommended future work}}{37}{table.caption.39}%
