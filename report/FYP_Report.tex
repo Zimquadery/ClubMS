@@ -144,7 +144,8 @@
 
 \vspace{0.9cm}
 {\fontsize{18}{22}\selectfont\bfseries B.Sc. Level 3 Semester II PROJECT REPORT}\\[0.2cm]
-{\fontsize{18}{22}\selectfont\bfseries Course Code: CSE 352, Course Title: Web and Mobile Application Development Sessional}
+{\fontsize{18}{22}\selectfont\bfseries Course Code: CSE 352}\\[0.2cm]
+{\fontsize{18}{22}\selectfont\bfseries Course Title: Web and Mobile Application Development Sessional}
 
 \vspace{0.9cm}
 {\fontsize{16}{19}\selectfont\bfseries Prepared by}
@@ -159,18 +160,16 @@ ID: 2202042 \\
 \end{tabular}
 }
 
-\vspace{0.9cm}
-{\fontsize{16}{19}\selectfont\bfseries Project Supervisor}
+\vspace{3cm}
 
-\vspace{0.3cm}
-{\fontsize{14}{17}\selectfont
-Pankaj Bhowmik \\
-Assistant Professor
-}
-
-\vspace{0.7cm}
 \IfFileExists{hstu-logo.png}{%
   \includegraphics[width=4cm,height=4cm]{hstu-logo.png}%
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{hstu-logo.png}
+    \caption{Enter Caption}
+    \label{fig:placeholder}
+\end{figure}
 }{%
   \fbox{\begin{minipage}[c][4cm][c]{4cm}\centering\itshape University Logo\end{minipage}}%
 }
@@ -189,10 +188,10 @@ Assistant Professor
 \chapter*{ABSTRACT}
 \addcontentsline{toc}{chapter}{ABSTRACT}
 
-Most universities still run their student clubs on paper forms, spreadsheets, and WhatsApp groups, or else pay for closed, subscription-based engagement suites that can't be self-hosted or customized. ClubMS was built to close that gap: it's a self-hosted, white-label club management platform with a Node.js/Express/Prisma REST API on PostgreSQL and a React frontend (Vite, Tailwind, Radix UI). It supports four roles -- Platform Admin, Club Admin, Faculty, and Student -- under a layered authorization model that checks both global role and per-resource ownership. On top of that sit a full club and membership lifecycle with department-based join rules and a join-agreement flow, multi-club events run through a consent-based co-host invitation system, RSVP tracking, announcements, a venue directory, magic-byte-validated file uploads for logos, banners, and ID cards, and a full audit log for accountability. The whole system runs on Docker Compose and can be rebranded for any institution just by changing a few environment variables. Built over about four months, it's backed by 345 automated tests -- both unit tests and full HTTP integration tests run against a real, disposable PostgreSQL instance via Testcontainers. This report covers the motivation behind the project, how it compares to existing academic and commercial club-management systems, the requirements gathered from three user roles, the system's design and implementation, the results, a cost comparison against commercial alternatives, and where the project falls short and could be extended.
+Most universities still run their student clubs on paper forms, spreadsheets, and WhatsApp groups, or else pay for closed, subscription-based engagement suites that cannot be self-hosted or customized. ClubMS was built to close that gap: a self-hosted, white-label club management platform with a Node.js/Express/Prisma REST API on PostgreSQL and a React frontend (Vite, Tailwind, Radix UI). It supports four roles -- Platform Admin, Club Admin, Faculty, and Student -- under a layered authorization model that checks both global role and per-resource ownership. On top of that sit a full club and membership lifecycle with department-based join rules and a join-agreement flow; multi-club events run through a consent-based co-host invitation system; RSVP tracking; announcements; a venue directory; magic-byte-validated file uploads for logos, banners, and ID cards; and an audit log for accountability. The whole system runs on Docker Compose and can be rebranded for any institution just by changing a few environment variables. Built over about five months, it is backed by 345 automated tests -- both unit tests and full HTTP integration tests run against a real, disposable PostgreSQL instance via Testcontainers. This report covers the motivation behind the project, how it compares to existing academic and commercial club-management systems, the requirements gathered from three user groups, the design and implementation, the results, a cost comparison against commercial alternatives, and where the project falls short and could be extended.
 
 \vspace{0.5cm}
-\noindent\textbf{Keywords:} club management system, university information system, role-based access control, self-hosted software, white-label web application, React, Node.js, PostgreSQL, Prisma, Docker.
+\noindent\textbf{Keywords:} club management system, role-based access control, white-label web application, React, Node.js.
 
 % =====================================================================
 % TABLE OF CONTENTS / LIST OF FIGURES / LIST OF TABLES
@@ -212,11 +211,11 @@ Most universities still run their student clubs on paper forms, spreadsheets, an
 
 \section{Background}
 
-Student clubs and societies are a core part of campus life: they give students a structured way to build skills, form communities, and engage with campus activities outside the classroom. Running them, however, generates a steady stream of administrative work -- accepting or rejecting membership applications, tracking who is an active member versus an alumnus, scheduling and publicising events, recording attendance, and keeping an auditable trail of decisions such as promotions and removals.
+Student clubs and societies are a core part of campus life: they give students a structured way to build skills, form communities, and engage with campus activities outside the classroom. Running them, however, generates a steady stream of administrative work -- accepting or rejecting membership applications, tracking who is an active member versus an alumnus, scheduling and publicizing events, recording attendance, and keeping an auditable trail of decisions such as promotions and removals.
 
 In many institutions this work is still done manually. A 2017 case study of the Student Affairs Department at Universiti Teknologi MARA, Terengganu found that club registration and event-proposal processing were handled through paper forms and repeated manual re-entry every semester, motivating the development of a dedicated online club management system [1]. More recent student projects report the same pattern in a different guise: a 2025 case study of club coordination at D. Y. Patil College of Engineering and Technology found that roughly twenty clubs relied on individual WhatsApp groups for communication, leading to fragmented, hard-to-audit information flow [2]. Where institutions do invest in dedicated software, the market is dominated by large, closed, subscription-priced campus-engagement suites such as CampusGroups and Modern Campus Involve (formerly Presence), which bundle orientation management, gamified badging, ticketing, and analytics into a single vendor-hosted product [3]. These products are capable, but they are licensed per institution or per student, cannot be self-hosted, and offer little control over branding, data residency, or the underlying data model.
 
-ClubMS was built to occupy the space between these two extremes: a system that is as structured and auditable as a purpose-built platform, but that a university (or a single department) can deploy on its own infrastructure, brand with its own name, logo, and colour, and extend without being tied to a vendor's roadmap or pricing.
+ClubMS was built to occupy the space between these two extremes: a system that is as structured and auditable as a purpose-built platform, but that a university (or a single department) can deploy on its own infrastructure, brand with its own name, logo, and color, and extend without being tied to a vendor's roadmap or pricing.
 
 \begin{figure}[H]
 \centering
@@ -254,16 +253,16 @@ The motivation for this project is both practical and technical. Practically, th
 \section{Objectives}
 
 \subsection{General Objective}
-To design, implement, and evaluate a self-hosted, white-label web-based club management platform that digitizes the full lifecycle of university clubs, memberships, and events for three distinct user roles.
+To design, implement, and evaluate a self-hosted, white-label web-based club management platform that digitizes the full lifecycle of university clubs, memberships, and events for three primary user groups (four system roles).
 
 \subsection{Specific Objectives}
 \begin{enumerate}
 \item To design a relational data model and REST API that represent clubs, memberships, events, RSVPs, announcements, and administrative audit trails.
 \item To implement a role-based access control (RBAC) system with role inheritance and per-resource ownership checks that scale from a single-club officer to a platform administrator.
-\item To implement a complete club and membership lifecycle, including department-based join eligibility rules, a join-agreement flow, and bulk moderation tools for officers.
+\item Implement a complete club and membership lifecycle, including department-based join eligibility rules, a join-agreement flow, and bulk moderation tools for officers.
 \item To implement an event management module that supports a single primary host club and a consent-based invitation workflow for co-hosting events across clubs.
 \item To implement secure file upload handling (club logos, event banners, and student ID cards) that validates file content rather than trusting client-supplied metadata.
-\item To implement a white-labelling mechanism that allows an institution's brand colour, logo, and name to be configured without modifying application code.
+\item To implement a white-labeling mechanism that allows an institution's brand color, logo, and name to be configured without modifying application code.
 \item To validate the system with an automated test suite covering both isolated utility functions and full HTTP integration paths against a real database.
 \item To package the system for reproducible deployment using Docker and Docker Compose.
 \end{enumerate}
@@ -302,16 +301,16 @@ Club and society management is a well-studied problem in student capstone and ap
 On-ClubS automated the Student Affairs Department's paper-based workflow for approving new club proposals and event proposals at a single campus [1]. It was built using a conventional PHP/MySQL stack and evaluated with a usability questionnaire that reported generally positive results. Its scope, however, stops at the proposal-approval stage: it does not model ongoing membership status, does not expose a student-facing join/browse experience, and includes no concept of roles beyond staff versus student. It also targets a single institution's server and has no branding or multi-deployment story.
 
 \section{MERN-Stack Club Management System (2025)}
-This paper presents a club and event management system built on the MERN stack (MongoDB, Express, React, Node.js) that automates event scheduling, authentication, participation tracking, and real-time notifications, and explicitly cites role-based access control as a design goal [4]. It is architecturally close to ClubMS's frontend/backend split, but the published work does not describe a membership lifecycle with distinct pending/active/alumni/rejected states, does not address multi-club event collaboration, and does not discuss deployment, white-labelling, or automated testing.
+This paper presents a club and event management system built on the MERN stack (MongoDB, Express, React, Node.js) that automates event scheduling, authentication, participation tracking, and real-time notifications, and explicitly cites role-based access control as a design goal [4]. It is architecturally close to ClubMS's frontend/backend split, but the published work does not describe a membership lifecycle with distinct pending/active/alumni/rejected states, does not address multi-club event collaboration, and does not discuss deployment, white-labeling, or automated testing.
 
 \section{College Club Management System -- Framework Proposal (2025)}
-This work is a survey- and literature-driven proposal for a "College Club Management System" rather than a fully implemented product; it enumerates the problems of manual club administration and sketches a target feature set based on stakeholder interviews [5]. It is included here because it independently corroborates the problem statement in Chapter~1 -- fragmented communication and manual processes -- but, being a proposal, it offers no working implementation, authorization model, or evaluation to compare directly against ClubMS.
+This work is a survey- and literature-driven proposal for a ``College Club Management System'' rather than a fully implemented product; it enumerates the problems of manual club administration and sketches a target feature set based on stakeholder interviews [5]. It is included here because it independently corroborates the problem statement in Chapter~1 -- fragmented communication and manual processes -- but, being a proposal, it offers no working implementation, authorization model, or evaluation to compare directly against ClubMS.
 
 \section{DYPCETCLUBS (2025)}
-DYPCETCLUBS is notable for using a technology stack very close to ClubMS's: React with TypeScript and Tailwind CSS on the frontend, and Node.js/Express with Prisma ORM on the backend [2]. It centralizes event management, notifications, and recruitment for roughly twenty college clubs that previously relied on WhatsApp groups. Its main limitations relative to ClubMS are its use of SQLite (a single-writer, file-based database not well suited to concurrent multi-club production use), the absence of a documented role-inheritance model or per-resource authorization layer, and no mention of containerized deployment, white-labelling, audit logging, or a consent-based cross-club collaboration workflow.
+DYPCETCLUBS is notable for using a technology stack very close to ClubMS's: React with TypeScript and Tailwind CSS on the frontend, and Node.js/Express with Prisma ORM on the backend [2]. It centralizes event management, notifications, and recruitment for roughly twenty college clubs that previously relied on WhatsApp groups. Its main limitations relative to ClubMS are its use of SQLite (a single-writer, file-based database not well suited to concurrent multi-club production use), the absence of a documented role-inheritance model or per-resource authorization layer, and no mention of containerized deployment, white-labeling, audit logging, or a consent-based cross-club collaboration workflow.
 
 \section{WeChat Applet Club Management System (2024)}
-This system reimplements club management as a WeChat Mini Program backed by a cloud database, aiming to increase interactivity by meeting students inside an app they already use [6]. While effective for institutions where WeChat is the dominant platform, the design is inherently locked to the WeChat ecosystem: it is not accessible as an ordinary web application, has no independent admin dashboard, and cannot be self-hosted or white-labelled outside of WeChat's own infrastructure.
+This system reimplements club management as a WeChat Mini Program backed by a cloud database, aiming to increase interactivity by meeting students inside an app they already use [6]. While effective for institutions where WeChat is the dominant platform, the design is inherently locked to the WeChat ecosystem: it is not accessible as an ordinary web application, has no independent admin dashboard, and cannot be self-hosted or white-labeled outside of WeChat's own infrastructure.
 
 \section{Commercial Campus Engagement Suites}
 Platforms such as CampusGroups and Modern Campus Involve are mature, feature-rich SaaS products offering orientation management, virtual involvement fairs, gamified badging, integrated budgeting and payments, and analytics dashboards for large institutions [3]. They are the strongest systems in this comparison in terms of breadth of features and production maturity. Their weaknesses, from the perspective of this project's objectives, are structural rather than functional: they are closed-source, licensed on a recurring commercial basis, hosted exclusively by the vendor (no self-hosting option), and offer only theming-level customization rather than control over the underlying codebase or data model.
@@ -334,7 +333,7 @@ DYPCETCLUBS [2] & Near-identical tech stack (React/Tailwind, Node/Express/Prisma
 WeChat Applet CMS [6] & High reach within WeChat-native user base & Locked to WeChat platform; not self-hostable or brandable \\
 Commercial suites [3] & Very broad feature set; proven at scale & Closed-source, subscription-priced, vendor-hosted only, no white-label deployment \\
 \midrule
-\textbf{ClubMS} & \multicolumn{2}{p{9.5cm}}{Self-hosted via Docker Compose; white-labelled at build time; four-role RBAC with inheritance \emph{and} per-resource ownership checks; full PENDING/ACTIVE/ALUMNI/REJECTED membership lifecycle; department-based join rules and join-agreement gating; consent-based cross-club event co-hosting; magic-byte-validated uploads; full audit trail; 345-case automated test suite with a real database} \\
+\textbf{ClubMS} & \multicolumn{2}{p{9.5cm}}{Self-hosted via Docker Compose; white-labeled at build time; four-role RBAC with inheritance \emph{and} per-resource ownership checks; full PENDING/ACTIVE/ALUMNI/REJECTED membership lifecycle; department-based join rules and join-agreement gating; consent-based cross-club event co-hosting; magic-byte-validated uploads; full audit trail; 345-case automated test suite with a real database} \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -494,7 +493,7 @@ FR-10 & Memberships & Officers shall be able to export a club's member list as C
 FR-11 & Events & Club officers shall be able to create, update, and delete events with a title, description, start/end time, venue, tags, and banner image. \\
 FR-12 & Events & Every event shall have exactly one primary hosting club and may have zero or more consenting co-host clubs. \\
 FR-13 & Events & An officer of a hosting club shall be able to invite another club to co-host an event; the invited club's officer shall be able to accept, reject, or the inviter may cancel the invitation. \\
-FR-14 & Events & Students shall be able to browse upcoming and past events and filter by club, venue, or "my events". \\
+FR-14 & Events & Students shall be able to browse upcoming and past events and filter by club, venue, or ``my events''. \\
 FR-15 & RSVP & Active members of a hosting club shall be able to RSVP to an event as Going, Maybe, or Not Going. \\
 FR-16 & RSVP & Officers of a hosting club shall be able to view and export the RSVP list for an event. \\
 FR-17 & Announcements & Club officers shall be able to post, pin, and delete announcements visible to a club's members. \\
@@ -522,10 +521,10 @@ Category & Requirement \\
 Security & Passwords shall be hashed (never stored in plain text); all state-changing endpoints shall require a valid JWT; authorization shall be enforced both by global role and by per-resource ownership; uploaded files shall be validated by content (magic bytes), not by client-supplied extension or MIME type [10]. \\
 Performance & List endpoints shall be paginated (default 20--50 items, maximum 100); frequently filtered/sorted columns shall be indexed; the frontend shall code-split routes so users only download the JavaScript needed for the page they are viewing. \\
 Availability \& Reliability & The API shall retry idempotent read operations transparently on transient database connection errors, but shall never automatically retry non-idempotent write operations. \\
-Usability \& Accessibility & The interface shall meet WCAG 2.1 AA expectations: sufficient colour contrast, full keyboard navigation, visible focus states, screen-reader-friendly semantics, and respect for the user's reduced-motion preference [9]. \\
+Usability \& Accessibility & The interface shall meet WCAG 2.1 AA expectations: sufficient color contrast, full keyboard navigation, visible focus states, screen-reader-friendly semantics, and respect for the user's reduced-motion preference [9]. \\
 Maintainability & The backend shall be organized as isolated feature modules (routes/controller/service/schema) with input validation centralized through a single schema-validation middleware. \\
-Portability \& White-labelling & The system shall be deployable via a single Docker Compose command; the frontend's brand colour, logo, and institution name shall be configurable through build-time environment variables without code changes. \\
-Testability & The system shall be covered by an automated test suite exercising both isolated utility logic and full HTTP request/response behaviour against a real database instance. \\
+Portability \& White-labeling & The system shall be deployable via a single Docker Compose command; the frontend's brand color, logo, and institution name shall be configurable through build-time environment variables without code changes. \\
+Testability & The system shall be covered by an automated test suite exercising both isolated utility logic and full HTTP request/response behavior against a real database instance. \\
 Auditability & Every privileged administrative action shall leave a permanent, queryable audit record. \\
 \bottomrule
 \end{tabularx}
@@ -533,7 +532,7 @@ Auditability & Every privileged administrative action shall leave a permanent, q
 
 \section{System Context}
 
-Figure~\ref{fig:3.1} shows the system context: three actor classes interact with the ClubMS platform over HTTPS, and a fourth "deployment" concern -- the institution's IT staff -- configures the platform once at deployment time via environment variables rather than through the application itself.
+Figure~\ref{fig:3.1} shows the system context: three actor classes interact with the ClubMS platform over HTTPS, and a fourth ``deployment'' concern -- the institution's IT staff -- configures the platform once at deployment time via environment variables rather than through the application itself.
 
 \begin{figure}[H]
 \centering
@@ -547,7 +546,7 @@ Figure~\ref{fig:3.1} shows the system context: three actor classes interact with
 \draw[arr] (student) -- node[lbl,above]{browse, join, RSVP} (core);
 \draw[arr] (officer) -- node[lbl,above]{moderate, host events} (core);
 \draw[arr] (admin) -- node[lbl,below]{manage clubs, venues, audit} (core);
-\draw[arr] (deploy) -- node[lbl,below]{brand colour, logo, name} (core);
+\draw[arr] (deploy) -- node[lbl,below]{brand color, logo, name} (core);
 \end{tikzpicture}%
 }
 \caption{System context diagram showing ClubMS's principal actors}
@@ -561,7 +560,7 @@ Figure~\ref{fig:3.1} shows the system context: three actor classes interact with
 
 \section{Development Methodology}
 
-ClubMS was developed iteratively rather than through a single up-front design phase, following an approach close to Agile feature-slicing: each iteration delivered a vertically complete slice of functionality (database migration, service logic, route, and corresponding UI) before moving to the next. Table~\ref{tab:4.1} summarizes the major development phases as recorded in the project's version-control history, spanning approximately four months.
+ClubMS was developed iteratively rather than through a single up-front design phase, following an approach close to Agile feature-slicing: each iteration delivered a vertically complete slice of functionality (database migration, service logic, route, and corresponding UI) before moving to the next. Table~\ref{tab:4.1} summarizes the major development phases as recorded in the project's version-control history, spanning approximately five months.
 
 \begin{table}[H]
 \caption{Development phases and timeline}
@@ -646,30 +645,103 @@ DevOps & Docker and Docker Compose [15], GitHub Actions CI \\
 
 \section{Database Design}
 
-The relational schema evolved through eighteen incremental Prisma migrations, from the initial schema in April 2026 to the addition of membership positions in August 2026. The core entities are \texttt{User}, \texttt{Club}, \texttt{ClubMembership}, \texttt{Event}, \texttt{EventHost}, \texttt{EventHostInvite}, \texttt{Venue}, \texttt{EventRsvp}, \texttt{Announcement}, and \texttt{AuditLog}. Figure~\ref{fig:4.2} shows a simplified entity-relationship diagram of the core scheduling and membership entities; \texttt{Announcement} and \texttt{AuditLog} (each a straightforward one-to-many child of \texttt{Club} and/or \texttt{User}) are omitted from the diagram for clarity and are described in Table~\ref{tab:4.3} instead.
+The relational schema evolved through eighteen incremental Prisma migrations, from the initial schema in April 2026 to the addition of membership positions in August 2026. The core entities are \texttt{User}, \texttt{Club}, \texttt{ClubMembership}, \texttt{Event}, \texttt{EventHost}, \texttt{EventHostInvite}, \texttt{Venue}, \texttt{EventRsvp}, \texttt{Announcement}, and \texttt{AuditLog}. Figure~\ref{fig:4.2} shows a simplified entity-relationship diagram of the core scheduling and membership entities, drawn in Chen notation: rectangles denote entity sets, diamonds denote named relationship sets, and ovals denote attributes (underlined = primary key, \texttt{...Id} = foreign key), with each edge annotated with its cardinality. The four join tables (\texttt{ClubMembership}, \texttt{EventHost}, \texttt{EventHostInvite}, \texttt{EventRsvp}) appear as associative entities at the many side of their access paths, exactly as they are materialized in the relational schema. \texttt{Announcement} and \texttt{AuditLog} (each a straightforward one-to-many child of \texttt{Club} and/or \texttt{User}) are omitted from the diagram for clarity and are described in Table~\ref{tab:4.3} instead.
 
 \begin{figure}[H]
 \centering
 \resizebox{\textwidth}{!}{%
-\begin{tikzpicture}[scale=0.95, every node/.append style={transform shape}]
-\node[ent] (user) at (0,7) {User};
-\node[ent] (club) at (8,7) {Club};
-\node[ent] (venue) at (14,7) {Venue};
-\node[ent] (member) at (4,4.3) {ClubMembership};
-\node[ent] (event) at (8,2) {Event};
-\node[ent] (host) at (4,-0.7) {EventHost};
-\node[ent] (invite) at (12,-0.7) {EventHostInvite};
-\node[ent] (rsvp) at (0,2) {EventRsvp};
+\begin{tikzpicture}[
+  ent/.style={draw, thick, rectangle, align=center, minimum width=2.2cm, minimum height=0.9cm, font=\small, fill=gray!7},
+  rel/.style={draw, thick, diamond, aspect=1.7, align=center, inner sep=1.5pt, font=\small, fill=gray!7},
+  attr/.style={draw, thin, ellipse, align=center, inner sep=1pt, minimum width=1.2cm, minimum height=0.6cm, font=\scriptsize, fill=white},
+  ln/.style={thick},
+  card/.style={font=\scriptsize, fill=white, inner sep=0.5pt}
+]
 
-\draw[arr] (user) -- node[lbl,left]{1} node[lbl, pos=0.85, above]{N} (member);
-\draw[arr] (club) -- node[lbl,right]{1} node[lbl, pos=0.85, above]{N} (member);
-\draw[arr] (club) -- node[lbl,left]{1} (host);
-\draw[arr] (event) -- node[lbl,right]{N} (host);
-\draw[arr] (club) to[out=-90,in=90] node[lbl,right]{1} (invite);
-\draw[arr] (event) -- node[lbl,left]{N} (invite);
-\draw[arr] (event) -- node[lbl,above]{N} node[lbl, pos=0.85, right]{1} (venue);
-\draw[arr] (user) -- node[lbl,left]{1} (rsvp);
-\draw[arr] (event) -- node[lbl,right]{N} (rsvp);
+% ---- Entities
+\node[ent] (user)   at (0,11)    {User};
+\node[ent] (member) at (7,11)    {ClubMembership};
+\node[ent] (club)   at (14,11)   {Club};
+\node[ent] (rsvp)   at (0,4)     {EventRsvp};
+\node[ent] (host)   at (8,4.5)   {EventHost};
+\node[ent] (invite) at (17.5,7.5){EventHostInvite};
+\node[ent] (event)  at (9,0)     {Event};
+\node[ent] (venue)  at (17,0)    {Venue};
+
+% ---- Relationships
+\node[rel] (requests) at (3.4,11)  {requests};
+\node[rel] (in)       at (10.6,11) {in};
+\node[rel] (submits)  at (0,7.5)   {submits};
+\node[rel] (responds) at (3.2,1.6) {responds\\ to};
+\node[rel] (hosts)    at (9.5,7.5) {hosts};
+\node[rel] (forh)     at (7,1.9)   {for};
+\node[rel] (invites)  at (17.5,11) {invites};
+\node[rel] (targets)  at (17.5,4)  {targets};
+\node[rel] (heldat)   at (13,0)    {held at};
+
+% ---- Attributes (underlined = primary key; ...Id = foreign key)
+\node[attr] (userid)     at (-2.3,12.5) {\underline{id}};
+\node[attr] (memid)      at (5.3,12.7)  {\underline{id}};
+\node[attr] (memstatus)  at (8.7,12.7)  {status};
+\node[attr] (memuser)    at (5.6,9.3)   {userId};
+\node[attr] (memclub)    at (8.5,9.3)   {clubId};
+\node[attr] (clubid)     at (14,12.7)   {\underline{id}};
+\node[attr] (hostid)     at (5.0,5.5)   {\underline{id}};
+\node[attr] (hostclub)   at (5.5,4.1)   {clubId};
+\node[attr] (hostevent)  at (10.2,4.5)  {eventId};
+\node[attr] (hostprim)   at (9.0,3.4)   {isPrimary};
+\node[attr] (invid)      at (20.5,8.0)  {\underline{id}};
+\node[attr] (invevent)   at (20.5,6.9)  {eventId};
+\node[attr] (invclub)    at (19.2,9.6)  {clubId};
+\node[attr] (rsvpid)     at (-2.5,5.2)  {\underline{id}};
+\node[attr] (rsvpstat)   at (2.2,5.1)   {status};
+\node[attr] (rsvpuser)   at (-2.4,2.9)  {userId};
+\node[attr] (rsapevent)  at (3.5,3.5)   {eventId};
+\node[attr] (eventid)    at (9,-1.7)    {\underline{id}};
+\node[attr] (eventvenue) at (6.4,-1.3)  {venueId};
+\node[attr] (venueid)    at (17,1.6)    {\underline{id}};
+
+% ---- Relationship edges (undirected; cardinality at each entity end)
+\draw[ln] (user) -- (requests);   \node[card, above] at (1.55,11)   {1};
+\draw[ln] (requests) -- (member); \node[card, above] at (5.05,11)   {N};
+\draw[ln] (member) -- (in);       \node[card, above] at (9.1,11)    {N};
+\draw[ln] (in) -- (club);         \node[card, above] at (12.3,11)   {1};
+\draw[ln] (user) -- (submits);    \node[card, left]  at (-0.4,8.9)  {1};
+\draw[ln] (submits) -- (rsvp);    \node[card, left]  at (-0.4,5.6)  {N};
+\draw[ln] (rsvp) -- (responds);   \node[card, below] at (1.5,2.75)  {N};
+\draw[ln] (responds) -- (event);  \node[card, above] at (6.0,1.3)   {1};
+\draw[ln] (club) -- (hosts);      \node[card, above] at (11.2,9.2)  {1};
+\draw[ln] (hosts) -- (host);      \node[card, above] at (8.75,6.25) {N};
+\draw[ln] (host) -- (forh);       \node[card, left]  at (7.0,3.2)   {N};
+\draw[ln] (forh) -- (event);      \node[card, above] at (7.7,1.2)   {1};
+\draw[ln] (club) -- (invites);    \node[card, above] at (15.6,11)   {1};
+\draw[ln] (invites) -- (invite);  \node[card, right] at (17.9,9.0)  {N};
+\draw[ln] (invite) -- (targets);  \node[card, right] at (17.9,5.9)  {N};
+\draw[ln] (targets) -- (event);   \node[card, above] at (13.2,1.95) {1};
+\draw[ln] (event) -- (heldat);    \node[card, above] at (10.75,0)   {N};
+\draw[ln] (heldat) -- (venue);    \node[card, above] at (15.5,0)    {1};
+
+% ---- Attribute links
+\draw[thin] (userid) -- (user);
+\draw[thin] (memid) -- (member);
+\draw[thin] (memstatus) -- (member);
+\draw[thin] (memuser) -- (member);
+\draw[thin] (memclub) -- (member);
+\draw[thin] (clubid) -- (club);
+\draw[thin] (hostid) -- (host);
+\draw[thin] (hostclub) -- (host);
+\draw[thin] (hostevent) -- (host);
+\draw[thin] (hostprim) -- (host);
+\draw[thin] (invid) -- (invite);
+\draw[thin] (invevent) -- (invite);
+\draw[thin] (invclub) -- (invite);
+\draw[thin] (rsvpid) -- (rsvp);
+\draw[thin] (rsvpstat) -- (rsvp);
+\draw[thin] (rsvpuser) -- (rsvp);
+\draw[thin] (rsapevent) -- (rsvp);
+\draw[thin] (eventid) -- (event);
+\draw[thin] (eventvenue) -- (event);
+\draw[thin] (venueid) -- (venue);
 \end{tikzpicture}%
 }
 \caption{Simplified entity-relationship diagram of the core ClubMS data model}
@@ -699,7 +771,7 @@ AuditLog & Immutable record of an administrative action: actor, action name, tar
 \end{tabularx}
 \end{table}
 
-Two design decisions in the schema are worth highlighting. First, \texttt{Event} has no direct \texttt{clubId} column; instead, the \texttt{EventHost} join table is the single source of truth for which clubs host an event, which is what makes multi-club co-hosting possible without duplicating events. Second, \texttt{EventHostInvite} deliberately stores only \emph{pending} invitations rather than a status column on \texttt{EventHost} itself, so that authorization logic which queries \texttt{EventHost} (for example, "is this user an officer of a hosting club") never has to filter out unaccepted invitations -- an un-accepted invite simply does not exist as a host relationship yet.
+Two design decisions in the schema are worth highlighting. First, \texttt{Event} has no direct \texttt{clubId} column; instead, the \texttt{EventHost} join table is the single source of truth for which clubs host an event, which is what makes multi-club co-hosting possible without duplicating events. Second, \texttt{EventHostInvite} deliberately stores only \emph{pending} invitations rather than a status column on \texttt{EventHost} itself, so that authorization logic which queries \texttt{EventHost} (for example, ``is this user an officer of a hosting club'') never has to filter out unaccepted invitations -- an un-accepted invite simply does not exist as a host relationship yet.
 
 \section{API Design}
 
@@ -799,10 +871,10 @@ This design underpins several theoretical foundations of role-based access contr
 \section{Key Module Implementation}
 
 \subsection{Registration and Secure Uploads}
-Registration is a multipart form submission combining text fields (name, email, password, phone, student ID) with an ID-card image file. The uploaded file is never trusted by its declared MIME type or filename extension; instead, its first bytes are inspected to determine the true image format, and the file is persisted under a randomly generated name with an extension derived from that detection. The same validated-upload helper is reused for club logos, event banners, and profile pictures, and the entire \texttt{/uploads} directory is served with a strict \texttt{Content-Security-Policy: default-src 'none'} header so that even a successfully uploaded file can never execute script in the browser.
+Registration is a multipart form submission combining text fields (name, email, password, phone, student ID) with an ID-card image file. The uploaded file is never trusted by its declared MIME type or filename extension; instead, its first bytes are inspected to determine the true image format, and the file is persisted under a randomly generated name with an extension derived from that detection. The same validated-upload helper is reused for club logos, event banners, and student ID cards, and the entire \texttt{/uploads} directory is served with a strict \texttt{Content-Security-Policy: default-src 'none'} header so that even a successfully uploaded file can never execute script in the browser.
 
 \subsection{Club and Membership Lifecycle}
-A club's join behaviour is governed by a \texttt{joinRuleMode} of \texttt{ALL}, \texttt{ALLOW}, or \texttt{BLOCK} combined with a list of departments; \texttt{requestJoin} evaluates this rule, and -- if the club has published rules text -- requires the requester to explicitly agree before the request is created. Membership then moves through \texttt{PENDING} $\rightarrow$ \texttt{ACTIVE}/\texttt{REJECTED}, with a rejected user able to re-apply (which resets the same row to \texttt{PENDING} rather than creating a duplicate). Officers can additionally promote a member to \texttt{OFFICER} (which also elevates the user's global role to \texttt{CLUB\_ADMIN}), demote an officer back to member, mark a member as \texttt{ALUMNI}, or remove a membership outright, with guards that prevent a user from demoting or removing themselves and that block removing the club's only remaining officer.
+A club's join behavior is governed by a \texttt{joinRuleMode} of \texttt{ALL}, \texttt{ALLOW}, or \texttt{BLOCK} combined with a list of departments; \texttt{requestJoin} evaluates this rule, and -- if the club has published rules text -- requires the requester to explicitly agree before the request is created. Membership then moves through \texttt{PENDING} $\rightarrow$ \texttt{ACTIVE}/\texttt{REJECTED}, with a rejected user able to re-apply (which resets the same row to \texttt{PENDING} rather than creating a duplicate). Officers can additionally promote a member to \texttt{OFFICER} (which also elevates the user's global role to \texttt{CLUB\_ADMIN}), demote an officer back to member, mark a member as \texttt{ALUMNI}, or remove a membership outright, with guards that prevent a user from demoting or removing themselves and that block removing the club's only remaining officer.
 
 \subsection{Multi-Club Event Hosting and Co-Host Invitations}
 Every event has exactly one primary hosting club and may accumulate co-hosts through a consent-based invitation flow, shown in Figure~\ref{fig:4.5}. An officer of any existing host club may invite another club; an officer of the invited club must explicitly accept before an \texttt{EventHost} row is created, or may reject it, and the inviter may cancel an outstanding invitation. This mirrors the same pending-then-confirmed pattern already used for membership requests, and keeps unaccepted invitations completely invisible to authorization checks that determine who may edit or RSVP to an event.
@@ -814,7 +886,7 @@ Every event has exactly one primary hosting club and may accumulate co-hosts thr
 \node[st] (pending) at (5,3) {PENDING invite};
 \node[st] (accepted) at (0,0) {ACCEPTED\\(EventHost row created)};
 \node[st] (rejected) at (5,0) {REJECTED\\(invite deleted)};
-\node[st] (cancelled) at (10,0) {CANCELLED\\(invite deleted)};
+\node[st] (cancelled) at (10,0) {CANCELED\\(invite deleted)};
 \draw[arr] (pending) -- node[lbl,left]{invited club officer accepts} (accepted);
 \draw[arr] (pending) -- node[lbl,right]{invited club officer rejects} (rejected);
 \draw[arr] (pending) -- node[lbl,right]{inviting club officer cancels} (cancelled);
@@ -932,17 +1004,21 @@ This chapter presents the delivered application organized by functional area, wi
 
 \ScreenshotFigure{Registration-form.png}{Registration form with student ID and ID-card upload}{fig:5.1}
 
-New users register with their institutional details and a scanned ID card; the system rejects duplicate emails and student IDs at submission time and shows inline validation errors sourced directly from the backend's Zod schemas.
+Figure~\ref{fig:5.1} shows the registration form. New users register with their institutional details and a scanned ID card; the system rejects duplicate emails and student IDs at submission time and shows inline validation errors sourced directly from the backend's Zod schemas.
 
 \section{Role-Based Dashboards}
 
 \ScreenshotFigure{Student-dashboard.png}{Student dashboard: joined clubs and upcoming events}{fig:5.2}
 
+Figure~\ref{fig:5.2} shows the student dashboard: a statistics strip of the student's joined clubs and upcoming events, giving a one-glance view of their own activity.
+
 \ScreenshotFigure{Club-admin-dashboard.png}{Club admin dashboard: managed clubs, pending requests, and co-host invites}{fig:5.3}
+
+Figure~\ref{fig:5.3} shows the club admin dashboard: the clubs the officer manages, with quick links into pending requests and the member roster, plus incoming co-host invitations awaiting a response.
 
 \ScreenshotFigure{PlatForm-admin-dashboard.png}{Platform admin dashboard: platform-wide statistics and Manage Clubs access}{fig:5.4}
 
-Each dashboard renders a role-specific statistics strip (for example, a student sees clubs joined and upcoming events, while a platform admin sees total clubs, users, events, and pending memberships) and hides sections entirely rather than disabling them for viewers who are not entitled to see that data. Club admins additionally see the clubs they officer with quick links into pending requests and the member roster, while platform admins see a direct link into the Manage Clubs page.
+Figure~\ref{fig:5.4} shows the platform admin dashboard: platform-wide totals (clubs, users, events, pending memberships) with a direct link into the Manage Clubs page. All three dashboards render a role-specific statistics strip and hide sections entirely rather than disabling them for viewers who are not entitled to see that data.
 
 \section{Club Directory and Detail}
 
@@ -950,13 +1026,13 @@ Each dashboard renders a role-specific statistics strip (for example, a student 
 
 \ScreenshotFigure{Club-details-page.png}{Club detail page showing roster, announcements, and published rules (member view)}{fig:5.6}
 
-The club directory lists every club with its category and member count and lets a visitor search and filter before opening a club's detail page. The club detail page reveals the member roster, contact details, and announcements only to active members and officers, while non-members see the club's public description and published rules without any unauthorized data ever leaving the server.
+Figure~\ref{fig:5.5} shows the club directory, which lists every club with its category and member count and lets a visitor search and filter before opening a club's detail page. Figure~\ref{fig:5.6} shows the resulting detail page; it reveals the member roster, contact details, and announcements only to active members and officers, while non-members see the club's public description and published rules without any unauthorized data ever leaving the server.
 
 \section{Membership Management}
 
 \ScreenshotFigure{Member-management.png}{Member management: roles, promote/demote, CSV export}{fig:5.7}
 
-Officers approve or reject pending applicants in bulk, promote members to Officer or demote them back to Member, and export the full roster as a CSV file for offline record-keeping.
+Figure~\ref{fig:5.7} shows the member management page. Officers approve or reject pending applicants in bulk, promote members to Officer or demote them back to Member, and export the full roster as a CSV file for offline record-keeping.
 
 \section{Events and RSVP}
 
@@ -964,19 +1040,19 @@ Officers approve or reject pending applicants in bulk, promote members to Office
 
 \ScreenshotFigure{Event-details-page.png}{Event detail page with RSVP controls and attendee count}{fig:5.9}
 
-Students browse all upcoming events across clubs and then RSVP as Going, Maybe, or Not Going on the event detail page; the attendee count updates immediately, and officers of any hosting club can additionally view and export the full RSVP list.
+Students browse all upcoming events across clubs (Figure~\ref{fig:5.8}) and then RSVP as Going, Maybe, or Not Going on the event detail page (Figure~\ref{fig:5.9}); the attendee count updates immediately, and officers of any hosting club can additionally view and export the full RSVP list.
 
 \section{Platform Administration}
 
 \ScreenshotFigure{Manage-clubs.png}{Admin: Manage Clubs page}{fig:5.10}
 
-Platform admins create and edit clubs, assign each one a name, category, logo, and brand color, and the same page surfaces every club's join-rule configuration for quick review.
+Figure~\ref{fig:5.10} shows the Manage Clubs page. Platform admins create and edit clubs, assign each one a name, category, logo, and brand color, and the same page surfaces every club's join-rule configuration for quick review.
 
 \section{Discussion}
 
-Measured against the objectives set out in Section~1.4, the delivered system covers all eight of them. The schema, evolved through eighteen migrations, models every entity described in Chapter~4, and the RBAC layer combines role inheritance with per-resource ownership checks. The club and membership lifecycle -- department-based eligibility, join agreements, and all -- is implemented and tested end to end, and multi-club events work through the consent-based invitation model described in Section~4.7.3. Uploads are validated by content rather than trusted metadata, and white-labelling comes down to three build-time environment variables. The whole system is backed by 345 automated tests spanning unit and full-stack integration levels, and it ships as a single Docker Compose file.
+Measured against the objectives set out in Section~1.4, the delivered system covers all eight of them. The schema, evolved through eighteen migrations, models every entity described in Chapter~4, and the RBAC layer combines role inheritance with per-resource ownership checks. The club and membership lifecycle -- department-based eligibility, join agreements, and all -- is implemented and tested end to end, and multi-club events work through the consent-based invitation model described in Section~4.7.3. Uploads are validated by content rather than trusted metadata, and white-labeling comes down to three build-time environment variables. The whole system is backed by 345 automated tests spanning unit and full-stack integration levels, and it ships as a single Docker Compose file.
 
-Compared with the systems reviewed in Chapter~2, ClubMS's advantage is structural rather than a matter of feature count: none of the academic projects documented a per-resource authorization layer, a consent-based cross-club workflow, or an integration suite tested against a real database, and none of the commercial suites can be self-hosted or white-labelled at all.
+Compared with the systems reviewed in Chapter~2, ClubMS's advantage is structural rather than a matter of feature count: none of the academic projects documented a per-resource authorization layer, a consent-based cross-club workflow, or an integration suite tested against a real database, and none of the commercial suites can be self-hosted or white-labeled at all.
 
 
 % #####################################################################
@@ -987,7 +1063,7 @@ Compared with the systems reviewed in Chapter~2, ClubMS's advantage is structura
 
 Because ClubMS is a self-hosted, open codebase produced as an academic project rather than a commercial product with an existing pricing history, the figures in this chapter are illustrative estimates intended to demonstrate the \emph{shape} of the cost-benefit tradeoff -- self-hosted, one-time development effort versus recurring commercial licensing -- rather than audited financial figures. They should be recalibrated with real quotations before being used for an actual procurement decision.
 
-\section{Development Cost Estimate}
+\section{Development Cost Estimate (Assumption)}
 
 Table~\ref{tab:6.1} breaks the observed development effort down by phase (derived from the project's iteration history in Table~\ref{tab:4.1}) and converts it to an illustrative cost in BDT, using an assumed blended day rate of BDT 1{,}500 -- representative of a junior-to-mid-level software developer's rate in the Bangladeshi IT job market.
 
@@ -1028,7 +1104,7 @@ Table~\ref{tab:6.2} compares the recurring cost profile of self-hosting ClubMS a
 Cost driver & Self-hosted ClubMS & Commercial SaaS suite \\
 \midrule
 Hosting / infrastructure & Small VPS or on-prem server, approx. USD 10--30/month & Included in subscription \\
-Software licensing & None (source available; MIT-style internal use) & Annual per-institution or per-student licence fee \\
+Software licensing & None (source available; MIT-style internal use) & Annual per-institution or per-student license fee \\
 Customization / branding & Free -- environment variables and, if needed, direct code changes & Limited to vendor-exposed theming options \\
 Data ownership & Full control; data never leaves institutional infrastructure & Hosted by vendor; export/portability depends on contract \\
 Vendor lock-in risk & Low & High \\
@@ -1039,7 +1115,7 @@ Feature breadth (out of the box) & Core club/event/membership workflow & Broad (
 
 \section{Benefit Analysis}
 
-The primary quantifiable benefit of digitizing club administration is officer time saved: bulk approve/reject of pending membership requests and CSV export of rosters and RSVP lists both replace what would otherwise be manual, per-record work. Qualitatively, the platform also reduces the error rate inherent in spreadsheet-based tracking (duplicate join requests are prevented at the database level by a unique constraint), and the audit log gives student-affairs staff a way to answer "who approved this, and when" questions that ad hoc tools cannot answer at all.
+The primary quantifiable benefit of digitizing club administration is officer time saved: bulk approve/reject of pending membership requests and CSV export of rosters and RSVP lists both replace what would otherwise be manual, per-record work. Qualitatively, the platform also reduces the error rate inherent in spreadsheet-based tracking (duplicate join requests are prevented at the database level by a unique constraint), and the audit log gives student-affairs staff a way to answer ``who approved this, and when'' questions that ad hoc tools cannot answer at all.
 
 
 % #####################################################################
