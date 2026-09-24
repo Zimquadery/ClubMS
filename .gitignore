@@ -6,3 +6,4 @@ frontend/dist/
 backend/uploads/
 .agents
 .zcode
+.opencode
