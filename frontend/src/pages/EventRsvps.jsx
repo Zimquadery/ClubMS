@@ -187,7 +187,7 @@ export default function EventRsvps() {
       </div>
 
       <div className="mt-4">
-        <h1 className="text-2xl font-bold">
+        <h1 className="text-2xl font-bold break-words">
           {event?.title || 'Loading...'}
           <span className="text-sm text-muted-foreground font-normal">
             {' '}&middot; {event?.club?.name || ''}
@@ -265,7 +265,7 @@ export default function EventRsvps() {
                         <div className="text-sm text-muted-foreground truncate">{rsvp.user?.email}</div>
                         <div className="text-xs text-muted-foreground truncate">{rsvp.user?.phone}</div>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex shrink-0 items-center gap-3">
                         <Badge className={STATUS_BADGE_CLASS[rsvp.status]}>
                           {rsvp.status === 'NOT_GOING' ? 'Not Going' : rsvp.status.charAt(0) + rsvp.status.slice(1).toLowerCase()}
                         </Badge>

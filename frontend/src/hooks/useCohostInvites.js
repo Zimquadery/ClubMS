@@ -26,6 +26,7 @@ export function useCohostInvites(clubId) {
       await client.post(`/cohost-invites/${id}/accept`);
       toast.success('Co-host invitation accepted');
       await refresh();
+      window.dispatchEvent(new Event('cohost-invites-changed'));
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to accept invitation');
     } finally {
@@ -39,6 +40,7 @@ export function useCohostInvites(clubId) {
       await client.post(`/cohost-invites/${id}/reject`);
       toast.success('Invitation declined');
       await refresh();
+      window.dispatchEvent(new Event('cohost-invites-changed'));
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to decline invitation');
     } finally {

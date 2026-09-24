@@ -1,6 +1,8 @@
-import { useState } from 'react'
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
+import client from '@/api/client'
+import CountBadge from '@/components/CountBadge'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import {
@@ -19,9 +21,33 @@ import { LayoutDashboard, Users, Calendar, LogOut, Shield, Menu, X, UserCircle, 
 export function Layout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   const universityName = import.meta.env.VITE_UNIVERSITY_NAME || 'ClubMS'
   const logoUrl = import.meta.env.VITE_LOGO_URL
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [cohostInviteCount, setCohostInviteCount] = useState(0)
+  const canSeeCohostInvites = user?.role === 'CLUB_ADMIN' || user?.role === 'FACULTY'
+
+  useEffect(() => {
+    if (!canSeeCohostInvites) {
+      setCohostInviteCount(0)
+      return
+    }
+    let cancelled = false
+    const fetchCount = () => {
+      client.get('/cohost-invites/incoming')
+        .then((res) => {
+          if (!cancelled) setCohostInviteCount((res.data.items || []).length)
+        })
+        .catch(() => {})
+    }
+    fetchCount()
+    window.addEventListener('cohost-invites-changed', fetchCount)
+    return () => {
+      cancelled = true
+      window.removeEventListener('cohost-invites-changed', fetchCount)
+    }
+  }, [canSeeCohostInvites, pathname])
 
   const handleLogout = () => {
     logout()
@@ -38,6 +64,9 @@ export function Layout() {
       <NavLink to="/dashboard" className={linkClass} onClick={() => setMobileMenuOpen(false)}>
         <LayoutDashboard className="h-4 w-4" />
         Dashboard
+        {cohostInviteCount > 0 && (
+          <CountBadge count={cohostInviteCount} label="co-host invitations awaiting response" />
+        )}
       </NavLink>
       <NavLink to="/clubs" className={linkClass} onClick={() => setMobileMenuOpen(false)}>
         <Users className="h-4 w-4" />

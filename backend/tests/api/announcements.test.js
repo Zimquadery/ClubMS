@@ -209,6 +209,25 @@ describe('PATCH /api/clubs/:clubId/announcements/:announcementId', () => {
     expect(res.body.title).toBe('Edited');
   });
 
+  it('non-author officer of the club can edit any announcement', async () => {
+    const author = await makeUser({ role: 'CLUB_ADMIN' });
+    const otherOfficer = await makeUser({ role: 'CLUB_ADMIN' });
+    const club = await makeClub();
+    await makeOfficer({ userId: author.id, clubId: club.id });
+    await makeOfficer({ userId: otherOfficer.id, clubId: club.id });
+    const ann = await makeAnnouncement({ clubId: club.id, authorId: author.id });
+
+    const res = await request(app)
+      .patch(`/api/clubs/${club.id}/announcements/${ann.id}`)
+      .set('Authorization', tokenFor(otherOfficer))
+      .send({ title: 'Officer edit' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.title).toBe('Officer edit');
+    const row = await prisma.announcement.findUnique({ where: { id: ann.id } });
+    expect(row.title).toBe('Officer edit');
+  });
+
   it('PLATFORM_ADMIN can edit anyone\'s announcement', async () => {
     const pa = await makeUser({ role: 'PLATFORM_ADMIN' });
     const other = await makeUser({ role: 'CLUB_ADMIN' });
@@ -352,6 +371,24 @@ describe('DELETE /api/clubs/:clubId/announcements/:announcementId', () => {
     const res = await request(app)
       .delete(`/api/clubs/${club.id}/announcements/${ann.id}`)
       .set('Authorization', tokenFor(author));
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    const row = await prisma.announcement.findUnique({ where: { id: ann.id } });
+    expect(row).toBeNull();
+  });
+
+  it('non-author officer of the club can delete any announcement', async () => {
+    const author = await makeUser({ role: 'CLUB_ADMIN' });
+    const otherOfficer = await makeUser({ role: 'CLUB_ADMIN' });
+    const club = await makeClub();
+    await makeOfficer({ userId: author.id, clubId: club.id });
+    await makeOfficer({ userId: otherOfficer.id, clubId: club.id });
+    const ann = await makeAnnouncement({ clubId: club.id, authorId: author.id });
+
+    const res = await request(app)
+      .delete(`/api/clubs/${club.id}/announcements/${ann.id}`)
+      .set('Authorization', tokenFor(otherOfficer));
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);

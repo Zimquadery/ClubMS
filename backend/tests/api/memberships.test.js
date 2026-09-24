@@ -1320,6 +1320,28 @@ describe('GET /api/memberships/my-clubs and /my-admin-clubs', () => {
     expect(ids).not.toContain(c2.id);
   });
 
+  it('my-admin-clubs includes per-club pendingRequests counts', async () => {
+    const officer = await makeUser({ role: 'CLUB_ADMIN' });
+    const clubA = await makeClub();
+    const clubB = await makeClub();
+    await makeOfficer({ userId: officer.id, clubId: clubA.id });
+    await makeOfficer({ userId: officer.id, clubId: clubB.id });
+    const p1 = await makeUser();
+    const p2 = await makeUser();
+    const active = await makeUser();
+    await makeMembership({ userId: p1.id, clubId: clubA.id, status: 'PENDING' });
+    await makeMembership({ userId: p2.id, clubId: clubA.id, status: 'PENDING' });
+    await makeActiveMember({ userId: active.id, clubId: clubA.id });
+
+    const res = await request(app)
+      .get('/api/memberships/my-admin-clubs')
+      .set('Authorization', tokenFor(officer));
+
+    expect(res.status).toBe(200);
+    expect(res.body.find((c) => c.id === clubA.id).pendingRequests).toBe(2);
+    expect(res.body.find((c) => c.id === clubB.id).pendingRequests).toBe(0);
+  });
+
   it('my-admin-clubs returns 403 for STUDENT', async () => {
     const student = await makeUser({ role: 'STUDENT' });
     const res = await request(app)

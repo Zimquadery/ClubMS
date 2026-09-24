@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import client from '@/api/client'
 import { toast } from 'sonner'
 
 export default function useClubDetail(id, user) {
+  const navigate = useNavigate()
   const [club, setClub] = useState(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -126,9 +128,12 @@ export default function useClubDetail(id, user) {
       const payload = venueId ? { ...rest, venueId } : { ...rest, venue }
       if (invitedClubs.length > 0) payload.inviteClubIds = invitedClubs.map((c) => c.id)
       if (tags.length > 0) payload.tags = tags
-      await client.post(`/clubs/${id}/events`, payload)
+      const res = await client.post(`/clubs/${id}/events`, payload)
       setShowCreateDialog(false)
-      toast.success('Event created!')
+      toast.success('Event created', {
+        duration: 6000,
+        action: { label: 'View event', onClick: () => navigate(`/events/${res.data.id}`) },
+      })
       setNewEvent({ title: '', description: '', startTime: '', endTime: '', venueId: '', venue: '', bannerUrl: '', invitedClubs: [], tags: [] })
       await fetchClub()
     } catch (err) {

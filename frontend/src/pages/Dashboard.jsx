@@ -11,6 +11,7 @@ import { Skeleton, ListSkeleton } from '@/components/ui/skeleton'
 import { SkeletonReveal } from '@/components/ui/SkeletonReveal'
 import { cn } from '@/lib/utils'
 import { ClubCoHostInvitesCard } from '@/components/event/ClubCoHostInvitesCard'
+import CountBadge from '@/components/CountBadge'
 
 function formatStat(n) {
   return typeof n === 'number' ? n.toLocaleString() : n
@@ -23,10 +24,10 @@ function getGreeting() {
   return 'Good evening'
 }
 
-function StatItem({ value, label, divided, attention }) {
+function StatItem({ value, label, divided, attention, to }) {
   const hasValue = Number(value) > 0
-  return (
-    <span className="whitespace-nowrap text-sm text-muted-foreground">
+  const content = (
+    <>
       {divided && (
         <span className="mx-1.5 text-muted-foreground/40 select-none" aria-hidden="true">·</span>
       )}
@@ -36,13 +37,18 @@ function StatItem({ value, label, divided, attention }) {
       )}>{formatStat(value)}</strong>{' '}
       {label}
       {attention && hasValue && (
-        <span
-          className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-status-yellow animate-pulse motion-reduce:animate-none"
-          aria-label={`${value} pending`}
-        />
+        <span className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-status-yellow" aria-hidden="true" />
       )}
-    </span>
+    </>
   )
+  if (to && hasValue) {
+    return (
+      <Link to={to} className="whitespace-nowrap rounded-sm text-sm text-brand-primary hover:underline underline-offset-4 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+        {content}
+      </Link>
+    )
+  }
+  return <span className="whitespace-nowrap text-sm text-muted-foreground">{content}</span>
 }
 
 function AdminCard({ isAdmin, adminClubs, clubsLoading }) {
@@ -83,9 +89,12 @@ function AdminCard({ isAdmin, adminClubs, clubsLoading }) {
                           <div className="flex gap-2">
                             <Link
                               to={`/admin/clubs/${club.id}/requests`}
-                              className="text-xs text-brand-primary hover:underline"
+                              className="inline-flex items-center gap-1 text-xs text-brand-primary hover:underline"
                             >
                               Requests
+                              {(club.pendingRequests ?? 0) > 0 && (
+                                <CountBadge count={club.pendingRequests} label="pending requests" />
+                              )}
                             </Link>
                             <Link
                               to={`/admin/clubs/${club.id}/members`}
@@ -106,7 +115,7 @@ function AdminCard({ isAdmin, adminClubs, clubsLoading }) {
   )
 }
 
-function UpcomingEventsCard({ events, loading }) {
+function UpcomingEventsCard({ events, loading, hasClubs }) {
   return (
     <Card>
       <CardHeader>
@@ -135,7 +144,9 @@ function UpcomingEventsCard({ events, loading }) {
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
-              No upcoming events. Join a club to see events here.
+              {hasClubs
+                ? 'No upcoming events from your clubs yet.'
+                : 'No upcoming events. Join a club to see events here.'}
             </p>
           )}
         </SkeletonReveal>
@@ -228,6 +239,8 @@ export default function Dashboard() {
     }
   }, [isClubAdmin])
 
+  const pendingClubs = adminClubs.filter((c) => (c.pendingRequests ?? 0) > 0)
+
   return (
     <div>
       <h1 className="text-2xl font-bold">
@@ -256,7 +269,13 @@ export default function Dashboard() {
                 <StatItem value={stats.myClubs} label="clubs" />
                 <StatItem value={stats.totalMembers} label="members" divided />
                 <StatItem value={stats.upcomingEvents} label="events" divided />
-                <StatItem value={stats.pendingRequests} label="pending" divided attention />
+                <StatItem
+                  value={stats.pendingRequests}
+                  label="pending"
+                  divided
+                  attention
+                  to={pendingClubs.length === 1 ? `/admin/clubs/${pendingClubs[0].id}/requests` : undefined}
+                />
               </>
             )}
             {user?.role === 'STUDENT' && (
@@ -278,7 +297,7 @@ export default function Dashboard() {
       )}
 
       <div className="grid gap-4 md:grid-cols-2 mt-6">
-        <UpcomingEventsCard events={upcomingEvents} loading={eventsLoading} />
+        <UpcomingEventsCard events={upcomingEvents} loading={eventsLoading} hasClubs={myClubs.length > 0} />
         <YourClubsCard clubs={myClubs} loading={clubsLoading} />
       </div>
     </div>

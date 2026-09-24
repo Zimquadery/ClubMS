@@ -23,12 +23,16 @@ import { ListSkeleton } from '@/components/ui/skeleton'
 import { SkeletonReveal } from '@/components/ui/SkeletonReveal'
 import { Pagination } from '@/components/Pagination'
 import { useAdminClubSelector } from '@/hooks/useAdminClubSelector'
+import { useAuth } from '@/hooks/useAuth'
 import { AdminClubHeader } from '@/components/admin/AdminClubHeader'
 import { IdCardThumb } from '@/components/admin/IdCardThumb'
 import usePaginatedFetch from '@/hooks/usePaginatedFetch'
 
 export default function ClubMembers() {
   const { clubId, adminClubs, currentClub, adminError, navigateToClub } = useAdminClubSelector((val) => `/admin/clubs/${val}/members`)
+  const { user } = useAuth()
+  const backTo = user?.role === 'PLATFORM_ADMIN' ? '/admin/clubs' : '/dashboard'
+  const backLabel = user?.role === 'PLATFORM_ADMIN' ? 'Back to Clubs' : 'Back to Dashboard'
   const [searchParams, setSearchParams] = useSearchParams()
   const tab = searchParams.get('tab') || 'active'
   const [activeMembers, setActiveMembers] = useState([])
@@ -155,7 +159,7 @@ export default function ClubMembers() {
 
   return (
     <div className="space-y-6">
-      <BackLink to="/admin/clubs" label="Back to Clubs" />
+      <BackLink to={backTo} label={backLabel} />
 
       <AdminClubHeader
         title="Club Members"
@@ -244,8 +248,8 @@ export default function ClubMembers() {
                         meta={[membership.user.department, membership.user.homeDistrict, `ID ${membership.user.studentId}`].filter(Boolean).join(' · ')}
                       />
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="truncate text-sm font-medium">{membership.user.name}</p>
+                        <div className="flex min-w-0 items-center gap-2">
+                          <p className="min-w-0 truncate text-sm font-medium">{membership.user.name}</p>
                           {membership.role === 'OFFICER' && (
                             <Badge variant="outline" className="text-xs">Officer</Badge>
                           )}
@@ -261,7 +265,7 @@ export default function ClubMembers() {
                       </div>
                     </div>
                     {tab === 'active' && (
-                      <div className="flex shrink-0 flex-wrap gap-1.5">
+                      <div className="flex shrink-0 flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:items-start">
                         <Button variant="ghost" size="sm" className="min-w-[92px]" onClick={() => openPositionEditor(membership)}>
                           <Pencil className="h-4 w-4 mr-1" /> Position
                         </Button>

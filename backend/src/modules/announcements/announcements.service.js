@@ -75,10 +75,6 @@ async function update(clubId, announcementId, userId, userRole, data) {
     throw new AppError('Announcement not found', 404);
   }
 
-  if (!isPrivilegedRole(userRole) && announcement.authorId !== userId) {
-    throw new AppError('You can only edit your own announcements', 403);
-  }
-
   return prisma.announcement.update({
     where: { id: announcementId },
     data,
@@ -92,10 +88,6 @@ async function remove(clubId, announcementId, userId, userRole) {
   });
   if (!announcement || announcement.clubId !== clubId) {
     throw new AppError('Announcement not found', 404);
-  }
-
-  if (!isPrivilegedRole(userRole) && announcement.authorId !== userId) {
-    throw new AppError('You can only delete your own announcements', 403);
   }
 
   await prisma.announcement.delete({ where: { id: announcementId } });

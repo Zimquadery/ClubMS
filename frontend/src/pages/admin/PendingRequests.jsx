@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Check, X, Users, CheckSquare, XSquare, SlidersHorizontal } from 'lucide-react'
+import { Check, X, Users, CheckSquare, XSquare, SlidersHorizontal, Pencil } from 'lucide-react'
 import BackLink from '@/components/BackLink'
 import { formatRelativeTime } from '@/lib/format'
 import { toast } from 'sonner'
@@ -21,6 +21,7 @@ import { ListSkeleton } from '@/components/ui/skeleton'
 import { SkeletonReveal } from '@/components/ui/SkeletonReveal'
 import { Pagination } from '@/components/Pagination'
 import { useAdminClubSelector } from '@/hooks/useAdminClubSelector'
+import { useAuth } from '@/hooks/useAuth'
 import { AdminClubHeader } from '@/components/admin/AdminClubHeader'
 import { IdCardThumb } from '@/components/admin/IdCardThumb'
 import { JoinRulesDialog } from '@/components/club/JoinRulesDialog'
@@ -30,6 +31,9 @@ const EXIT_MS = 200
 
 export default function PendingRequests() {
   const { clubId, adminClubs, currentClub, adminError, navigateToClub } = useAdminClubSelector((val) => `/admin/clubs/${val}/requests`)
+  const { user } = useAuth()
+  const backTo = user?.role === 'PLATFORM_ADMIN' ? '/admin/clubs' : '/dashboard'
+  const backLabel = user?.role === 'PLATFORM_ADMIN' ? 'Back to Clubs' : 'Back to Dashboard'
 
   const {
     items: requests, setItems: setRequests,
@@ -54,6 +58,7 @@ export default function PendingRequests() {
   const [rulesOpen, setRulesOpen] = useState(false)
   const [approveTarget, setApproveTarget] = useState(null)
   const [position, setPosition] = useState('')
+  const [bulkRejectOpen, setBulkRejectOpen] = useState(false)
 
   useEffect(() => {
     if (!clubId) return
@@ -117,15 +122,17 @@ export default function PendingRequests() {
   }
 
   async function handleBulkAction(action, successVerb, errorContext) {
-    if (selected.size === 0) return
+    if (selected.size === 0) return false
     setBulkLoading(true)
     try {
       await client.post(`/clubs/${clubId}/members/bulk-${action}`, { userIds: Array.from(selected) })
       toast.success(`${selected.size} request(s) ${successVerb}`)
       setSelected(new Set())
       await fetchRequests()
+      return true
     } catch (err) {
       toast.error(err.response?.data?.message || `Failed to ${errorContext}`)
+      return false
     } finally {
       setBulkLoading(false)
     }
@@ -136,7 +143,12 @@ export default function PendingRequests() {
   }
 
   function handleBulkReject() {
-    handleBulkAction('reject', 'rejected', 'bulk reject')
+    setBulkRejectOpen(true)
+  }
+
+  async function confirmBulkReject() {
+    const ok = await handleBulkAction('reject', 'rejected', 'bulk reject')
+    if (ok) setBulkRejectOpen(false)
   }
 
   function openApprove(req) {
@@ -153,7 +165,7 @@ export default function PendingRequests() {
   return (
     <>
     <div className="space-y-6">
-      <BackLink to="/admin/clubs" label="Back to Clubs" />
+      <BackLink to={backTo} label={backLabel} />
 
       <AdminClubHeader
         title="Pending Requests"
@@ -226,8 +238,8 @@ export default function PendingRequests() {
                           meta={[req.user.department, req.user.homeDistrict, `ID ${req.user.studentId}`].filter(Boolean).join(' · ')}
                         />
                         <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="truncate text-sm font-medium">{req.user.name}</p>
+                          <div className="flex min-w-0 items-center gap-2">
+                            <p className="min-w-0 truncate text-sm font-medium">{req.user.name}</p>
                             {(req.user.department || req.user.homeDistrict) && (
                               <span className="whitespace-nowrap text-xs text-muted-foreground">
                                 {[req.user.department, req.user.homeDistrict].filter(Boolean).join(' · ')}
@@ -240,14 +252,23 @@ export default function PendingRequests() {
                           </p>
                         </div>
                       </div>
-                      <div className="flex shrink-0 gap-1.5">
+                      <div className="flex shrink-0 flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:items-start">
                         <Button
                           size="sm"
                           className="min-w-[80px] bg-brand-primary hover:bg-brand-primary/90 text-white"
                           disabled={rowBusy}
-                          onClick={() => openApprove(req)}
+                          onClick={() => handleAction(req.userId, 'approve')}
                         >
                           <Check className="h-4 w-4 mr-1" /> Approve
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-muted-foreground hover:text-foreground"
+                          disabled={rowBusy}
+                          onClick={() => openApprove(req)}
+                        >
+                          <Pencil className="h-4 w-4 mr-1" /> Position
                         </Button>
                         <Button
                           variant="ghost"
@@ -276,7 +297,7 @@ export default function PendingRequests() {
     </div>
     {selected.size > 0 && (
       <Card className="sticky bottom-4 border-brand-primary/30">
-        <CardContent className="p-3 flex items-center justify-between">
+        <CardContent className="p-3 flex flex-col items-center justify-between gap-3 sm:flex-row">
           <span className="text-sm font-medium">{selected.size} selected</span>
           <div className="flex gap-2">
             <Button
@@ -285,7 +306,7 @@ export default function PendingRequests() {
               disabled={bulkLoading}
               onClick={handleBulkApprove}
             >
-              <CheckSquare className="h-4 w-4 mr-1" /> Bulk Approve
+              <CheckSquare className="h-4 w-4 mr-1" /> {bulkLoading ? 'Approving...' : 'Bulk Approve'}
             </Button>
             <Button
               variant="destructive"
@@ -293,7 +314,7 @@ export default function PendingRequests() {
               disabled={bulkLoading}
               onClick={handleBulkReject}
             >
-              <XSquare className="h-4 w-4 mr-1" /> Bulk Reject
+              <XSquare className="h-4 w-4 mr-1" /> {bulkLoading ? 'Rejecting...' : 'Bulk Reject'}
             </Button>
           </div>
         </CardContent>
@@ -305,6 +326,7 @@ export default function PendingRequests() {
           <DialogTitle>Reject Membership Request</DialogTitle>
           <DialogDescription>
             Are you sure you want to reject <strong>{rejectTarget?.user?.name}</strong>&apos;s request to join this club?
+            Rejected members can re-apply at any time.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
@@ -314,6 +336,23 @@ export default function PendingRequests() {
             if (ok) setRejectTarget(null)
           }}>
             {actionLoading[rejectTarget?.userId] ? 'Rejecting...' : 'Reject'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    <Dialog open={bulkRejectOpen} onOpenChange={setBulkRejectOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Reject Membership Requests</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to reject {selected.size} selected request{selected.size !== 1 ? 's' : ''}?
+            Rejected members can re-apply at any time.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setBulkRejectOpen(false)} disabled={bulkLoading}>Cancel</Button>
+          <Button variant="destructive" disabled={bulkLoading} onClick={confirmBulkReject}>
+            {bulkLoading ? 'Rejecting...' : 'Reject'}
           </Button>
         </DialogFooter>
       </DialogContent>

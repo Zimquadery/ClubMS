@@ -308,7 +308,19 @@ async function getAdminClubs(userId) {
     include: { club: { select: { id: true, name: true, category: true } } },
     orderBy: { createdAt: 'asc' },
   });
-  return memberships.map((m) => m.club);
+
+  const officerClubIds = memberships.map((m) => m.clubId);
+  const pendingCounts = await prisma.clubMembership.groupBy({
+    by: ['clubId'],
+    where: { clubId: { in: officerClubIds }, status: 'PENDING' },
+    _count: { _all: true },
+  });
+  const pendingByClub = new Map(pendingCounts.map((g) => [g.clubId, g._count._all]));
+
+  return memberships.map((m) => ({
+    ...m.club,
+    pendingRequests: pendingByClub.get(m.clubId) ?? 0,
+  }));
 }
 
 async function promoteMember(clubId, userId) {

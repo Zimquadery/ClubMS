@@ -29,6 +29,7 @@
   --color-brand-primary: var(--brand-primary, #1E40AF);
   --color-status-green: #22c55e;
   --color-status-yellow: #eab308;
+  --color-status-yellow-foreground: #0f172a;
   --animate-fade-in: fade-in 200ms ease-out;
   --font-display: "Lora", Georgia, "Times New Roman", serif;
 }
